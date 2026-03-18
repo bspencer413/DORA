@@ -8,6 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>Dead or Alive</title>
   <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiRGVhZCBvciBBbGl2ZSIsInNob3J0X25hbWUiOiJEZWFkL0FsaXZlIiwic3RhcnRfdXJsIjoiLyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiM3ZjFkMWQiLCJ0aGVtZV9jb2xvciI6IiNkYzI2MjYifQ==">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -15,6 +16,7 @@
   <style>
     * { -webkit-tap-highlight-color: transparent; }
     html, body { height: 100%; overflow-x: hidden; }
+    .font-playfair { font-family: 'Playfair Display', Georgia, serif; }
   </style>
 </head>
 <body style="margin:0;padding:0;">
@@ -23,9 +25,9 @@
 const { useState, useEffect } = React;
 
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
-const WANTED_BG = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/IMG_0437.png';
+const WANTED_BG = 'https://raw.githubusercontent.com/Bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.0.4e';
+const APP_VERSION = '1.0.5';
 
 const toTitleCase = (str) => {
   if (!str) return str;
@@ -101,17 +103,23 @@ const ClearableInput = ({ value, onChange, onBlur, onKeyPress, placeholder, type
   </div>
 );
 
-const BackButton = ({ onClick }) => (
-  <button onClick={onClick} className="text-red-400 flex items-center gap-1 text-sm py-2 mb-2">← Back to Settings</button>
-);
-
 const DOALogo = ({ onHome }) => (
   <button onClick={onHome} className="flex items-center gap-2 mb-4">
     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-700 to-gray-900 flex items-center justify-center shadow-md border border-red-600">
       <span className="text-white text-xs font-black">DOA</span>
     </div>
-    <span className="text-white/90 text-sm font-bold tracking-widest drop-shadow" style={{fontFamily:'serif'}}>DEAD OR ALIVE</span>
+    <span className="text-white/90 text-sm font-bold tracking-widest drop-shadow font-playfair">DEAD OR ALIVE</span>
   </button>
+);
+
+const GlassCard = ({ children, className = '' }) => (
+  <div className={`rounded-2xl shadow-xl ${className}`} style={{
+    background: 'rgba(0,0,0,0.45)',
+    backdropFilter: 'blur(10px)',
+    border: '1px solid rgba(255,255,255,0.15)',
+  }}>
+    {children}
+  </div>
 );
 
 const PageWrapper = ({ children }) => (
@@ -125,7 +133,7 @@ const PageWrapper = ({ children }) => (
     backgroundRepeat: 'no-repeat',
     backgroundAttachment: 'scroll',
   }}>
-    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.42)' }} />
+    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.35)' }} />
     <div style={{ position: 'relative', zIndex: 10 }}>{children}</div>
   </div>
 );
@@ -170,6 +178,21 @@ function App() {
   const [showDangerZone, setShowDangerZone] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  const navigateTo = (newPage) => {
+    window.history.pushState({ page: newPage }, '', `#${newPage}`);
+    setPage(newPage);
+  };
+
+  useEffect(() => {
+    const handlePopState = (e) => {
+      if (e.state && e.state.page) setPage(e.state.page);
+      else setPage('home');
+    };
+    window.addEventListener('popstate', handlePopState);
+    window.history.replaceState({ page: 'home' }, '', '#home');
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   useEffect(() => {
     const t = localStorage.getItem('doa_token');
     const u = localStorage.getItem('doa_user');
@@ -210,7 +233,7 @@ function App() {
       localStorage.setItem('doa_token', data.access_token);
       const u = { email, id: '123', name: email.split('@')[0] };
       localStorage.setItem('doa_user', JSON.stringify(u));
-      setUser(u); setAuth(true); setPage('home');
+      setUser(u); setAuth(true); navigateTo('home');
       loadWatchlist(); loadNotifications();
     } catch (error) { clearTimeout(wakeTimer); setBackendWaking(false); alert('Error: ' + error.message); }
     finally { setLoading(false); }
@@ -221,6 +244,7 @@ function App() {
     setAuth(false); setUser(null); setWatchlist([]); setNotifications([]);
     setResults([]); setWikiProfile(null); setWatchlistCheck(null);
     setWatchlistChecked(false); setSearched(false);
+    navigateTo('home');
   };
 
   const doDeleteAccount = async () => {
@@ -318,22 +342,22 @@ function App() {
   };
 
   const unreadCount = notifications.length;
-  const iClass = "w-full px-4 py-3 border border-red-900/50 rounded-lg focus:ring-2 focus:ring-red-500 text-base bg-gray-900/60 text-white placeholder-gray-500";
+  const iClass = "w-full px-4 py-3 border border-white/20 rounded-lg focus:ring-2 focus:ring-red-500 text-base bg-black/30 text-white placeholder-white/40 backdrop-blur-sm";
 
   const WikiCard = ({ profile, showAddButton }) => {
     const alreadyWatching = isOnWatchlist(profile.title);
     const isDisambig = profile.isDisambiguation;
     return (
-      <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
+      <div className="rounded-2xl overflow-hidden shadow-lg" style={{border: '1px solid rgba(220,38,38,0.4)'}}>
         <div className={`px-5 py-3 flex items-center gap-3 ${profile.deathDate ? 'bg-gray-800' : isDisambig ? 'bg-yellow-600' : 'bg-green-700'}`}>
           <span className="text-white font-black tracking-widest text-sm">{profile.deathDate ? '⚫ DEAD' : isDisambig ? '🟡 UNSURE' : '🟢 ALIVE'}</span>
           {profile.deathDate && profile.deathDate !== 'deceased' && <span className="text-white/80 text-xs ml-auto">Died: {profile.deathDate}</span>}
         </div>
-        <div className="bg-gray-900/70 p-5">
+        <div className="p-5" style={{background: 'rgba(0,0,0,0.70)', backdropFilter: 'blur(10px)'}}>
           <div className="flex gap-4 items-start mb-4">
             {profile.thumbnail ? <img src={profile.thumbnail} alt={profile.title} className="w-20 h-20 rounded-full object-cover border-2 border-red-600/50 shrink-0" /> : <div className="w-20 h-20 rounded-full bg-red-900/40 flex items-center justify-center shrink-0 text-3xl">👤</div>}
             <div className="flex-1">
-              <h2 className="text-white text-xl font-bold mb-1">{profile.title}</h2>
+              <h2 className="text-white text-xl font-bold mb-1 font-playfair">{profile.title}</h2>
               {!isDisambig && <p className="text-red-300 text-sm italic mb-1">{profile.description}</p>}
               {profile.birthDate && <p className="text-red-400 text-xs">🎂 Born: {profile.birthDate}</p>}
             </div>
@@ -344,7 +368,7 @@ function App() {
           {showAddButton && (
             <div className="space-y-2 mb-3">
               {!profile.deathDate && (alreadyWatching
-                ? <button onClick={() => setPage('watchlist')} className="w-full py-3 bg-green-700/30 border border-green-500/40 text-green-200 rounded-xl text-sm text-center">✅ Already on your watchlist — tap to view</button>
+                ? <button onClick={() => navigateTo('watchlist')} className="w-full py-3 bg-green-700/30 border border-green-500/40 text-green-200 rounded-xl text-sm text-center">✅ Already on your watchlist — tap to view</button>
                 : !isDisambig && <button onClick={() => addWatchFromSearch(profile.title)} disabled={loading} className="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-base flex items-center justify-center gap-2 disabled:opacity-50"><PlusIcon /> Add to Watchlist</button>
               )}
               <button onClick={clearSearch} className="w-full py-3 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center">✕ Clear Search</button>
@@ -365,17 +389,17 @@ function App() {
     const isDisambig = profile && profile.isDisambiguation;
     const notFound = !profile;
     return (
-      <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
+      <div className="rounded-2xl overflow-hidden shadow-lg" style={{border: '1px solid rgba(220,38,38,0.4)'}}>
         <div className={`px-5 py-3 ${isDeceased ? 'bg-gray-800' : isDisambig ? 'bg-yellow-600' : notFound ? 'bg-blue-700' : 'bg-green-700'}`}>
           <span className="text-white font-black tracking-widest text-sm">{isDeceased ? '⚫ DEAD' : isDisambig ? '🟡 UNSURE' : notFound ? '🔍 NOT IN WIKIPEDIA' : '🟢 ALIVE'}</span>
         </div>
-        <div className="bg-gray-900/70 p-5">
+        <div className="p-5" style={{background: 'rgba(0,0,0,0.70)', backdropFilter: 'blur(10px)'}}>
           {profile && !notFound && (
             <>
               <div className="flex gap-4 items-start mb-4">
                 {profile.thumbnail ? <img src={profile.thumbnail} alt={profile.title} className="w-20 h-20 rounded-full object-cover border-2 border-red-600/50 shrink-0" /> : <div className="w-20 h-20 rounded-full bg-red-900/40 flex items-center justify-center shrink-0 text-3xl">👤</div>}
                 <div className="flex-1">
-                  <h2 className="text-white text-xl font-bold mb-1">{profile.title}</h2>
+                  <h2 className="text-white text-xl font-bold mb-1 font-playfair">{profile.title}</h2>
                   {!isDisambig && <p className="text-red-300 text-sm italic">{profile.description}</p>}
                   {profile.birthDate && <p className="text-red-400 text-xs mt-1">🎂 Born: {profile.birthDate}</p>}
                 </div>
@@ -383,7 +407,7 @@ function App() {
               {!isDisambig && profile.extract && <p className="text-gray-100 text-base leading-relaxed mb-4">{profile.extract.split('. ').slice(0, 3).join('. ') + '.'}</p>}
             </>
           )}
-          {notFound && <div className="mb-4"><p className="text-white text-lg font-bold mb-1">"{name}"</p><p className="text-gray-400 text-sm">No Wikipedia result found. This may be a private individual or the spelling may be different.</p></div>}
+          {notFound && <div className="mb-4"><p className="text-white text-lg font-bold mb-1 font-playfair">"{name}"</p><p className="text-gray-400 text-sm">No Wikipedia result found. This may be a private individual or the spelling may be different.</p></div>}
           {isDisambig && <div className="p-3 bg-yellow-500/20 border border-yellow-400/30 rounded-xl mb-4"><p className="text-yellow-200 text-sm text-center">⚠️ Multiple people share this name — consider adding a middle name or location</p></div>}
           {isDeceased && <div className="p-3 bg-gray-700/50 border border-gray-600/30 rounded-xl mb-4"><p className="text-gray-200 text-sm text-center">⚫ This person has passed away.{profile.deathDate && profile.deathDate !== 'deceased' ? ` Died: ${profile.deathDate}` : ''}</p></div>}
           {!isDeceased && (
@@ -418,33 +442,32 @@ function App() {
         backgroundPosition: 'center top',
         backgroundRepeat: 'no-repeat',
       }}>
-        {/* Compact bottom-anchored login card */}
-        <div style={{ padding: '0 1rem 1rem 1rem' }}>
-          <div className="max-w-md mx-auto bg-black/55 backdrop-blur-sm rounded-2xl p-4 shadow-2xl border border-red-900/40 space-y-3">
+        <div style={{padding: '0 1rem 1.5rem 1rem'}}>
+          <div className="max-w-md mx-auto rounded-2xl p-5 shadow-2xl space-y-3" style={{background: 'rgba(0,0,0,0.60)', backdropFilter: 'blur(8px)', border: '1px solid rgba(220,38,38,0.3)'}}>
             <div className="text-center">
-              <h1 className="text-white text-2xl font-black tracking-widest" style={{fontFamily:'serif'}}>DEAD OR ALIVE</h1>
-              <p className="text-red-400 text-xs mt-1 font-bold tracking-wide">Find out if the people you remember are dead or alive</p>
+              <h1 className="text-white font-black tracking-widest font-playfair" style={{fontSize:'clamp(1.6rem,4vw,2.2rem)'}}>DEAD OR ALIVE</h1>
+              <p className="text-red-400 font-bold tracking-wide mt-1" style={{fontSize:'clamp(0.8rem,2vw,0.95rem)'}}>Find out if the people you remember are dead or alive</p>
               <p className="text-white/40 text-xs mt-1">🎁 Free during beta — early users keep free access forever</p>
             </div>
             <input type="email" placeholder="Email address" value={email}
               onChange={(e) => setEmail(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && doAuth()}
-              className="w-full px-4 py-2.5 rounded-xl bg-white/15 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-red-500 text-base" />
+              className="w-full px-4 py-3 rounded-xl bg-white/15 border border-white/25 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-red-500 text-base" />
             <div className="relative">
               <input type={showPassword ? 'text' : 'password'} placeholder="Password" value={password}
                 onChange={(e) => setPassword(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && doAuth()}
-                className="w-full px-4 py-2.5 rounded-xl bg-white/15 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-red-500 text-base" />
-              <button onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60">
+                className="w-full px-4 py-3 rounded-xl bg-white/15 border border-white/25 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-red-500 text-base" />
+              <button onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50">
                 {showPassword ? <EyeOffIcon /> : <EyeIcon />}
               </button>
             </div>
-            {backendWaking && <p className="text-white/60 text-xs text-center animate-pulse">⏳ Waking up the server... this may take 30 seconds...</p>}
+            {backendWaking && <p className="text-white/50 text-xs text-center animate-pulse">⏳ Waking up the server... this may take 30 seconds...</p>}
             <div className="grid grid-cols-2 gap-3">
               <button onClick={() => { setMode('login'); doAuth(); }} disabled={loading}
-                className="py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl disabled:opacity-50 text-base">
+                className="py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl disabled:opacity-50 text-lg">
                 {loading && mode === 'login' ? '...' : 'Sign In'}
               </button>
               <button onClick={() => { setMode('register'); doAuth(); }} disabled={loading}
-                className="py-2.5 bg-white/20 hover:bg-white/30 text-white font-bold rounded-xl disabled:opacity-50 text-base border border-white/30">
+                className="py-3 bg-white/15 hover:bg-white/25 text-white font-bold rounded-xl disabled:opacity-50 text-lg border border-white/25">
                 {loading && mode === 'register' ? '...' : 'Register'}
               </button>
             </div>
@@ -457,42 +480,69 @@ function App() {
 
   return (
     <PageWrapper>
-      <div className="w-full max-w-2xl mx-auto p-4">
+      <div className="w-full max-w-3xl mx-auto p-4">
 
         {page === 'home' && (
-          <div className="space-y-5">
-            <div className="bg-gray-900/55 rounded-2xl p-6 text-white shadow-lg text-center border border-red-800/50 backdrop-blur-sm">
-              <h2 className="text-4xl font-black mb-1 tracking-widest" style={{fontFamily:'serif'}}>DEAD OR ALIVE</h2>
-              <p className="text-red-400 text-sm font-bold tracking-wide mb-3">Three brains. One mission.</p>
-              <p className="text-white/90 text-sm">Welcome, {user?.name}! 👋</p>
-              <p className="text-white/70 text-sm">Monitoring {watchlist.length} people</p>
+          <div className="space-y-6">
+            <div className="rounded-3xl overflow-hidden shadow-2xl" style={{
+              background: 'linear-gradient(135deg, rgba(127,29,29,0.80) 0%, rgba(30,30,30,0.80) 100%)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(220,38,38,0.3)',
+            }}>
+              <div className="p-8 text-center">
+                <h1 className="text-white font-black tracking-widest mb-2 drop-shadow-lg font-playfair" style={{fontSize:'clamp(2rem,5vw,3.5rem)'}}>
+                  DEAD OR ALIVE
+                </h1>
+                <p className="text-red-400 font-bold tracking-wide mb-1" style={{fontSize:'clamp(0.9rem,2vw,1.1rem)'}}>
+                  Three brains. One mission.
+                </p>
+                <div className="w-16 h-0.5 bg-red-700/50 mx-auto my-3" />
+                <p className="text-white/90 mb-1" style={{fontSize:'clamp(0.85rem,1.8vw,1rem)'}}>Welcome, {user?.name}! 👋</p>
+                <p className="text-red-300" style={{fontSize:'clamp(0.85rem,1.8vw,1rem)'}}>Monitoring <span className="font-bold text-white">{watchlist.length}</span> people</p>
+              </div>
             </div>
-            <div className="bg-black/35 rounded-xl px-4 py-3 backdrop-blur-sm border border-red-900/30">
-              <p className="text-white/90 text-center text-sm font-medium">Find out if the people you remember are dead or alive — no guessing, no googling, just answers.</p>
+
+            <div className="rounded-2xl px-6 py-4 text-center" style={{
+              background: 'rgba(127,29,29,0.50)',
+              backdropFilter: 'blur(4px)',
+              border: '1px solid rgba(220,38,38,0.25)',
+            }}>
+              <p className="text-white font-medium leading-relaxed" style={{fontSize:'clamp(0.95rem,2vw,1.15rem)'}}>
+                Find out if the people you remember are dead or alive — no guessing, no googling, just answers.
+              </p>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <button onClick={() => setPage('search')} className="bg-gray-900/55 rounded-xl p-5 shadow-lg backdrop-blur-sm text-left border border-red-900/30">
-                <div className="flex flex-col items-start gap-3">
+
+            <div className="grid grid-cols-2 gap-5">
+              <button onClick={() => navigateTo('search')}
+                className="rounded-2xl p-6 text-left shadow-xl transition-transform active:scale-95"
+                style={{background: 'rgba(0,0,0,0.40)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)'}}>
+                <div className="w-12 h-12 rounded-full flex items-center justify-center mb-4 shadow-lg" style={{background: 'linear-gradient(135deg, #991b1b, #1f2937)'}}>
                   <SearchIcon />
-                  <div>
-                    <h3 className="font-bold text-white text-xl">Search</h3>
-                    <p className="text-base text-gray-300 mt-1">Look up anyone — dead or alive</p>
-                  </div>
                 </div>
+                <h3 className="font-bold text-white drop-shadow mb-2 font-playfair" style={{fontSize:'clamp(1.1rem,2.5vw,1.4rem)'}}>Search</h3>
+                <p className="text-white/70 leading-snug" style={{fontSize:'clamp(0.8rem,1.8vw,1rem)'}}>Look up anyone — dead or alive</p>
               </button>
-              <button onClick={() => setPage('watchlist')} className="bg-gray-900/55 rounded-xl p-5 shadow-lg backdrop-blur-sm text-left border border-red-900/30 relative">
-                {unreadCount > 0 && <span className="absolute top-3 right-3 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">{unreadCount > 9 ? '9+' : unreadCount}</span>}
-                <div className="flex flex-col items-start gap-3">
+
+              <button onClick={() => navigateTo('watchlist')}
+                className="rounded-2xl p-6 text-left shadow-xl relative transition-transform active:scale-95"
+                style={{background: 'rgba(0,0,0,0.40)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)'}}>
+                {unreadCount > 0 && (
+                  <span className="absolute top-4 right-4 bg-red-600 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-lg">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+                <div className="w-12 h-12 rounded-full flex items-center justify-center mb-4 shadow-lg" style={{background: 'linear-gradient(135deg, #991b1b, #1f2937)'}}>
                   <HeartIcon />
-                  <div>
-                    <h3 className="font-bold text-white text-xl">Watchlist</h3>
-                    <p className="text-base text-gray-300 mt-1">Monitor people — get alerted when status changes</p>
-                  </div>
                 </div>
+                <h3 className="font-bold text-white drop-shadow mb-2 font-playfair" style={{fontSize:'clamp(1.1rem,2.5vw,1.4rem)'}}>Watchlist</h3>
+                <p className="text-white/70 leading-snug" style={{fontSize:'clamp(0.8rem,1.8vw,1rem)'}}>Monitor people — get alerted when status changes</p>
               </button>
             </div>
-            <button onClick={() => setPage('about')} className="w-full py-4 bg-red-900/50 backdrop-blur-sm rounded-xl border border-red-700/50 text-left px-5">
-              <p className="text-white font-bold text-lg">💀 About Dead or Alive</p>
+
+            <button onClick={() => navigateTo('about')}
+              className="w-full rounded-2xl px-6 py-5 text-left shadow-xl transition-transform active:scale-95"
+              style={{background: 'rgba(127,29,29,0.50)', backdropFilter: 'blur(6px)', border: '1px solid rgba(220,38,38,0.3)'}}>
+              <p className="text-white font-bold font-playfair" style={{fontSize:'clamp(1rem,2.5vw,1.3rem)'}}>💀 About Dead or Alive</p>
               <p className="text-red-300 text-sm mt-1">Three brains. One mission. Read the story →</p>
             </button>
           </div>
@@ -500,31 +550,31 @@ function App() {
 
         {page === 'watchlist' && (
           <div className="space-y-6">
-            <DOALogo onHome={() => setPage('home')} />
-            <div className="bg-gray-900/60 rounded-2xl p-6 shadow-lg border border-red-900/30 backdrop-blur-sm">
-              <h2 className="text-3xl font-black mb-1 text-center text-white tracking-wide">WATCHLIST</h2>
-              <p className="text-base text-gray-400 mb-2 text-center">Add a person to monitor</p>
-              <p className="text-sm text-gray-500 mb-6 text-center italic">We'll alert you when their status changes</p>
+            <DOALogo onHome={() => navigateTo('home')} />
+            <GlassCard className="p-6">
+              <h2 className="text-3xl font-black mb-1 text-center text-white font-playfair">WATCHLIST</h2>
+              <p className="text-base text-white/60 mb-2 text-center">Add a person to monitor</p>
+              <p className="text-sm text-white/40 mb-6 text-center italic">We'll alert you when their status changes</p>
               {!watchlistChecked ? (
                 <div className="space-y-4">
                   <ClearableInput value={nw.name} onChange={(e) => setNw({...nw, name: e.target.value})} onBlur={(e) => setNw({...nw, name: toTitleCase(e.target.value)})} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Full Name (First and Last)" inputClass={iClass} />
                   <ClearableInput value={nw.location} onChange={(e) => setNw({...nw, location: e.target.value})} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Location (optional)" inputClass={iClass} />
                   <ClearableInput value={nw.birthYear} onChange={(e) => setNw({...nw, birthYear: e.target.value.replace(/\D/g, '').slice(0, 4)})} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Birth Year (optional, e.g. 1952)" maxLength={4} inputClass={iClass} />
-                  <button onClick={checkWatch} disabled={watchlistChecking} className="w-full py-4 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 text-lg font-bold">
+                  <button onClick={checkWatch} disabled={watchlistChecking} className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 text-lg font-bold">
                     <SearchIcon /> {watchlistChecking ? 'Checking...' : 'Check Name'}
                   </button>
                 </div>
               ) : <WatchlistCheckCard />}
-            </div>
-            <div className="bg-gray-900/60 rounded-2xl p-6 shadow-lg border border-red-900/30 backdrop-blur-sm">
-              <h2 className="text-xl font-bold mb-4 text-white">Your Watchlist ({watchlist.length})</h2>
-              {watchlist.length === 0 ? <p className="text-gray-500 text-center py-8">No one on your watchlist yet</p> : (
+            </GlassCard>
+            <GlassCard className="p-6">
+              <h2 className="text-xl font-bold mb-4 text-white font-playfair">Your Watchlist ({watchlist.length})</h2>
+              {watchlist.length === 0 ? <p className="text-white/40 text-center py-8">No one on your watchlist yet</p> : (
                 <div className="space-y-3">
                   {watchlist.map(w => (
-                    <div key={w.id} className="p-4 bg-gray-800/50 rounded-lg border border-red-900/20">
+                    <div key={w.id} className="p-4 rounded-lg" style={{background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)'}}>
                       {editingId === w.id ? (
                         <div className="space-y-2">
-                          <ClearableInput value={editingName} onChange={(e) => setEditingName(e.target.value)} placeholder="Enter name" inputClass="w-full px-3 py-2 border border-red-700 rounded-lg focus:ring-2 focus:ring-red-500 text-base bg-gray-700 text-white placeholder-gray-500" />
+                          <ClearableInput value={editingName} onChange={(e) => setEditingName(e.target.value)} placeholder="Enter name" inputClass={iClass} />
                           <div className="flex gap-2">
                             <button onClick={async () => {
                               await delWatch(w.id);
@@ -532,19 +582,19 @@ function App() {
                               await fetch(`${API_BASE}/watchlist`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ name: toTitleCase(editingName), location: w.location, dob: w.dob }) });
                               await loadWatchlist(); setEditingId(null); setEditingName('');
                             }} className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-bold">Save</button>
-                            <button onClick={() => { setEditingId(null); setEditingName(''); }} className="flex-1 py-2 bg-gray-600 text-gray-200 rounded-lg text-sm">Cancel</button>
+                            <button onClick={() => { setEditingId(null); setEditingName(''); }} className="flex-1 py-2 bg-white/15 text-white rounded-lg text-sm">Cancel</button>
                           </div>
                         </div>
                       ) : (
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
-                            <h3 className="font-semibold text-lg text-white">{w.name}</h3>
-                            <div className="text-sm text-gray-400">{w.location && <span>{w.location}</span>}{w.dob && <span> • Born: {w.dob}</span>}</div>
-                            <div className="flex items-center gap-1 mt-1"><CheckIcon /><span className="text-xs text-green-500">Active</span></div>
+                            <h3 className="font-semibold text-lg text-white font-playfair">{w.name}</h3>
+                            <div className="text-sm text-white/50">{w.location && <span>{w.location}</span>}{w.dob && <span> • Born: {w.dob}</span>}</div>
+                            <div className="flex items-center gap-1 mt-1"><CheckIcon /><span className="text-xs text-green-400">Active</span></div>
                           </div>
                           <div className="flex gap-2">
-                            <button onClick={() => { setEditingId(w.id); setEditingName(w.name); }} className="p-2 text-red-400 hover:bg-red-900/30 rounded-lg"><EditIcon /></button>
-                            <button onClick={() => delWatch(w.id)} className="p-2 text-red-500 hover:bg-red-900/30 rounded-lg"><TrashIcon /></button>
+                            <button onClick={() => { setEditingId(w.id); setEditingName(w.name); }} className="p-2 text-red-400 hover:bg-white/10 rounded-lg"><EditIcon /></button>
+                            <button onClick={() => delWatch(w.id)} className="p-2 text-red-500 hover:bg-white/10 rounded-lg"><TrashIcon /></button>
                           </div>
                         </div>
                       )}
@@ -552,113 +602,113 @@ function App() {
                   ))}
                 </div>
               )}
-            </div>
+            </GlassCard>
           </div>
         )}
 
         {page === 'search' && (
           <div className="space-y-6">
-            <DOALogo onHome={() => setPage('home')} />
-            <div className="bg-gray-900/60 rounded-2xl p-6 shadow-lg border border-red-900/30 backdrop-blur-sm">
-              <h2 className="text-xl font-bold mb-1 text-white">Search</h2>
-              <p className="text-base text-gray-400 mb-4">Dead or alive — find out now</p>
+            <DOALogo onHome={() => navigateTo('home')} />
+            <GlassCard className="p-6">
+              <h2 className="text-xl font-bold mb-1 text-white font-playfair">Search</h2>
+              <p className="text-base text-white/60 mb-4">Dead or alive — find out now</p>
               <div className="space-y-4">
                 <ClearableInput value={sName} onChange={(e) => { setSName(e.target.value); setWikiProfile(null); setResults([]); setSearched(false); }} onKeyPress={(e) => e.key === 'Enter' && doSearch()} placeholder="Full Name (First and Last)" inputClass={iClass} />
                 <ClearableInput value={sLoc} onChange={(e) => setSLoc(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && doSearch()} placeholder="Location (optional)" inputClass={iClass} />
                 <ClearableInput value={sBirthYear} onChange={(e) => setSBirthYear(e.target.value.replace(/\D/g, '').slice(0, 4))} onKeyPress={(e) => e.key === 'Enter' && doSearch()} placeholder="Birth Year (optional, e.g. 1952)" maxLength={4} inputClass={iClass} />
-                <button onClick={doSearch} disabled={loading} className="w-full py-4 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 text-lg font-bold">
+                <button onClick={doSearch} disabled={loading} className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 text-lg font-bold">
                   <SearchIcon /> {loading ? 'Searching...' : 'Search'}
                 </button>
               </div>
-            </div>
+            </GlassCard>
             {wikiProfile && !loading && <WikiCard profile={wikiProfile} showAddButton={true} />}
             {!loading && searched && !wikiProfile && results.length === 0 && (
-              <div className="bg-gray-900/60 rounded-2xl p-6 shadow-lg text-center border border-red-900/30 backdrop-blur-sm">
+              <GlassCard className="p-6 text-center">
                 <p className="text-4xl mb-3">🔍</p>
-                <h3 className="font-bold text-white text-lg mb-2">No results found for "{sName}"</h3>
-                <p className="text-gray-400 text-sm">Try checking the spelling, adding a middle name, or a different variation.</p>
-              </div>
+                <h3 className="font-bold text-white text-lg mb-2 font-playfair">No results found for "{sName}"</h3>
+                <p className="text-white/60 text-sm">Try checking the spelling, adding a middle name, or a different variation.</p>
+              </GlassCard>
             )}
             {results.length > 0 && (
-              <div className="bg-gray-900/60 rounded-2xl p-6 shadow-lg border border-red-900/30 backdrop-blur-sm">
-                <h2 className="text-xl font-bold mb-4 text-white">Obituary Records ({results.length})</h2>
+              <GlassCard className="p-6">
+                <h2 className="text-xl font-bold mb-4 text-white font-playfair">Obituary Records ({results.length})</h2>
                 <div className="space-y-3">
                   {results.map(r => (
-                    <div key={r.id} className="p-4 border border-red-900/30 rounded-lg bg-gray-800/50">
+                    <div key={r.id} className="p-4 rounded-lg" style={{background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)'}}>
                       <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-semibold text-lg text-white">{r.name}</h3>
-                        <span className={`px-2 py-1 rounded-full text-xs ${r.confidence === 'high' ? 'bg-green-900 text-green-300' : 'bg-yellow-900 text-yellow-300'}`}>{r.confidence}</span>
+                        <h3 className="font-semibold text-lg text-white font-playfair">{r.name}</h3>
+                        <span className={`px-2 py-1 rounded-full text-xs ${r.confidence === 'high' ? 'bg-green-800/60 text-green-300' : 'bg-yellow-800/60 text-yellow-300'}`}>{r.confidence}</span>
                       </div>
-                      <div className="text-sm text-gray-400 space-y-1">
+                      <div className="text-sm text-white/50 space-y-1">
                         {r.age && <p>Age: {r.age}</p>}
                         <p>Location: {r.location || 'Unknown'}</p>
                         <p>Date: {r.date || 'Unknown'}</p>
                         <p>Source: {r.source}</p>
                       </div>
-                      {r.obit_text && <p className="text-sm text-gray-300 mt-3 leading-relaxed border-t border-red-900/30 pt-3">{r.obit_text.slice(0, 300)}{r.obit_text.length > 300 ? '...' : ''}</p>}
+                      {r.obit_text && <p className="text-sm text-white/75 mt-3 leading-relaxed border-t border-white/10 pt-3">{r.obit_text.slice(0, 300)}{r.obit_text.length > 300 ? '...' : ''}</p>}
                     </div>
                   ))}
                 </div>
-              </div>
+              </GlassCard>
             )}
           </div>
         )}
 
         {page === 'notifications' && (
           <div className="space-y-6">
-            <DOALogo onHome={() => setPage('home')} />
-            <div className="bg-gray-900/60 rounded-2xl p-6 shadow-lg border border-red-900/30 backdrop-blur-sm">
-              <h2 className="text-2xl font-black mb-1 text-center text-white tracking-wide">ALERTS</h2>
-              <p className="text-base text-gray-400 mb-6 text-center">Watchlist status changes</p>
+            <DOALogo onHome={() => navigateTo('home')} />
+            <GlassCard className="p-6">
+              <h2 className="text-2xl font-black mb-1 text-center text-white font-playfair tracking-wide">ALERTS</h2>
+              <p className="text-base text-white/60 mb-6 text-center">Watchlist status changes</p>
               {notifications.length === 0 ? (
                 <div className="text-center py-12">
                   <p className="text-5xl mb-4">🔔</p>
-                  <p className="text-gray-400 font-medium">No alerts yet</p>
-                  <p className="text-gray-500 text-sm mt-2">We'll alert you when someone on your watchlist passes away</p>
+                  <p className="text-white/70 font-medium">No alerts yet</p>
+                  <p className="text-white/40 text-sm mt-2">We'll alert you when someone on your watchlist passes away</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {notifications.map(n => (
-                    <div key={n.id} className="p-4 bg-red-950/50 border border-red-800 rounded-xl">
+                    <div key={n.id} className="p-4 rounded-xl" style={{background: 'rgba(220,38,38,0.2)', border: '1px solid rgba(220,38,38,0.4)'}}>
                       <div className="flex items-start gap-3">
                         <span className="text-2xl">⚫</span>
                         <div className="flex-1">
-                          <h3 className="font-bold text-white text-lg">{n.name}</h3>
-                          <p className="text-gray-400 text-sm mt-1">{n.message}</p>
-                          <p className="text-gray-600 text-xs mt-2">{new Date(n.created_at).toLocaleDateString()}</p>
+                          <h3 className="font-bold text-white text-lg font-playfair">{n.name}</h3>
+                          <p className="text-white/60 text-sm mt-1">{n.message}</p>
+                          <p className="text-white/30 text-xs mt-2">{new Date(n.created_at).toLocaleDateString()}</p>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-            </div>
+            </GlassCard>
           </div>
         )}
 
         {page === 'settings' && (
           <div className="space-y-6 pb-8">
-            <DOALogo onHome={() => setPage('home')} />
-            <div className="bg-gray-900/60 rounded-2xl p-6 shadow-lg border border-red-900/30 backdrop-blur-sm">
-              <h2 className="text-xl font-bold mb-4 text-white">Account</h2>
-              <div className="p-3 bg-gray-800/50 rounded-lg mb-4"><p className="font-medium text-gray-300">{user?.email}</p></div>
+            <DOALogo onHome={() => navigateTo('home')} />
+            <GlassCard className="p-6">
+              <h2 className="text-xl font-bold mb-4 text-white font-playfair">Account</h2>
+              <div className="p-3 rounded-lg mb-4" style={{background: 'rgba(255,255,255,0.08)'}}><p className="font-medium text-white/70">{user?.email}</p></div>
               <div className="space-y-3">
-                <button onClick={() => setPage('about')} className="w-full py-3 bg-red-900/30 text-red-300 rounded-lg text-lg font-medium text-left px-4 border border-red-900/30">💀 About Dead or Alive</button>
-                <button onClick={() => setPage('privacy')} className="w-full py-3 bg-red-900/30 text-red-300 rounded-lg text-lg font-medium text-left px-4 border border-red-900/30">🔒 Privacy Policy</button>
+                <button onClick={() => navigateTo('about')} className="w-full py-3 rounded-lg text-lg font-medium text-left px-4 text-red-300" style={{background: 'rgba(127,29,29,0.4)', border: '1px solid rgba(220,38,38,0.3)'}}>💀 About Dead or Alive</button>
+                <button onClick={() => navigateTo('privacy')} className="w-full py-3 rounded-lg text-lg font-medium text-left px-4 text-red-300" style={{background: 'rgba(127,29,29,0.4)', border: '1px solid rgba(220,38,38,0.3)'}}>🔒 Privacy Policy</button>
               </div>
-            </div>
-            <button onClick={doLogout} className="w-full py-4 bg-red-700 text-white rounded-lg text-lg font-bold">Sign Out</button>
-            <div className="pt-4 border-t border-red-900/30">
-              <button onClick={() => setShowDangerZone(!showDangerZone)} className="w-full py-2 text-gray-600 text-sm text-center">{showDangerZone ? '▲ Hide' : '▼ Account Removal'}</button>
+            </GlassCard>
+            <button onClick={doLogout} className="w-full py-4 bg-red-700/80 backdrop-blur-sm text-white rounded-lg text-lg font-bold">Sign Out</button>
+            <div className="pt-4" style={{borderTop: '1px solid rgba(255,255,255,0.1)'}}>
+              <button onClick={() => setShowDangerZone(!showDangerZone)} className="w-full py-2 text-white/30 text-sm text-center">{showDangerZone ? '▲ Hide' : '▼ Account Removal'}</button>
               {showDangerZone && (
                 <div className="mt-3 space-y-3">
                   {!showDeleteConfirm
-                    ? <button onClick={() => setShowDeleteConfirm(true)} className="w-full py-3 bg-gray-900/70 border border-red-800 text-red-500 rounded-lg text-sm">Delete Account</button>
-                    : <div className="bg-red-950/90 border border-red-800 rounded-2xl p-6 space-y-4">
-                        <h3 className="font-bold text-red-400 text-lg">⚠️ Are you sure?</h3>
-                        <p className="text-red-300 text-sm">This will permanently delete your account and all watchlist data.</p>
+                    ? <button onClick={() => setShowDeleteConfirm(true)} className="w-full py-3 rounded-lg text-sm text-red-400" style={{background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(220,38,38,0.4)'}}>Delete Account</button>
+                    : <div className="rounded-2xl p-6 space-y-4" style={{background: 'rgba(127,29,29,0.4)', border: '1px solid rgba(220,38,38,0.5)'}}>
+                        <h3 className="font-bold text-red-300 text-lg">⚠️ Are you sure?</h3>
+                        <p className="text-red-200 text-sm">This will permanently delete your account and all watchlist data.</p>
                         <button onClick={doDeleteAccount} className="w-full py-3 bg-red-700 text-white rounded-lg font-bold">Yes, Permanently Delete My Account</button>
-                        <button onClick={() => { setShowDeleteConfirm(false); setShowDangerZone(false); }} className="w-full py-3 bg-gray-800 border border-gray-600 text-gray-300 rounded-lg font-medium">Cancel</button>
+                        <button onClick={() => { setShowDeleteConfirm(false); setShowDangerZone(false); }} className="w-full py-3 text-white/60 rounded-lg" style={{background: 'rgba(255,255,255,0.08)'}}>Cancel</button>
                       </div>
                   }
                 </div>
@@ -669,51 +719,51 @@ function App() {
 
         {page === 'about' && (
           <div className="space-y-6">
-            <DOALogo onHome={() => setPage('home')} />
-            <div className="bg-gray-900/60 rounded-2xl p-6 shadow-lg border border-red-900/30 backdrop-blur-sm">
-              <BackButton onClick={() => setPage('settings')} />
-              <h2 className="text-2xl font-black mb-2 text-white tracking-wide">ABOUT DEAD OR ALIVE</h2>
+            <DOALogo onHome={() => navigateTo('home')} />
+            <GlassCard className="p-6">
+              <button onClick={() => navigateTo('home')} className="text-red-400 flex items-center gap-1 text-sm py-2 mb-2">← Back to Home</button>
+              <h2 className="text-2xl font-black mb-2 text-white font-playfair tracking-wide">ABOUT DEAD OR ALIVE</h2>
               <p className="text-red-400 italic text-base leading-relaxed mb-6">Three brains. One mission. Dead or Alive.</p>
-              <div className="space-y-4 text-gray-300 text-base leading-relaxed">
+              <div className="space-y-4 text-white/80 text-base leading-relaxed">
                 <p>Dead or Alive was produced by three brains — mine, ChatGPT, and Claude (Anthropic). I'm a retired 74 year old former high-tech entrepreneur and early adopter of new tech. I've owned just about every Apple product that has come out since the Apple II.</p>
                 <p>As I get older, traditional search engines have become really frustrating. I find asking AI much more effective. But one thing you still couldn't do was have a watchlist that alerts you to events that matter to you. I found it very hard using existing tools to find out if former friends, classmates, colleagues and even famous figures were dead or alive. So I built Dead or Alive — a straight answer to a simple question.</p>
                 <p>We partner with Legacy, the largest obituary platform in the United States, covering more than 70% of all U.S. deaths through partnerships with thousands of newspapers and funeral homes. Dead or Alive monitors Legacy continuously — when someone on your watchlist passes away, you'll know.</p>
                 <p>We also partner with Wikipedia for biographical information on notable people. The intelligent ALIVE/DEAD detection engine was developed with Claude by Anthropic. A portion of proceeds will be donated to Wikipedia.</p>
                 <p>If you have thoughts on how to improve Dead or Alive, please reach out!</p>
               </div>
-              <div className="mt-6 pt-6 border-t border-red-900/30">
+              <div className="mt-6 pt-6" style={{borderTop: '1px solid rgba(255,255,255,0.15)'}}>
                 <div className="flex items-center gap-4">
                   <img src={BILL_PHOTO} alt="Bill Spencer" className="w-20 h-20 rounded-full object-cover border-2 border-red-600 shadow-lg" />
                   <div>
-                    <p className="font-bold text-white text-lg">Bill Spencer</p>
+                    <p className="font-bold text-white text-lg font-playfair">Bill Spencer</p>
                     <p className="text-red-400 italic">Idea Hamster 🐹</p>
                     <a href="mailto:contact@memorywatch.com" className="text-red-400 text-sm mt-1 block">contact@memorywatch.com</a>
                   </div>
                 </div>
               </div>
-              <BackButton onClick={() => setPage('settings')} />
-            </div>
+              <button onClick={() => navigateTo('home')} className="text-red-400 flex items-center gap-1 text-sm py-2 mt-4">← Back to Home</button>
+            </GlassCard>
           </div>
         )}
 
         {page === 'privacy' && (
           <div className="space-y-6">
-            <DOALogo onHome={() => setPage('home')} />
-            <div className="bg-gray-900/60 rounded-2xl p-6 shadow-lg border border-red-900/30 backdrop-blur-sm">
-              <BackButton onClick={() => setPage('settings')} />
-              <h2 className="text-2xl font-bold mb-6 text-white">Privacy Policy</h2>
-              <p className="text-gray-500 text-sm mb-6">Last updated: March 17, 2026</p>
-              <div className="space-y-6 text-gray-300 text-base leading-relaxed">
-                <div><h3 className="font-bold text-white mb-2">1. Information We Collect</h3><p>We collect only what is necessary: your email address, watchlist names, search queries, and anonymous usage data.</p></div>
-                <div><h3 className="font-bold text-white mb-2">2. How We Use Your Information</h3><p>We use your information to authenticate your account, maintain your watchlist, and deliver alerts. We do not sell your personal information. Ever.</p></div>
-                <div><h3 className="font-bold text-white mb-2">3. Data Sources</h3><p>Search results are powered by Legacy obituary feeds and Wikipedia.</p></div>
-                <div><h3 className="font-bold text-white mb-2">4. Data Storage</h3><p>Your data is stored securely on Render.com servers in the United States with industry-standard encryption.</p></div>
-                <div><h3 className="font-bold text-white mb-2">5. Your Rights</h3><p>You may delete your account and all data from Settings at any time.</p></div>
-                <div><h3 className="font-bold text-white mb-2">6. Children's Privacy</h3><p>This service is not directed at children under 13.</p></div>
-                <div><h3 className="font-bold text-white mb-2">7. Contact</h3><a href="mailto:contact@memorywatch.com" className="text-red-400">contact@memorywatch.com</a></div>
+            <DOALogo onHome={() => navigateTo('home')} />
+            <GlassCard className="p-6">
+              <button onClick={() => navigateTo('settings')} className="text-red-400 flex items-center gap-1 text-sm py-2 mb-2">← Back to Settings</button>
+              <h2 className="text-2xl font-bold mb-6 text-white font-playfair">Privacy Policy</h2>
+              <p className="text-white/40 text-sm mb-6">Last updated: March 17, 2026</p>
+              <div className="space-y-6 text-white/75 text-base leading-relaxed">
+                <div><h3 className="font-bold text-white mb-2 font-playfair">1. Information We Collect</h3><p>We collect only what is necessary: your email address, watchlist names, search queries, and anonymous usage data.</p></div>
+                <div><h3 className="font-bold text-white mb-2 font-playfair">2. How We Use Your Information</h3><p>We use your information to authenticate your account, maintain your watchlist, and deliver alerts. We do not sell your personal information. Ever.</p></div>
+                <div><h3 className="font-bold text-white mb-2 font-playfair">3. Data Sources</h3><p>Search results are powered by Legacy obituary feeds and Wikipedia.</p></div>
+                <div><h3 className="font-bold text-white mb-2 font-playfair">4. Data Storage</h3><p>Your data is stored securely on Render.com servers in the United States with industry-standard encryption.</p></div>
+                <div><h3 className="font-bold text-white mb-2 font-playfair">5. Your Rights</h3><p>You may delete your account and all data from Settings at any time.</p></div>
+                <div><h3 className="font-bold text-white mb-2 font-playfair">6. Children's Privacy</h3><p>This service is not directed at children under 13.</p></div>
+                <div><h3 className="font-bold text-white mb-2 font-playfair">7. Contact</h3><a href="mailto:contact@memorywatch.com" className="text-red-400">contact@memorywatch.com</a></div>
               </div>
-              <BackButton onClick={() => setPage('settings')} />
-            </div>
+              <button onClick={() => navigateTo('settings')} className="text-red-400 flex items-center gap-1 text-sm py-2 mt-4">← Back to Settings</button>
+            </GlassCard>
           </div>
         )}
 
@@ -721,22 +771,22 @@ function App() {
 
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
-        backgroundColor: 'rgba(10,0,0,0.85)',
-        backdropFilter: 'blur(8px)',
-        borderTop: '1px solid #7f1d1d',
+        backgroundColor: 'rgba(0,0,0,0.60)',
+        backdropFilter: 'blur(12px)',
+        borderTop: '1px solid rgba(220,38,38,0.25)',
         padding: '0.75rem 1rem',
         paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))',
       }}>
-        <div className="flex justify-around max-w-2xl mx-auto">
-          <button onClick={() => setPage('home')} className={`flex flex-col items-center gap-1 px-4 py-2 ${page === 'home' ? 'text-red-500' : 'text-gray-600'}`}><HomeIcon /><span className="text-xs">Home</span></button>
-          <button onClick={() => setPage('search')} className={`flex flex-col items-center gap-1 px-4 py-2 ${page === 'search' ? 'text-red-500' : 'text-gray-600'}`}><SearchIcon /><span className="text-xs">Search</span></button>
-          <button onClick={() => setPage('watchlist')} className={`flex flex-col items-center gap-1 px-4 py-2 ${page === 'watchlist' ? 'text-red-500' : 'text-gray-600'}`}><HeartIcon /><span className="text-xs">Watchlist</span></button>
-          <button onClick={() => setPage('notifications')} className={`flex flex-col items-center gap-1 px-4 py-2 relative ${page === 'notifications' ? 'text-red-500' : 'text-gray-600'}`}>
+        <div className="flex justify-around max-w-3xl mx-auto">
+          <button onClick={() => navigateTo('home')} className={`flex flex-col items-center gap-1 px-4 py-2 ${page === 'home' ? 'text-red-500' : 'text-white/30'}`}><HomeIcon /><span className="text-xs">Home</span></button>
+          <button onClick={() => navigateTo('search')} className={`flex flex-col items-center gap-1 px-4 py-2 ${page === 'search' ? 'text-red-500' : 'text-white/30'}`}><SearchIcon /><span className="text-xs">Search</span></button>
+          <button onClick={() => navigateTo('watchlist')} className={`flex flex-col items-center gap-1 px-4 py-2 ${page === 'watchlist' ? 'text-red-500' : 'text-white/30'}`}><HeartIcon /><span className="text-xs">Watchlist</span></button>
+          <button onClick={() => navigateTo('notifications')} className={`flex flex-col items-center gap-1 px-4 py-2 relative ${page === 'notifications' ? 'text-red-500' : 'text-white/30'}`}>
             <BellIcon />
             {unreadCount > 0 && <span className="absolute top-1 right-2 bg-red-600 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">{unreadCount > 9 ? '9+' : unreadCount}</span>}
             <span className="text-xs">Alerts</span>
           </button>
-          <button onClick={() => setPage('settings')} className={`flex flex-col items-center gap-1 px-4 py-2 ${page === 'settings' ? 'text-red-500' : 'text-gray-600'}`}><SettingsIcon /><span className="text-xs">Settings</span></button>
+          <button onClick={() => navigateTo('settings')} className={`flex flex-col items-center gap-1 px-4 py-2 ${page === 'settings' ? 'text-red-500' : 'text-white/30'}`}><SettingsIcon /><span className="text-xs">Settings</span></button>
         </div>
       </div>
     </PageWrapper>
