@@ -27,10 +27,11 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.0.7f';
+const APP_VERSION = '1.0.7g';
 
 const isPhone = window.innerWidth < 500;
-const PT = isPhone ? '35vh' : '36vh';
+const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
+const PT = isPhone ? '38vh' : isTablet ? '44vh' : '40vh';
 const TAP_TOP = isPhone ? '82%' : '84%';
 
 const toTitleCase = (str) => {
@@ -112,15 +113,16 @@ const BackButton = ({ onClick }) => (
 );
 
 const CardPageHeader = ({ title, subtitle, onHome }) => (
-  <div className="flex items-center justify-between mb-3 pb-2 border-b border-red-900/30">
-    <div>
-      <h2 className="text-xl font-black text-white tracking-wide">{title}</h2>
-      {subtitle && <p className="text-gray-300 text-xs mt-0.5">{subtitle}</p>}
+  <div className="mb-3 pb-2 border-b border-red-900/30">
+    <div className="flex items-center justify-between">
+      <div className="w-10" />
+      <h2 className="text-xl font-black text-white tracking-wide text-center flex-1">{title}</h2>
+      <button onClick={onHome} className="flex flex-col items-center text-gray-500 hover:text-red-400 transition-colors w-10">
+        <HomeIcon />
+        <span className="text-xs">Home</span>
+      </button>
     </div>
-    <button onClick={onHome} className="flex flex-col items-center text-gray-500 hover:text-red-400 transition-colors">
-      <HomeIcon />
-      <span className="text-xs">Home</span>
-    </button>
+    {subtitle && <p className="text-gray-300 text-xs mt-1 text-center">{subtitle}</p>}
   </div>
 );
 
@@ -426,9 +428,7 @@ function App() {
 
   if (page === 'landing') {
     return (
-      <div onClick={() => setPage('login')} style={{
-        minHeight: '100dvh', width: '100%', cursor: 'pointer', position: 'relative', ...POSTER_STYLE,
-      }}>
+      <div onClick={() => setPage('login')} style={{ minHeight: '100dvh', width: '100%', cursor: 'pointer', position: 'relative', ...POSTER_STYLE }}>
         <div style={{ position: 'absolute', top: TAP_TOP, left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
           <div className="tap-pulse" style={{ color: 'white', fontSize: isPhone ? '1.2rem' : '1.1rem', fontWeight: '900', letterSpacing: '0.12em', textShadow: '0 2px 8px rgba(0,0,0,0.9)', textAlign: 'center' }}>⬇ TAP TO ENTER ⬇</div>
           <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem' }}>🎁 Free during beta</div>
@@ -515,8 +515,8 @@ function App() {
               ) : <WatchlistCheckCard />}
             </div>
             <div className={cardClass}>
-              <h2 className="text-xl font-bold mb-0.5 text-white">Your Watchlist ({watchlist.length})</h2>
-              <p className="text-sm text-gray-200 mb-3">People you are currently monitoring</p>
+              <h2 className="text-xl font-bold mb-0.5 text-white text-center">Your Watchlist ({watchlist.length})</h2>
+              <p className="text-sm text-gray-200 mb-3 text-center">People you are currently monitoring</p>
               {watchlist.length === 0 ? <p className="text-gray-400 text-center py-6">No one on your watchlist yet</p> : (
                 <div className="space-y-3">
                   {watchlist.map(w => (
@@ -573,8 +573,8 @@ function App() {
             )}
             {results.length > 0 && (
               <div className={cardClass}>
-                <h2 className="text-xl font-bold mb-1 text-white">Obituary Records ({results.length})</h2>
-                <p className="text-sm text-gray-200 mb-3">Records found in our Legacy database</p>
+                <h2 className="text-xl font-bold mb-1 text-white text-center">Obituary Records ({results.length})</h2>
+                <p className="text-sm text-gray-200 mb-3 text-center">Records found in our Legacy database</p>
                 <div className="space-y-3">
                   {results.map(r => (
                     <div key={r.id} className="p-3 border border-red-900/30 rounded-lg bg-gray-800/50">
@@ -631,7 +631,7 @@ function App() {
           <div className="space-y-3 pb-8" style={{ paddingTop: PT }}>
             <div className={cardClass}>
               <CardPageHeader title="Settings" subtitle="Manage your account and preferences" onHome={() => setPage('home')} />
-              <div className="p-3 bg-gray-800/50 rounded-lg mb-3"><p className="font-medium text-gray-200 text-sm">{user?.email}</p></div>
+              <div className="p-3 bg-gray-800/50 rounded-lg mb-3"><p className="font-medium text-gray-200 text-sm text-center">{user?.email}</p></div>
               <div className="space-y-2">
                 <button onClick={() => setPage('about')} className="w-full py-2.5 bg-red-900/30 text-red-200 rounded-lg text-sm font-medium text-left px-4 border border-red-900/30">💀 About Dead or Alive</button>
                 <button onClick={() => setPage('privacy')} className="w-full py-2.5 bg-red-900/30 text-red-200 rounded-lg text-sm font-medium text-left px-4 border border-red-900/30">🔒 Privacy Policy</button>
