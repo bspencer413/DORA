@@ -25,7 +25,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/IMG_0437.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.0.4d';
+const APP_VERSION = '1.0.4e';
 
 const toTitleCase = (str) => {
   if (!str) return str;
@@ -94,31 +94,15 @@ const EyeOffIcon = () => (
 
 const ClearableInput = ({ value, onChange, onBlur, onKeyPress, placeholder, type='text', maxLength, inputClass }) => (
   <div className="relative">
-    <input
-      type={type}
-      placeholder={placeholder}
-      value={value}
-      onChange={onChange}
-      onBlur={onBlur}
-      onKeyPress={onKeyPress}
-      maxLength={maxLength}
-      className={inputClass + ' pr-10'}
-    />
+    <input type={type} placeholder={placeholder} value={value} onChange={onChange} onBlur={onBlur} onKeyPress={onKeyPress} maxLength={maxLength} className={inputClass + ' pr-10'} />
     {value && value.length > 0 && (
-      <button
-        onClick={() => onChange({ target: { value: '' } })}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white text-lg font-bold leading-none"
-        type="button">
-        ✕
-      </button>
+      <button onClick={() => onChange({ target: { value: '' } })} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white text-lg font-bold leading-none" type="button">✕</button>
     )}
   </div>
 );
 
 const BackButton = ({ onClick }) => (
-  <button onClick={onClick} className="text-red-400 flex items-center gap-1 text-sm py-2 mb-2">
-    ← Back to Settings
-  </button>
+  <button onClick={onClick} className="text-red-400 flex items-center gap-1 text-sm py-2 mb-2">← Back to Settings</button>
 );
 
 const DOALogo = ({ onHome }) => (
@@ -132,11 +116,8 @@ const DOALogo = ({ onHome }) => (
 
 const PageWrapper = ({ children }) => (
   <div style={{
-    minHeight: '100dvh',
-    width: '100%',
-    position: 'relative',
-    paddingTop: '1rem',
-    paddingBottom: '5rem',
+    minHeight: '100dvh', width: '100%', position: 'relative',
+    paddingTop: '1rem', paddingBottom: '5rem',
     backgroundColor: '#1a0000',
     backgroundImage: `url(${WANTED_BG})`,
     backgroundSize: 'contain',
@@ -144,10 +125,7 @@ const PageWrapper = ({ children }) => (
     backgroundRepeat: 'no-repeat',
     backgroundAttachment: 'scroll',
   }}>
-    <div style={{
-      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.42)',
-    }} />
+    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.42)' }} />
     <div style={{ position: 'relative', zIndex: 10 }}>{children}</div>
   </div>
 );
@@ -162,8 +140,7 @@ function isDeceasedCheck(extract, description, deathDate, type) {
   const isPastTense = /^[^.]*\bwas (an?|the)\b[^.]*\./.test(extract) && !/\(born/.test(firstSentence);
   const diedInExtract = /\b(died|death|passed away|deceased)\b/i.test(extract);
   const diedInDescription = /\b(died|death|deceased)\b/i.test(description);
-  const hasDeathDate = !!deathDate;
-  return hasDeathDate || hasDeathInBrackets || hasYearsInDescription || isPastTense || diedInExtract || diedInDescription;
+  return !!deathDate || hasDeathInBrackets || hasYearsInDescription || isPastTense || diedInExtract || diedInDescription;
 }
 
 function App() {
@@ -196,58 +173,47 @@ function App() {
   useEffect(() => {
     const t = localStorage.getItem('doa_token');
     const u = localStorage.getItem('doa_user');
-    if (t && u) {
-      setUser(JSON.parse(u));
-      setAuth(true);
-      setPage('home');
-      loadWatchlist();
-      loadNotifications();
-    }
+    if (t && u) { setUser(JSON.parse(u)); setAuth(true); setPage('home'); loadWatchlist(); loadNotifications(); }
   }, []);
 
   const loadWatchlist = async () => {
     try {
       const token = localStorage.getItem('doa_token');
-      const response = await fetch(`${API_BASE}/watchlist`, { headers: { 'Authorization': `Bearer ${token}` } });
-      if (!response.ok) throw new Error('Failed');
-      setWatchlist(await response.json());
-    } catch (error) { console.error(error); }
+      const r = await fetch(`${API_BASE}/watchlist`, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (!r.ok) throw new Error('Failed');
+      setWatchlist(await r.json());
+    } catch (e) { console.error(e); }
   };
 
   const loadNotifications = async () => {
     try {
       const token = localStorage.getItem('doa_token');
-      const response = await fetch(`${API_BASE}/notifications`, { headers: { 'Authorization': `Bearer ${token}` } });
-      if (!response.ok) throw new Error('Failed');
-      setNotifications(await response.json());
-    } catch (error) { console.error(error); }
+      const r = await fetch(`${API_BASE}/notifications`, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (!r.ok) throw new Error('Failed');
+      setNotifications(await r.json());
+    } catch (e) { console.error(e); }
   };
 
   const doAuth = async () => {
     if (!email || !password) return;
-    setLoading(true);
-    setBackendWaking(false);
+    setLoading(true); setBackendWaking(false);
     const wakeTimer = setTimeout(() => setBackendWaking(true), 3000);
     try {
       const endpoint = mode === 'login' ? 'login' : 'register';
-      const response = await fetch(`${API_BASE}/auth/${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const r = await fetch(`${API_BASE}/auth/${endpoint}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
-      clearTimeout(wakeTimer);
-      setBackendWaking(false);
-      if (!response.ok) { const err = await response.json(); throw new Error(err.detail || 'Auth failed'); }
-      const data = await response.json();
+      clearTimeout(wakeTimer); setBackendWaking(false);
+      if (!r.ok) { const err = await r.json(); throw new Error(err.detail || 'Auth failed'); }
+      const data = await r.json();
       localStorage.setItem('doa_token', data.access_token);
       const u = { email, id: '123', name: email.split('@')[0] };
       localStorage.setItem('doa_user', JSON.stringify(u));
       setUser(u); setAuth(true); setPage('home');
       loadWatchlist(); loadNotifications();
-    } catch (error) {
-      clearTimeout(wakeTimer); setBackendWaking(false);
-      alert('Error: ' + error.message);
-    } finally { setLoading(false); }
+    } catch (error) { clearTimeout(wakeTimer); setBackendWaking(false); alert('Error: ' + error.message); }
+    finally { setLoading(false); }
   };
 
   const doLogout = () => {
@@ -260,10 +226,9 @@ function App() {
   const doDeleteAccount = async () => {
     try {
       const token = localStorage.getItem('doa_token');
-      const response = await fetch(`${API_BASE}/account`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
-      if (!response.ok) throw new Error('Failed');
-      doLogout();
-      alert('Your account has been permanently deleted.');
+      const r = await fetch(`${API_BASE}/account`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+      if (!r.ok) throw new Error('Failed');
+      doLogout(); alert('Your account has been permanently deleted.');
     } catch (error) { alert('Error deleting account: ' + error.message); }
   };
 
@@ -272,8 +237,7 @@ function App() {
 
   const fetchWikiProfile = async (name) => {
     try {
-      const wikiRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(toTitleCase(name))}`);
-      const w = await wikiRes.json();
+      const w = await (await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(toTitleCase(name))}`)).json();
       if (!w.extract) return null;
       const extract = w.extract || '', description = w.description || '', type = w.type || '';
       if (type === 'disambiguation') return { title: w.title.replace(' (disambiguation)', ''), extract, thumbnail: w.thumbnail?.source, birthDate: null, deathDate: null, description, isDisambiguation: true };
@@ -290,10 +254,8 @@ function App() {
     if (name.trim().split(' ').filter(p => p.length > 0).length < 2) { alert('Please enter a first and last name.'); return; }
     if (isOnWatchlist(name)) { alert(`${name} is already on your watchlist!`); return; }
     setWatchlistChecking(true); setWatchlistCheck(null); setWatchlistChecked(false);
-    try {
-      const profile = await fetchWikiProfile(name);
-      setWatchlistCheck({ profile, name }); setWatchlistChecked(true);
-    } catch (error) { setWatchlistCheck({ profile: null, name }); setWatchlistChecked(true); }
+    try { const profile = await fetchWikiProfile(name); setWatchlistCheck({ profile, name }); setWatchlistChecked(true); }
+    catch (error) { setWatchlistCheck({ profile: null, name }); setWatchlistChecked(true); }
     finally { setWatchlistChecking(false); }
   };
 
@@ -302,11 +264,11 @@ function App() {
     setLoading(true);
     try {
       const token = localStorage.getItem('doa_token');
-      const response = await fetch(`${API_BASE}/watchlist`, {
+      const r = await fetch(`${API_BASE}/watchlist`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ name: watchlistCheck.name, location: nw.location, dob: nw.birthYear })
       });
-      if (!response.ok) throw new Error('Failed');
+      if (!r.ok) throw new Error('Failed');
       await loadWatchlist(); clearWatchlistCheck();
     } catch (error) { alert('Error: ' + error.message); }
     finally { setLoading(false); }
@@ -317,11 +279,11 @@ function App() {
     setLoading(true);
     try {
       const token = localStorage.getItem('doa_token');
-      const response = await fetch(`${API_BASE}/watchlist`, {
+      const r = await fetch(`${API_BASE}/watchlist`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ name: profileTitle, location: '', dob: '' })
       });
-      if (!response.ok) throw new Error('Failed');
+      if (!r.ok) throw new Error('Failed');
       await loadWatchlist(); clearSearch();
     } catch (error) { alert('Error: ' + error.message); }
     finally { setLoading(false); }
@@ -330,8 +292,8 @@ function App() {
   const delWatch = async (id) => {
     try {
       const token = localStorage.getItem('doa_token');
-      const response = await fetch(`${API_BASE}/watchlist/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
-      if (!response.ok) throw new Error('Failed');
+      const r = await fetch(`${API_BASE}/watchlist/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+      if (!r.ok) throw new Error('Failed');
       await loadWatchlist();
     } catch (error) { alert('Error: ' + error.message); }
   };
@@ -342,12 +304,12 @@ function App() {
     setLoading(true); setWikiProfile(null); setResults([]); setSearched(false);
     try {
       const token = localStorage.getItem('doa_token');
-      const response = await fetch(`${API_BASE}/search`, {
+      const r = await fetch(`${API_BASE}/search`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ name: toTitleCase(sName), location: sLoc || undefined, birth_year: sBirthYear || undefined })
       });
-      if (!response.ok) throw new Error('Failed');
-      setResults(await response.json());
+      if (!r.ok) throw new Error('Failed');
+      setResults(await r.json());
       const profile = await fetchWikiProfile(sName);
       if (profile) setWikiProfile(profile);
       setSearched(true);
@@ -356,7 +318,7 @@ function App() {
   };
 
   const unreadCount = notifications.length;
-  const iClass = "w-full px-4 py-3 border border-red-900/50 rounded-lg focus:ring-2 focus:ring-red-500 text-lg bg-gray-900/60 text-white placeholder-gray-500";
+  const iClass = "w-full px-4 py-3 border border-red-900/50 rounded-lg focus:ring-2 focus:ring-red-500 text-base bg-gray-900/60 text-white placeholder-gray-500";
 
   const WikiCard = ({ profile, showAddButton }) => {
     const alreadyWatching = isOnWatchlist(profile.title);
@@ -364,16 +326,12 @@ function App() {
     return (
       <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
         <div className={`px-5 py-3 flex items-center gap-3 ${profile.deathDate ? 'bg-gray-800' : isDisambig ? 'bg-yellow-600' : 'bg-green-700'}`}>
-          <span className="text-white font-black tracking-widest text-sm">
-            {profile.deathDate ? '⚫ DEAD' : isDisambig ? '🟡 UNSURE' : '🟢 ALIVE'}
-          </span>
+          <span className="text-white font-black tracking-widest text-sm">{profile.deathDate ? '⚫ DEAD' : isDisambig ? '🟡 UNSURE' : '🟢 ALIVE'}</span>
           {profile.deathDate && profile.deathDate !== 'deceased' && <span className="text-white/80 text-xs ml-auto">Died: {profile.deathDate}</span>}
         </div>
         <div className="bg-gray-900/70 p-5">
           <div className="flex gap-4 items-start mb-4">
-            {profile.thumbnail
-              ? <img src={profile.thumbnail} alt={profile.title} className="w-20 h-20 rounded-full object-cover border-2 border-red-600/50 shrink-0" />
-              : <div className="w-20 h-20 rounded-full bg-red-900/40 flex items-center justify-center shrink-0 text-3xl">👤</div>}
+            {profile.thumbnail ? <img src={profile.thumbnail} alt={profile.title} className="w-20 h-20 rounded-full object-cover border-2 border-red-600/50 shrink-0" /> : <div className="w-20 h-20 rounded-full bg-red-900/40 flex items-center justify-center shrink-0 text-3xl">👤</div>}
             <div className="flex-1">
               <h2 className="text-white text-xl font-bold mb-1">{profile.title}</h2>
               {!isDisambig && <p className="text-red-300 text-sm italic mb-1">{profile.description}</p>}
@@ -409,17 +367,13 @@ function App() {
     return (
       <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
         <div className={`px-5 py-3 ${isDeceased ? 'bg-gray-800' : isDisambig ? 'bg-yellow-600' : notFound ? 'bg-blue-700' : 'bg-green-700'}`}>
-          <span className="text-white font-black tracking-widest text-sm">
-            {isDeceased ? '⚫ DEAD' : isDisambig ? '🟡 UNSURE' : notFound ? '🔍 NOT IN WIKIPEDIA' : '🟢 ALIVE'}
-          </span>
+          <span className="text-white font-black tracking-widest text-sm">{isDeceased ? '⚫ DEAD' : isDisambig ? '🟡 UNSURE' : notFound ? '🔍 NOT IN WIKIPEDIA' : '🟢 ALIVE'}</span>
         </div>
         <div className="bg-gray-900/70 p-5">
           {profile && !notFound && (
             <>
               <div className="flex gap-4 items-start mb-4">
-                {profile.thumbnail
-                  ? <img src={profile.thumbnail} alt={profile.title} className="w-20 h-20 rounded-full object-cover border-2 border-red-600/50 shrink-0" />
-                  : <div className="w-20 h-20 rounded-full bg-red-900/40 flex items-center justify-center shrink-0 text-3xl">👤</div>}
+                {profile.thumbnail ? <img src={profile.thumbnail} alt={profile.title} className="w-20 h-20 rounded-full object-cover border-2 border-red-600/50 shrink-0" /> : <div className="w-20 h-20 rounded-full bg-red-900/40 flex items-center justify-center shrink-0 text-3xl">👤</div>}
                 <div className="flex-1">
                   <h2 className="text-white text-xl font-bold mb-1">{profile.title}</h2>
                   {!isDisambig && <p className="text-red-300 text-sm italic">{profile.description}</p>}
@@ -457,45 +411,44 @@ function App() {
       <div style={{
         minHeight: '100dvh', width: '100%',
         display: 'flex', flexDirection: 'column',
-        justifyContent: 'center', alignItems: 'center',
+        justifyContent: 'flex-end',
         backgroundColor: '#1a0000',
         backgroundImage: `url(${WANTED_BG})`,
         backgroundSize: 'contain',
         backgroundPosition: 'center top',
         backgroundRepeat: 'no-repeat',
       }}>
-        <div className="w-full max-w-md mx-auto px-4">
-          <div className="bg-black/45 backdrop-blur-sm rounded-3xl p-8 shadow-2xl space-y-4 border border-red-900/40">
-            <div className="text-center mb-2">
-              <h1 className="text-white text-5xl font-black tracking-widest" style={{fontFamily:'serif'}}>DEAD OR ALIVE</h1>
-              <p className="text-red-400 text-base mt-3 font-bold tracking-wide">Find out if the people you remember are dead or alive</p>
-              <p className="text-white/50 text-xs mt-2">🎁 Free during beta — early users keep free access forever</p>
+        {/* Compact bottom-anchored login card */}
+        <div style={{ padding: '0 1rem 1rem 1rem' }}>
+          <div className="max-w-md mx-auto bg-black/55 backdrop-blur-sm rounded-2xl p-4 shadow-2xl border border-red-900/40 space-y-3">
+            <div className="text-center">
+              <h1 className="text-white text-2xl font-black tracking-widest" style={{fontFamily:'serif'}}>DEAD OR ALIVE</h1>
+              <p className="text-red-400 text-xs mt-1 font-bold tracking-wide">Find out if the people you remember are dead or alive</p>
+              <p className="text-white/40 text-xs mt-1">🎁 Free during beta — early users keep free access forever</p>
             </div>
             <input type="email" placeholder="Email address" value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && doAuth()}
-              className="w-full px-5 py-4 rounded-xl bg-white/15 border border-white/30 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-red-500 text-lg" />
+              onChange={(e) => setEmail(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && doAuth()}
+              className="w-full px-4 py-2.5 rounded-xl bg-white/15 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-red-500 text-base" />
             <div className="relative">
               <input type={showPassword ? 'text' : 'password'} placeholder="Password" value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && doAuth()}
-                className="w-full px-5 py-4 rounded-xl bg-white/15 border border-white/30 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-red-500 text-lg" />
-              <button onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60">
+                onChange={(e) => setPassword(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && doAuth()}
+                className="w-full px-4 py-2.5 rounded-xl bg-white/15 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-red-500 text-base" />
+              <button onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60">
                 {showPassword ? <EyeOffIcon /> : <EyeIcon />}
               </button>
             </div>
             {backendWaking && <p className="text-white/60 text-xs text-center animate-pulse">⏳ Waking up the server... this may take 30 seconds...</p>}
             <div className="grid grid-cols-2 gap-3">
               <button onClick={() => { setMode('login'); doAuth(); }} disabled={loading}
-                className="py-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl disabled:opacity-50 text-xl">
+                className="py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl disabled:opacity-50 text-base">
                 {loading && mode === 'login' ? '...' : 'Sign In'}
               </button>
               <button onClick={() => { setMode('register'); doAuth(); }} disabled={loading}
-                className="py-4 bg-white/20 hover:bg-white/30 text-white font-bold rounded-xl disabled:opacity-50 text-xl border border-white/30">
+                className="py-2.5 bg-white/20 hover:bg-white/30 text-white font-bold rounded-xl disabled:opacity-50 text-base border border-white/30">
                 {loading && mode === 'register' ? '...' : 'Register'}
               </button>
             </div>
-            <p className="text-white/40 text-xs text-center">You'll stay signed in automatically</p>
+            <p className="text-white/30 text-xs text-center">You'll stay signed in automatically</p>
           </div>
         </div>
       </div>
@@ -515,13 +468,10 @@ function App() {
               <p className="text-white/70 text-sm">Monitoring {watchlist.length} people</p>
             </div>
             <div className="bg-black/35 rounded-xl px-4 py-3 backdrop-blur-sm border border-red-900/30">
-              <p className="text-white/90 text-center text-sm font-medium">
-                Find out if the people you remember are dead or alive — no guessing, no googling, just answers.
-              </p>
+              <p className="text-white/90 text-center text-sm font-medium">Find out if the people you remember are dead or alive — no guessing, no googling, just answers.</p>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <button onClick={() => setPage('search')}
-                className="bg-gray-900/55 rounded-xl p-5 shadow-lg backdrop-blur-sm text-left border border-red-900/30">
+              <button onClick={() => setPage('search')} className="bg-gray-900/55 rounded-xl p-5 shadow-lg backdrop-blur-sm text-left border border-red-900/30">
                 <div className="flex flex-col items-start gap-3">
                   <SearchIcon />
                   <div>
@@ -530,13 +480,8 @@ function App() {
                   </div>
                 </div>
               </button>
-              <button onClick={() => setPage('watchlist')}
-                className="bg-gray-900/55 rounded-xl p-5 shadow-lg backdrop-blur-sm text-left border border-red-900/30 relative">
-                {unreadCount > 0 && (
-                  <span className="absolute top-3 right-3 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
+              <button onClick={() => setPage('watchlist')} className="bg-gray-900/55 rounded-xl p-5 shadow-lg backdrop-blur-sm text-left border border-red-900/30 relative">
+                {unreadCount > 0 && <span className="absolute top-3 right-3 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">{unreadCount > 9 ? '9+' : unreadCount}</span>}
                 <div className="flex flex-col items-start gap-3">
                   <HeartIcon />
                   <div>
@@ -546,9 +491,7 @@ function App() {
                 </div>
               </button>
             </div>
-            {/* Prominent About button */}
-            <button onClick={() => setPage('about')}
-              className="w-full py-4 bg-red-900/50 backdrop-blur-sm rounded-xl border border-red-700/50 text-left px-5">
+            <button onClick={() => setPage('about')} className="w-full py-4 bg-red-900/50 backdrop-blur-sm rounded-xl border border-red-700/50 text-left px-5">
               <p className="text-white font-bold text-lg">💀 About Dead or Alive</p>
               <p className="text-red-300 text-sm mt-1">Three brains. One mission. Read the story →</p>
             </button>
@@ -575,9 +518,7 @@ function App() {
             </div>
             <div className="bg-gray-900/60 rounded-2xl p-6 shadow-lg border border-red-900/30 backdrop-blur-sm">
               <h2 className="text-xl font-bold mb-4 text-white">Your Watchlist ({watchlist.length})</h2>
-              {watchlist.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">No one on your watchlist yet</p>
-              ) : (
+              {watchlist.length === 0 ? <p className="text-gray-500 text-center py-8">No one on your watchlist yet</p> : (
                 <div className="space-y-3">
                   {watchlist.map(w => (
                     <div key={w.id} className="p-4 bg-gray-800/50 rounded-lg border border-red-900/20">
@@ -700,9 +641,7 @@ function App() {
             <DOALogo onHome={() => setPage('home')} />
             <div className="bg-gray-900/60 rounded-2xl p-6 shadow-lg border border-red-900/30 backdrop-blur-sm">
               <h2 className="text-xl font-bold mb-4 text-white">Account</h2>
-              <div className="p-3 bg-gray-800/50 rounded-lg mb-4">
-                <p className="font-medium text-gray-300">{user?.email}</p>
-              </div>
+              <div className="p-3 bg-gray-800/50 rounded-lg mb-4"><p className="font-medium text-gray-300">{user?.email}</p></div>
               <div className="space-y-3">
                 <button onClick={() => setPage('about')} className="w-full py-3 bg-red-900/30 text-red-300 rounded-lg text-lg font-medium text-left px-4 border border-red-900/30">💀 About Dead or Alive</button>
                 <button onClick={() => setPage('privacy')} className="w-full py-3 bg-red-900/30 text-red-300 rounded-lg text-lg font-medium text-left px-4 border border-red-900/30">🔒 Privacy Policy</button>
