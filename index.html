@@ -27,7 +27,12 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.0.7c';
+const APP_VERSION = '1.0.7d';
+
+// Responsive paddingTop — iPhone needs more to clear poster header
+const isPhone = window.innerWidth < 500;
+const PT = isPhone ? '54vh' : '40vh';
+const TAP_TOP = isPhone ? '82%' : '84%';
 
 const toTitleCase = (str) => {
   if (!str) return str;
@@ -108,7 +113,7 @@ const BackButton = ({ onClick }) => (
 );
 
 const DOALogo = ({ onHome }) => (
-  <button onClick={onHome} className="flex items-center gap-2 mb-4">
+  <button onClick={onHome} className="flex items-center gap-2 mb-3">
     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-700 to-gray-900 flex items-center justify-center shadow-md border border-red-600">
       <span className="text-white text-xs font-black">DOA</span>
     </div>
@@ -327,7 +332,6 @@ function App() {
   const unreadCount = notifications.length;
   const iClass = "w-full px-4 py-2.5 border border-red-900/50 rounded-lg focus:ring-2 focus:ring-red-500 text-base bg-gray-900/60 text-white placeholder-gray-400";
   const cardClass = "bg-black/35 rounded-2xl p-3 shadow-lg border border-red-900/30 backdrop-blur-sm";
-  const PT = '40vh';
 
   const PageHeader = ({ title, subtitle }) => (
     <div className="text-center mb-4">
@@ -410,7 +414,7 @@ function App() {
               <button onClick={confirmAddWatch} disabled={loading} className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
                 <PlusIcon /> {loading ? 'Adding...' : 'Yes, Add to Watchlist'}
               </button>
-              <button onClick={() => { setWatchlistChecked(false); setWatchlistCheck(null); }} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center">
+              <button onClick={() => { setWatchlistChecked(false); setWatchlistCheck(null); }} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center flex items-center justify-center gap-2">
                 <EditIcon /> Edit Name
               </button>
               <button onClick={clearWatchlistCheck} className="w-full py-1.5 text-white/40 text-xs text-center">Cancel</button>
@@ -422,32 +426,30 @@ function App() {
     );
   };
 
-  // ── LANDING PAGE — full poster, big TAP TO ENTER below Family Stars & Lovers ──
+  // ── LANDING PAGE ──
   if (page === 'landing') {
     return (
       <div onClick={() => setPage('login')} style={{
         minHeight: '100dvh', width: '100%',
-        cursor: 'pointer',
-        position: 'relative',
+        cursor: 'pointer', position: 'relative',
         ...POSTER_STYLE,
       }}>
-        {/* TAP TO ENTER positioned below Family Stars & Lovers — ~88% down the poster */}
         <div style={{
           position: 'absolute',
-          top: '88%',
+          top: TAP_TOP,
           left: 0, right: 0,
           display: 'flex', flexDirection: 'column',
-          alignItems: 'center', gap: '0.5rem',
+          alignItems: 'center', gap: '0.4rem',
         }}>
           <div className="tap-pulse" style={{
             color: 'white',
-            fontSize: '1.6rem',
+            fontSize: isPhone ? '1.2rem' : '1.1rem',
             fontWeight: '900',
-            letterSpacing: '0.15em',
-            textShadow: '0 2px 8px rgba(0,0,0,0.8)',
+            letterSpacing: '0.12em',
+            textShadow: '0 2px 8px rgba(0,0,0,0.9)',
             textAlign: 'center',
           }}>⬇ TAP TO ENTER ⬇</div>
-          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem' }}>🎁 Free during beta</div>
+          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem' }}>🎁 Free during beta</div>
         </div>
       </div>
     );
@@ -503,9 +505,13 @@ function App() {
   }
 
   // ── MAIN APP ──
+  // Wide container for about/privacy, narrow for everything else
+  const isWide = page === 'about' || page === 'privacy';
+  const containerClass = isWide ? 'w-full max-w-3xl mx-auto px-4' : 'w-full max-w-sm mx-auto px-3';
+
   return (
     <PageWrapper>
-      <div className="w-full max-w-sm mx-auto px-3">
+      <div className={containerClass}>
 
         {page === 'home' && (
           <div className="space-y-2" style={{ paddingTop: PT }}>
