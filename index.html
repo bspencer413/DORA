@@ -15,6 +15,8 @@
   <style>
     * { -webkit-tap-highlight-color: transparent; font-family: Georgia, 'Times New Roman', serif; }
     html, body { height: 100%; overflow-x: hidden; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .tap-pulse { animation: pulse 1.8s ease-in-out infinite; }
   </style>
 </head>
 <body style="margin:0;padding:0;">
@@ -25,7 +27,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.0.7b';
+const APP_VERSION = '1.0.7c';
 
 const toTitleCase = (str) => {
   if (!str) return str;
@@ -114,18 +116,22 @@ const DOALogo = ({ onHome }) => (
   </button>
 );
 
+const POSTER_STYLE = {
+  backgroundColor: '#2c1a0e',
+  backgroundImage: `url(${WANTED_BG})`,
+  backgroundSize: 'contain',
+  backgroundPosition: 'center top',
+  backgroundRepeat: 'no-repeat',
+  backgroundAttachment: 'fixed',
+};
+
 const PageWrapper = ({ children }) => (
   <div style={{
     minHeight: '100dvh', width: '100%', position: 'relative',
     paddingBottom: '5rem',
-    backgroundColor: '#1a0000',
-    backgroundImage: `url(${WANTED_BG})`,
-    backgroundSize: 'contain',
-    backgroundPosition: 'center top',
-    backgroundRepeat: 'no-repeat',
-    backgroundAttachment: 'fixed',
+    ...POSTER_STYLE,
   }}>
-    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.25)' }} />
+    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.22)' }} />
     <div style={{ position: 'relative', zIndex: 10 }}>{children}</div>
   </div>
 );
@@ -221,8 +227,7 @@ function App() {
     localStorage.removeItem('doa_token'); localStorage.removeItem('doa_user');
     setAuth(false); setUser(null); setWatchlist([]); setNotifications([]);
     setResults([]); setWikiProfile(null); setWatchlistCheck(null);
-    setWatchlistChecked(false); setSearched(false);
-    setPage('landing');
+    setWatchlistChecked(false); setSearched(false); setPage('landing');
   };
 
   const doDeleteAccount = async () => {
@@ -320,15 +325,14 @@ function App() {
   };
 
   const unreadCount = notifications.length;
-  const iClass = "w-full px-4 py-3 border border-red-900/50 rounded-lg focus:ring-2 focus:ring-red-500 text-base bg-gray-900/60 text-white placeholder-gray-400";
-  const cardClass = "bg-black/30 rounded-2xl p-4 shadow-lg border border-red-900/30 backdrop-blur-sm";
-  const PT = '45vh';
+  const iClass = "w-full px-4 py-2.5 border border-red-900/50 rounded-lg focus:ring-2 focus:ring-red-500 text-base bg-gray-900/60 text-white placeholder-gray-400";
+  const cardClass = "bg-black/35 rounded-2xl p-3 shadow-lg border border-red-900/30 backdrop-blur-sm";
+  const PT = '40vh';
 
-  // Consistent page header
   const PageHeader = ({ title, subtitle }) => (
-    <div className="text-center mb-5">
+    <div className="text-center mb-4">
       <h2 className="text-3xl font-bold text-white tracking-wide">{title}</h2>
-      <p className="text-lg text-gray-200 mt-2">{subtitle}</p>
+      <p className="text-lg text-gray-200 mt-1">{subtitle}</p>
     </div>
   );
 
@@ -337,32 +341,32 @@ function App() {
     const isDisambig = profile.isDisambiguation;
     return (
       <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
-        <div className={`px-5 py-3 flex items-center gap-3 ${profile.deathDate ? 'bg-gray-800' : isDisambig ? 'bg-yellow-600' : 'bg-green-700'}`}>
+        <div className={`px-5 py-2 flex items-center gap-3 ${profile.deathDate ? 'bg-gray-800' : isDisambig ? 'bg-yellow-600' : 'bg-green-700'}`}>
           <span className="text-white font-black tracking-widest text-sm">{profile.deathDate ? '⚫ DEAD' : isDisambig ? '🟡 UNSURE' : '🟢 ALIVE'}</span>
           {profile.deathDate && profile.deathDate !== 'deceased' && <span className="text-white/80 text-xs ml-auto">Died: {profile.deathDate}</span>}
         </div>
-        <div className="bg-gray-900/70 p-5">
-          <div className="flex gap-4 items-start mb-4">
-            {profile.thumbnail ? <img src={profile.thumbnail} alt={profile.title} className="w-20 h-20 rounded-full object-cover border-2 border-red-600/50 shrink-0" /> : <div className="w-20 h-20 rounded-full bg-red-900/40 flex items-center justify-center shrink-0 text-3xl">👤</div>}
+        <div className="bg-gray-900/70 p-4">
+          <div className="flex gap-3 items-start mb-3">
+            {profile.thumbnail ? <img src={profile.thumbnail} alt={profile.title} className="w-16 h-16 rounded-full object-cover border-2 border-red-600/50 shrink-0" /> : <div className="w-16 h-16 rounded-full bg-red-900/40 flex items-center justify-center shrink-0 text-2xl">👤</div>}
             <div className="flex-1">
-              <h2 className="text-white text-xl font-bold mb-1">{profile.title}</h2>
+              <h2 className="text-white text-lg font-bold mb-1">{profile.title}</h2>
               {!isDisambig && <p className="text-red-300 text-sm italic mb-1">{profile.description}</p>}
               {profile.birthDate && <p className="text-red-400 text-xs">🎂 Born: {profile.birthDate}</p>}
             </div>
           </div>
-          {!isDisambig && profile.extract && <p className="text-gray-100 text-base leading-relaxed mb-4">{profile.extract.split('. ').slice(0, 3).join('. ') + '.'}</p>}
-          {isDisambig && <div className="p-3 bg-yellow-500/20 border border-yellow-400/30 rounded-xl mb-4"><p className="text-yellow-200 text-sm text-center">⚠️ Multiple people share this name — try a middle name or location</p></div>}
-          {profile.deathDate && <div className="p-3 bg-gray-700/50 border border-gray-600/30 rounded-xl mb-4"><p className="text-gray-200 text-sm text-center">⚫ This person has passed away</p></div>}
+          {!isDisambig && profile.extract && <p className="text-gray-100 text-sm leading-relaxed mb-3">{profile.extract.split('. ').slice(0, 2).join('. ') + '.'}</p>}
+          {isDisambig && <div className="p-2 bg-yellow-500/20 border border-yellow-400/30 rounded-xl mb-3"><p className="text-yellow-200 text-sm text-center">⚠️ Multiple people share this name</p></div>}
+          {profile.deathDate && <div className="p-2 bg-gray-700/50 border border-gray-600/30 rounded-xl mb-3"><p className="text-gray-200 text-sm text-center">⚫ This person has passed away</p></div>}
           {showAddButton && (
-            <div className="space-y-2 mb-3">
+            <div className="space-y-2 mb-2">
               {!profile.deathDate && (alreadyWatching
-                ? <button onClick={() => setPage('watchlist')} className="w-full py-3 bg-green-700/30 border border-green-500/40 text-green-200 rounded-xl text-sm text-center">✅ Already on your watchlist — tap to view</button>
-                : !isDisambig && <button onClick={() => addWatchFromSearch(profile.title)} disabled={loading} className="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-base flex items-center justify-center gap-2 disabled:opacity-50"><PlusIcon /> Add to Watchlist</button>
+                ? <button onClick={() => setPage('watchlist')} className="w-full py-2 bg-green-700/30 border border-green-500/40 text-green-200 rounded-xl text-sm text-center">✅ Already on your watchlist</button>
+                : !isDisambig && <button onClick={() => addWatchFromSearch(profile.title)} disabled={loading} className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50"><PlusIcon /> Add to Watchlist</button>
               )}
-              <button onClick={clearSearch} className="w-full py-3 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center">✕ Clear Search</button>
+              <button onClick={clearSearch} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center">✕ Clear Search</button>
             </div>
           )}
-          <div className="p-3 bg-red-900/20 border border-red-800/20 rounded-xl">
+          <div className="p-2 bg-red-900/20 border border-red-800/20 rounded-xl">
             <p className="text-red-200 text-xs">💀 Data provided by Wikipedia. Dead or Alive donates a portion of revenues to the Wikimedia Foundation.</p>
           </div>
         </div>
@@ -378,63 +382,73 @@ function App() {
     const notFound = !profile;
     return (
       <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
-        <div className={`px-5 py-3 ${isDeceased ? 'bg-gray-800' : isDisambig ? 'bg-yellow-600' : notFound ? 'bg-blue-700' : 'bg-green-700'}`}>
+        <div className={`px-5 py-2 ${isDeceased ? 'bg-gray-800' : isDisambig ? 'bg-yellow-600' : notFound ? 'bg-blue-700' : 'bg-green-700'}`}>
           <span className="text-white font-black tracking-widest text-sm">{isDeceased ? '⚫ DEAD' : isDisambig ? '🟡 UNSURE' : notFound ? '🔍 NOT IN WIKIPEDIA' : '🟢 ALIVE'}</span>
         </div>
-        <div className="bg-gray-900/70 p-5">
+        <div className="bg-gray-900/70 p-4">
           {profile && !notFound && (
             <>
-              <div className="flex gap-4 items-start mb-4">
-                {profile.thumbnail ? <img src={profile.thumbnail} alt={profile.title} className="w-20 h-20 rounded-full object-cover border-2 border-red-600/50 shrink-0" /> : <div className="w-20 h-20 rounded-full bg-red-900/40 flex items-center justify-center shrink-0 text-3xl">👤</div>}
+              <div className="flex gap-3 items-start mb-3">
+                {profile.thumbnail ? <img src={profile.thumbnail} alt={profile.title} className="w-16 h-16 rounded-full object-cover border-2 border-red-600/50 shrink-0" /> : <div className="w-16 h-16 rounded-full bg-red-900/40 flex items-center justify-center shrink-0 text-2xl">👤</div>}
                 <div className="flex-1">
-                  <h2 className="text-white text-xl font-bold mb-1">{profile.title}</h2>
+                  <h2 className="text-white text-lg font-bold mb-1">{profile.title}</h2>
                   {!isDisambig && <p className="text-red-300 text-sm italic">{profile.description}</p>}
                   {profile.birthDate && <p className="text-red-400 text-xs mt-1">🎂 Born: {profile.birthDate}</p>}
                 </div>
               </div>
-              {!isDisambig && profile.extract && <p className="text-gray-100 text-base leading-relaxed mb-4">{profile.extract.split('. ').slice(0, 3).join('. ') + '.'}</p>}
+              {!isDisambig && profile.extract && <p className="text-gray-100 text-sm leading-relaxed mb-3">{profile.extract.split('. ').slice(0, 2).join('. ') + '.'}</p>}
             </>
           )}
-          {notFound && <div className="mb-4"><p className="text-white text-lg font-bold mb-1">"{name}"</p><p className="text-gray-300 text-base">No Wikipedia result found. This may be a private individual or the spelling may be different.</p></div>}
-          {isDisambig && <div className="p-3 bg-yellow-500/20 border border-yellow-400/30 rounded-xl mb-4"><p className="text-yellow-200 text-sm text-center">⚠️ Multiple people share this name</p></div>}
-          {isDeceased && <div className="p-3 bg-gray-700/50 border border-gray-600/30 rounded-xl mb-4"><p className="text-gray-200 text-sm text-center">⚫ This person has passed away.{profile.deathDate && profile.deathDate !== 'deceased' ? ` Died: ${profile.deathDate}` : ''}</p></div>}
+          {notFound && <div className="mb-3"><p className="text-white text-base font-bold mb-1">"{name}"</p><p className="text-gray-300 text-sm">No Wikipedia result found.</p></div>}
+          {isDisambig && <div className="p-2 bg-yellow-500/20 border border-yellow-400/30 rounded-xl mb-3"><p className="text-yellow-200 text-sm text-center">⚠️ Multiple people share this name</p></div>}
+          {isDeceased && <div className="p-2 bg-gray-700/50 border border-gray-600/30 rounded-xl mb-3"><p className="text-gray-200 text-sm text-center">⚫ This person has passed away.{profile.deathDate && profile.deathDate !== 'deceased' ? ` Died: ${profile.deathDate}` : ''}</p></div>}
           {!isDeceased && (
-            <div className="space-y-3 mt-2">
-              <p className="text-white/80 text-sm text-center font-medium border-t border-white/10 pt-3">
-                {notFound ? `Add "${name}" to your watchlist anyway?` : isDisambig ? `Add "${name}" to your watchlist?` : `Add ${profile.title} to your watchlist?`}
+            <div className="space-y-2 mt-2">
+              <p className="text-white/80 text-sm text-center font-medium border-t border-white/10 pt-2">
+                {notFound ? `Add "${name}" to watchlist?` : `Add ${profile.title || name} to watchlist?`}
               </p>
-              <button onClick={confirmAddWatch} disabled={loading} className="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-base flex items-center justify-center gap-2 disabled:opacity-50">
+              <button onClick={confirmAddWatch} disabled={loading} className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
                 <PlusIcon /> {loading ? 'Adding...' : 'Yes, Add to Watchlist'}
               </button>
-              <button onClick={() => { setWatchlistChecked(false); setWatchlistCheck(null); }} className="w-full py-3 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center flex items-center justify-center gap-2">
+              <button onClick={() => { setWatchlistChecked(false); setWatchlistCheck(null); }} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center">
                 <EditIcon /> Edit Name
               </button>
-              <button onClick={clearWatchlistCheck} className="w-full py-2 text-white/40 text-xs text-center">Cancel</button>
+              <button onClick={clearWatchlistCheck} className="w-full py-1.5 text-white/40 text-xs text-center">Cancel</button>
             </div>
           )}
-          {isDeceased && <button onClick={clearWatchlistCheck} className="w-full py-3 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center mt-2">← Try Another Name</button>}
+          {isDeceased && <button onClick={clearWatchlistCheck} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center mt-2">← Try Another Name</button>}
         </div>
       </div>
     );
   };
 
-  // ── LANDING PAGE ──
+  // ── LANDING PAGE — full poster, big TAP TO ENTER below Family Stars & Lovers ──
   if (page === 'landing') {
     return (
       <div onClick={() => setPage('login')} style={{
         minHeight: '100dvh', width: '100%',
-        backgroundColor: '#1a0000',
-        backgroundImage: `url(${WANTED_BG})`,
-        backgroundSize: 'contain',
-        backgroundPosition: 'center top',
-        backgroundRepeat: 'no-repeat',
         cursor: 'pointer',
-        display: 'flex', flexDirection: 'column',
-        justifyContent: 'flex-end', alignItems: 'center',
-        paddingBottom: '2rem',
+        position: 'relative',
+        ...POSTER_STYLE,
       }}>
-        <div className="animate-pulse text-white/70 text-sm tracking-widest mb-2">TAP TO ENTER</div>
-        <div className="text-white/40 text-xs">🎁 Free during beta</div>
+        {/* TAP TO ENTER positioned below Family Stars & Lovers — ~88% down the poster */}
+        <div style={{
+          position: 'absolute',
+          top: '88%',
+          left: 0, right: 0,
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', gap: '0.5rem',
+        }}>
+          <div className="tap-pulse" style={{
+            color: 'white',
+            fontSize: '1.6rem',
+            fontWeight: '900',
+            letterSpacing: '0.15em',
+            textShadow: '0 2px 8px rgba(0,0,0,0.8)',
+            textAlign: 'center',
+          }}>⬇ TAP TO ENTER ⬇</div>
+          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem' }}>🎁 Free during beta</div>
+        </div>
       </div>
     );
   }
@@ -444,12 +458,7 @@ function App() {
     return (
       <div style={{
         minHeight: '100dvh', width: '100%',
-        backgroundColor: '#1a0000',
-        backgroundImage: `url(${WANTED_BG})`,
-        backgroundSize: 'contain',
-        backgroundPosition: 'center top',
-        backgroundRepeat: 'no-repeat',
-        backgroundAttachment: 'fixed',
+        ...POSTER_STYLE,
         display: 'flex', flexDirection: 'column',
         alignItems: 'center',
         paddingTop: PT,
@@ -499,27 +508,26 @@ function App() {
       <div className="w-full max-w-sm mx-auto px-3">
 
         {page === 'home' && (
-          <div className="space-y-3" style={{ paddingTop: PT }}>
-            <div className={cardClass + " text-center"}>
-              <h2 className="text-2xl font-black tracking-widest text-white mb-1">DEAD OR ALIVE</h2>
-              <p className="text-red-300 text-base font-bold tracking-wide mb-2">Three brains. One mission.</p>
-              <p className="text-white/90 text-base">Welcome, {user?.name}! 👋</p>
-              <p className="text-gray-200 text-base">Monitoring <span className="font-bold text-white">{watchlist.length}</span> people</p>
+          <div className="space-y-2" style={{ paddingTop: PT }}>
+            <div className={cardClass + " text-center py-2"}>
+              <h2 className="text-xl font-black tracking-widest text-white">DEAD OR ALIVE</h2>
+              <p className="text-red-300 text-sm font-bold tracking-wide">Three brains. One mission.</p>
+              <p className="text-white/90 text-sm mt-1">Welcome, {user?.name}! 👋 Monitoring <span className="font-bold text-white">{watchlist.length}</span> people</p>
             </div>
-            <div className="grid grid-cols-2 gap-3 items-stretch">
-              <button onClick={() => setPage('search')} className={cardClass + " text-left w-full flex flex-col"}>
-                <div className="flex flex-col items-start gap-2 flex-1">
+            <div className="grid grid-cols-2 gap-2 items-stretch">
+              <button onClick={() => setPage('search')} className={cardClass + " text-left w-full flex flex-col py-3"}>
+                <div className="flex flex-col items-start gap-1.5 flex-1">
                   <SearchIcon />
-                  <h3 className="font-bold text-white text-xl">Search</h3>
-                  <p className="text-base text-gray-200">Look up anyone — dead or alive</p>
+                  <h3 className="font-bold text-white text-lg">Search</h3>
+                  <p className="text-sm text-gray-200">Look up anyone — dead or alive</p>
                 </div>
               </button>
-              <button onClick={() => setPage('watchlist')} className={cardClass + " text-left w-full flex flex-col relative"}>
-                {unreadCount > 0 && <span className="absolute top-3 right-3 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">{unreadCount > 9 ? '9+' : unreadCount}</span>}
-                <div className="flex flex-col items-start gap-2 flex-1">
+              <button onClick={() => setPage('watchlist')} className={cardClass + " text-left w-full flex flex-col py-3 relative"}>
+                {unreadCount > 0 && <span className="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">{unreadCount > 9 ? '9+' : unreadCount}</span>}
+                <div className="flex flex-col items-start gap-1.5 flex-1">
                   <HeartIcon />
-                  <h3 className="font-bold text-white text-xl">Watchlist</h3>
-                  <p className="text-base text-gray-200">Monitor — get alerted on changes</p>
+                  <h3 className="font-bold text-white text-lg">Watchlist</h3>
+                  <p className="text-sm text-gray-200">Monitor — get alerted on changes</p>
                 </div>
               </button>
             </div>
@@ -547,7 +555,7 @@ function App() {
               ) : <WatchlistCheckCard />}
             </div>
             <div className={cardClass}>
-              <h2 className="text-2xl font-bold mb-2 text-white">Your Watchlist ({watchlist.length})</h2>
+              <h2 className="text-2xl font-bold mb-1 text-white">Your Watchlist ({watchlist.length})</h2>
               <p className="text-lg text-gray-200 mb-4">People you are currently monitoring</p>
               {watchlist.length === 0 ? <p className="text-gray-400 text-center py-6">No one on your watchlist yet</p> : (
                 <div className="space-y-3">
@@ -596,7 +604,7 @@ function App() {
                 <ClearableInput value={sName} onChange={(e) => { setSName(e.target.value); setWikiProfile(null); setResults([]); setSearched(false); }} onKeyPress={(e) => e.key === 'Enter' && doSearch()} placeholder="Full Name (First and Last)" inputClass={iClass} />
                 <ClearableInput value={sLoc} onChange={(e) => setSLoc(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && doSearch()} placeholder="Location (optional)" inputClass={iClass} />
                 <ClearableInput value={sBirthYear} onChange={(e) => setSBirthYear(e.target.value.replace(/\D/g, '').slice(0, 4))} onKeyPress={(e) => e.key === 'Enter' && doSearch()} placeholder="Birth Year (optional)" maxLength={4} inputClass={iClass} />
-                <button onClick={doSearch} disabled={loading} className="w-full py-3 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 text-base font-bold">
+                <button onClick={doSearch} disabled={loading} className="w-full py-2.5 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 text-base font-bold">
                   <SearchIcon /> {loading ? 'Searching...' : 'Search'}
                 </button>
               </div>
@@ -611,8 +619,8 @@ function App() {
             )}
             {results.length > 0 && (
               <div className={cardClass}>
-                <h2 className="text-2xl font-bold mb-2 text-white">Obituary Records ({results.length})</h2>
-                <p className="text-lg text-gray-200 mb-4">Records found in our Legacy database</p>
+                <h2 className="text-xl font-bold mb-1 text-white">Obituary Records ({results.length})</h2>
+                <p className="text-base text-gray-200 mb-3">Records found in our Legacy database</p>
                 <div className="space-y-3">
                   {results.map(r => (
                     <div key={r.id} className="p-3 border border-red-900/30 rounded-lg bg-gray-800/50">
@@ -641,10 +649,10 @@ function App() {
             <div className={cardClass}>
               <PageHeader title="Alerts" subtitle="Status changes for people on your watchlist" />
               {notifications.length === 0 ? (
-                <div className="text-center py-6">
-                  <p className="text-4xl mb-3">🔔</p>
+                <div className="text-center py-4">
+                  <p className="text-4xl mb-2">🔔</p>
                   <p className="text-white font-bold text-xl">No alerts yet</p>
-                  <p className="text-gray-200 text-base mt-2">We'll alert you when someone on your watchlist passes away</p>
+                  <p className="text-gray-200 text-base mt-1">We'll alert you when someone on your watchlist passes away</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -671,7 +679,7 @@ function App() {
             <DOALogo onHome={() => setPage('home')} />
             <div className={cardClass}>
               <PageHeader title="Settings" subtitle="Manage your account and preferences" />
-              <div className="p-3 bg-gray-800/50 rounded-lg mb-3"><p className="font-medium text-gray-200">{user?.email}</p></div>
+              <div className="p-3 bg-gray-800/50 rounded-lg mb-3"><p className="font-medium text-gray-200 text-sm">{user?.email}</p></div>
               <div className="space-y-2">
                 <button onClick={() => setPage('about')} className="w-full py-2.5 bg-red-900/30 text-red-200 rounded-lg text-base font-medium text-left px-4 border border-red-900/30">💀 About Dead or Alive</button>
                 <button onClick={() => setPage('privacy')} className="w-full py-2.5 bg-red-900/30 text-red-200 rounded-lg text-base font-medium text-left px-4 border border-red-900/30">🔒 Privacy Policy</button>
