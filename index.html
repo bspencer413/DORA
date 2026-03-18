@@ -25,7 +25,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/IMG_0437.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.0.4b';
+const APP_VERSION = '1.0.4c';
 
 const toTitleCase = (str) => {
   if (!str) return str;
@@ -92,6 +92,30 @@ const EyeOffIcon = () => (
   </svg>
 );
 
+// Reusable clearable input
+const ClearableInput = ({ value, onChange, onBlur, onKeyPress, placeholder, type='text', maxLength, inputClass }) => (
+  <div className="relative">
+    <input
+      type={type}
+      placeholder={placeholder}
+      value={value}
+      onChange={onChange}
+      onBlur={onBlur}
+      onKeyPress={onKeyPress}
+      maxLength={maxLength}
+      className={inputClass + ' pr-10'}
+    />
+    {value.length > 0 && (
+      <button
+        onClick={() => onChange({ target: { value: '' } })}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white text-lg font-bold leading-none"
+        type="button">
+        ✕
+      </button>
+    )}
+  </div>
+);
+
 const BackButton = ({ onClick }) => (
   <button onClick={onClick} className="text-red-400 flex items-center gap-1 text-sm py-2">
     ← Back to Settings
@@ -122,7 +146,7 @@ const PageWrapper = ({ children }) => (
   }}>
     <div style={{
       position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.75)',
+      backgroundColor: 'rgba(0,0,0,0.78)',
     }} />
     <div style={{ position: 'relative', zIndex: 10 }}>{children}</div>
   </div>
@@ -434,6 +458,8 @@ function App() {
 
   const unreadCount = notifications.length;
 
+  const inputClass = "w-full px-4 py-3 border border-red-900/50 rounded-lg focus:ring-2 focus:ring-red-500 text-lg bg-gray-800 text-white placeholder-gray-500";
+
   const WikiCard = ({ profile, showAddButton }) => {
     const alreadyWatching = isOnWatchlist(profile.title);
     const isDisambig = profile.isDisambiguation;
@@ -610,7 +636,8 @@ function App() {
         display: 'flex', flexDirection: 'column',
         justifyContent: 'center', alignItems: 'center',
         backgroundImage: `url(${WANTED_BG})`,
-        backgroundSize: 'cover', backgroundPosition: 'center top',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center 30%',
         backgroundRepeat: 'no-repeat',
       }}>
         <div className="w-full max-w-md mx-auto px-4">
@@ -724,23 +751,29 @@ function App() {
               <p className="text-sm text-gray-500 mb-6 text-center italic">We'll alert you when their status changes</p>
               {!watchlistChecked ? (
                 <div className="space-y-4">
-                  <input type="text" placeholder="Full Name (First and Last)"
+                  <ClearableInput
                     value={nw.name}
                     onChange={(e) => setNw({...nw, name: e.target.value})}
                     onBlur={(e) => setNw({...nw, name: toTitleCase(e.target.value)})}
                     onKeyPress={(e) => e.key === 'Enter' && checkWatch()}
-                    className="w-full px-4 py-3 border border-red-900/50 rounded-lg focus:ring-2 focus:ring-red-500 text-lg bg-gray-800 text-white placeholder-gray-500" />
-                  <input type="text" placeholder="Location (optional)"
+                    placeholder="Full Name (First and Last)"
+                    inputClass={inputClass}
+                  />
+                  <ClearableInput
                     value={nw.location}
                     onChange={(e) => setNw({...nw, location: e.target.value})}
                     onKeyPress={(e) => e.key === 'Enter' && checkWatch()}
-                    className="w-full px-4 py-3 border border-red-900/50 rounded-lg focus:ring-2 focus:ring-red-500 text-lg bg-gray-800 text-white placeholder-gray-500" />
-                  <input type="text" placeholder="Birth Year (optional, e.g. 1952)"
+                    placeholder="Location (optional)"
+                    inputClass={inputClass}
+                  />
+                  <ClearableInput
                     value={nw.birthYear}
                     onChange={(e) => setNw({...nw, birthYear: e.target.value.replace(/\D/g, '').slice(0, 4)})}
                     onKeyPress={(e) => e.key === 'Enter' && checkWatch()}
+                    placeholder="Birth Year (optional, e.g. 1952)"
                     maxLength={4}
-                    className="w-full px-4 py-3 border border-red-900/50 rounded-lg focus:ring-2 focus:ring-red-500 text-lg bg-gray-800 text-white placeholder-gray-500" />
+                    inputClass={inputClass}
+                  />
                   <button onClick={checkWatch} disabled={watchlistChecking}
                     className="w-full py-4 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 text-lg font-bold">
                     <SearchIcon /> {watchlistChecking ? 'Checking...' : 'Check Name'}
@@ -760,9 +793,12 @@ function App() {
                     <div key={w.id} className="p-4 bg-gray-800/60 rounded-lg border border-red-900/20">
                       {editingId === w.id ? (
                         <div className="space-y-2">
-                          <input type="text" value={editingName}
+                          <ClearableInput
+                            value={editingName}
                             onChange={(e) => setEditingName(e.target.value)}
-                            className="w-full px-3 py-2 border border-red-700 rounded-lg focus:ring-2 focus:ring-red-500 text-base bg-gray-700 text-white" />
+                            placeholder="Enter name"
+                            inputClass="w-full px-3 py-2 border border-red-700 rounded-lg focus:ring-2 focus:ring-red-500 text-base bg-gray-700 text-white placeholder-gray-500"
+                          />
                           <div className="flex gap-2">
                             <button onClick={async () => {
                               await delWatch(w.id);
@@ -825,32 +861,32 @@ function App() {
               <h2 className="text-xl font-bold mb-1 text-white">Search</h2>
               <p className="text-base text-gray-400 mb-4">Dead or alive — find out now</p>
               <div className="space-y-4">
-                <input type="text" placeholder="Full Name (First and Last)"
+                <ClearableInput
                   value={sName}
                   onChange={(e) => { setSName(e.target.value); setWikiProfile(null); setResults([]); setSearched(false); }}
                   onKeyPress={(e) => e.key === 'Enter' && doSearch()}
-                  className="w-full px-4 py-3 border border-red-900/50 rounded-lg focus:ring-2 focus:ring-red-500 text-lg bg-gray-800 text-white placeholder-gray-500" />
-                <input type="text" placeholder="Location (optional)"
+                  placeholder="Full Name (First and Last)"
+                  inputClass={inputClass}
+                />
+                <ClearableInput
                   value={sLoc}
                   onChange={(e) => setSLoc(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && doSearch()}
-                  className="w-full px-4 py-3 border border-red-900/50 rounded-lg focus:ring-2 focus:ring-red-500 text-lg bg-gray-800 text-white placeholder-gray-500" />
-                <input type="text" placeholder="Birth Year (optional, e.g. 1952)"
+                  placeholder="Location (optional)"
+                  inputClass={inputClass}
+                />
+                <ClearableInput
                   value={sBirthYear}
                   onChange={(e) => setSBirthYear(e.target.value.replace(/\D/g, '').slice(0, 4))}
                   onKeyPress={(e) => e.key === 'Enter' && doSearch()}
+                  placeholder="Birth Year (optional, e.g. 1952)"
                   maxLength={4}
-                  className="w-full px-4 py-3 border border-red-900/50 rounded-lg focus:ring-2 focus:ring-red-500 text-lg bg-gray-800 text-white placeholder-gray-500" />
-                <div className="flex gap-3">
-                  <button onClick={doSearch} disabled={loading}
-                    className="flex-1 py-4 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 text-lg font-bold">
-                    <SearchIcon /> {loading ? 'Searching...' : 'Search'}
-                  </button>
-                  {(sName || wikiProfile || results.length > 0) && (
-                    <button onClick={clearSearch}
-                      className="py-4 px-5 bg-gray-700 text-gray-300 rounded-lg text-lg font-bold">✕</button>
-                  )}
-                </div>
+                  inputClass={inputClass}
+                />
+                <button onClick={doSearch} disabled={loading}
+                  className="w-full py-4 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 text-lg font-bold">
+                  <SearchIcon /> {loading ? 'Searching...' : 'Search'}
+                </button>
               </div>
             </div>
             {wikiProfile && !loading && <WikiCard profile={wikiProfile} showAddButton={true} />}
@@ -985,9 +1021,7 @@ function App() {
             <div className="bg-gray-900/90 rounded-2xl p-6 shadow-lg border border-red-900/30">
               <BackButton onClick={() => setPage('settings')} />
               <h2 className="text-2xl font-black mb-2 text-white tracking-wide">ABOUT DEAD OR ALIVE</h2>
-              <p className="text-red-400 italic text-base leading-relaxed mb-6">
-                Three brains. One mission. Dead or Alive.
-              </p>
+              <p className="text-red-400 italic text-base leading-relaxed mb-6">Three brains. One mission. Dead or Alive.</p>
               <div className="space-y-4 text-gray-300 text-base leading-relaxed">
                 <p>Dead or Alive was produced by three brains — mine, ChatGPT, and Claude (Anthropic). I'm a retired 74 year old former high-tech entrepreneur and early adopter of new tech. I've owned just about every Apple product that has come out since the Apple II.</p>
                 <p>As I get older, I found it very hard using existing tools to find out if former friends, classmates, colleagues and even famous figures were dead or alive. So I built Dead or Alive — a straight answer to a simple question.</p>
@@ -1018,34 +1052,13 @@ function App() {
               <h2 className="text-2xl font-bold mb-6 text-white">Privacy Policy</h2>
               <p className="text-gray-500 text-sm mb-6">Last updated: March 17, 2026</p>
               <div className="space-y-6 text-gray-300 text-base leading-relaxed">
-                <div>
-                  <h3 className="font-bold text-white mb-2">1. Information We Collect</h3>
-                  <p>We collect only what is necessary: your email address, watchlist names, search queries, and anonymous usage data.</p>
-                </div>
-                <div>
-                  <h3 className="font-bold text-white mb-2">2. How We Use Your Information</h3>
-                  <p>We use your information to authenticate your account, maintain your watchlist, and deliver alerts. We do not sell your personal information. Ever.</p>
-                </div>
-                <div>
-                  <h3 className="font-bold text-white mb-2">3. Data Sources</h3>
-                  <p>Search results are powered by Legacy obituary feeds and Wikipedia.</p>
-                </div>
-                <div>
-                  <h3 className="font-bold text-white mb-2">4. Data Storage</h3>
-                  <p>Your data is stored securely on Render.com servers in the United States with industry-standard encryption.</p>
-                </div>
-                <div>
-                  <h3 className="font-bold text-white mb-2">5. Your Rights</h3>
-                  <p>You may delete your account and all data from Settings at any time.</p>
-                </div>
-                <div>
-                  <h3 className="font-bold text-white mb-2">6. Children's Privacy</h3>
-                  <p>This service is not directed at children under 13.</p>
-                </div>
-                <div>
-                  <h3 className="font-bold text-white mb-2">7. Contact</h3>
-                  <a href="mailto:contact@memorywatch.com" className="text-red-400">contact@memorywatch.com</a>
-                </div>
+                <div><h3 className="font-bold text-white mb-2">1. Information We Collect</h3><p>We collect only what is necessary: your email address, watchlist names, search queries, and anonymous usage data.</p></div>
+                <div><h3 className="font-bold text-white mb-2">2. How We Use Your Information</h3><p>We use your information to authenticate your account, maintain your watchlist, and deliver alerts. We do not sell your personal information. Ever.</p></div>
+                <div><h3 className="font-bold text-white mb-2">3. Data Sources</h3><p>Search results are powered by Legacy obituary feeds and Wikipedia.</p></div>
+                <div><h3 className="font-bold text-white mb-2">4. Data Storage</h3><p>Your data is stored securely on Render.com servers in the United States with industry-standard encryption.</p></div>
+                <div><h3 className="font-bold text-white mb-2">5. Your Rights</h3><p>You may delete your account and all data from Settings at any time.</p></div>
+                <div><h3 className="font-bold text-white mb-2">6. Children's Privacy</h3><p>This service is not directed at children under 13.</p></div>
+                <div><h3 className="font-bold text-white mb-2">7. Contact</h3><a href="mailto:contact@memorywatch.com" className="text-red-400">contact@memorywatch.com</a></div>
               </div>
               <BackButton onClick={() => setPage('settings')} />
             </div>
