@@ -7,20 +7,6 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>Dead or Alive</title>
-  <meta name="description" content="Dead or Alive — find out instantly if someone from your past is still living. Search by name, monitor your watchlist, and get alerted when someone passes away.">
-  <meta name="keywords" content="dead or alive, is someone dead, obituary search, death records, find out if someone died, celebrity death, deceased search, obituary lookup, death notice, find death records, is my friend alive, genealogy death search, legacy obituaries">
-  <meta name="author" content="DORA - Dead or Alive">
-  <meta name="robots" content="index, follow">
-  <link rel="canonical" href="https://dora.watch">
-  <meta property="og:title" content="Dead or Alive — Find Out Instantly">
-  <meta property="og:description" content="Search anyone by name and find out if they are dead or alive. Monitor people you care about and get alerted when their status changes.">
-  <meta property="og:url" content="https://dora.watch">
-  <meta property="og:type" content="website">
-  <meta property="og:image" content="https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Dead or Alive — Find Out Instantly">
-  <meta name="twitter:description" content="Search anyone by name and find out if they are dead or alive.">
-  <meta name="twitter:image" content="https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png">
   <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiRGVhZCBvciBBbGl2ZSIsInNob3J0X25hbWUiOiJEZWFkL0FsaXZlIiwic3RhcnRfdXJsIjoiLyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiM3ZjFkMWQiLCJ0aGVtZV9jb2xvciI6IiNkYzI2MjYifQ==">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -41,11 +27,11 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.0.9';
+const APP_VERSION = '1.0.7g';
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
-const PT = isPhone ? '38vh' : isTablet ? '48vh' : '44vh';
+const PT = isPhone ? '33vh' : isTablet ? '44vh' : '40vh';
 const TAP_TOP = isPhone ? '82%' : '84%';
 
 const toTitleCase = (str) => {
@@ -127,16 +113,16 @@ const BackButton = ({ onClick }) => (
 );
 
 const CardPageHeader = ({ title, subtitle, onHome }) => (
-  <div className="mb-2 pb-1.5 border-b border-red-900/30">
+  <div className="mb-3 pb-2 border-b border-red-900/30">
     <div className="flex items-center justify-between">
+      <div className="w-10" />
+      <h2 className="text-xl font-black text-white tracking-wide text-center flex-1">{title}</h2>
       <button onClick={onHome} className="flex flex-col items-center text-gray-500 hover:text-red-400 transition-colors w-10">
         <HomeIcon />
         <span className="text-xs">Home</span>
       </button>
-      <h2 className="text-lg font-black text-white tracking-wide text-center flex-1">{title}</h2>
-      <div className="w-10" />
     </div>
-    {subtitle && <p className="text-gray-300 text-xs mt-0.5 text-center">{subtitle}</p>}
+    {subtitle && <p className="text-gray-300 text-xs mt-1 text-center">{subtitle}</p>}
   </div>
 );
 
@@ -457,7 +443,8 @@ function App() {
         <div style={{ width: '100%', maxWidth: '22rem' }}>
           <div className="bg-black/50 backdrop-blur-sm rounded-2xl p-4 shadow-2xl border border-red-900/40 space-y-3">
             <div className="text-center">
-              <h1 className="text-white text-2xl font-black tracking-widest">DEAD OR ALIVE</h1>
+              <h1 className="text-white text-lg font-black tracking-widest">DEAD OR ALIVE</h1>
+              <p className="text-red-300 text-base mt-1 font-bold">Find out if the people you remember are dead or alive</p>
               <p className="text-white/50 text-xs mt-1">🎁 Free during beta — early users keep free access forever</p>
             </div>
             <input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && doAuth()} className="w-full px-4 py-2 rounded-xl bg-white/15 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-red-500 text-base" />
@@ -485,7 +472,7 @@ function App() {
           <div className="space-y-2" style={{ paddingTop: PT }}>
             <div className={cardClass + " text-center py-2"}>
               <h2 className="text-xl font-black tracking-widest text-white">DEAD OR ALIVE</h2>
-              <p className="text-red-300 text-sm font-bold tracking-wide">Find out if someone you miss is dead or alive.</p>
+              <p className="text-red-300 text-sm font-bold tracking-wide">Three brains. One mission.</p>
               <p className="text-white/90 text-sm mt-1">Welcome, {user?.name}! 👋 Monitoring <span className="font-bold text-white">{watchlist.length}</span> people</p>
             </div>
             <div className="grid grid-cols-2 gap-2 items-stretch">
@@ -507,7 +494,7 @@ function App() {
             </div>
             <button onClick={() => setPage('about')} className="w-full py-2 bg-red-900/50 backdrop-blur-sm rounded-xl border border-red-700/50 text-left px-4">
               <p className="text-white font-bold text-sm">💀 About Dead or Alive</p>
-              <p className="text-red-300 text-xs mt-0.5">Find out if someone you miss is dead or alive. Read the story →</p>
+              <p className="text-red-300 text-xs mt-0.5">Three brains. One mission. Read the story →</p>
             </button>
           </div>
         )}
@@ -675,8 +662,8 @@ function App() {
             <div className={cardClass}>
               <BackButton onClick={() => setPage('settings')} />
               <h2 className="text-3xl font-black mb-2 text-white tracking-wide">About Dead or Alive</h2>
-              <p className="text-red-300 italic text-lg leading-relaxed mb-4">Find out if someone you miss is dead or alive.</p>
-              <div className="space-y-3 text-gray-100 text-lg leading-relaxed font-medium">
+              <p className="text-red-300 italic text-lg leading-relaxed mb-4">Three brains. One mission. Dead or Alive.</p>
+              <div className="space-y-3 text-gray-200 text-base leading-relaxed">
                 <p>Dead or Alive was produced by three brains — mine, ChatGPT, and Claude (Anthropic). I'm a retired 74 year old former high-tech entrepreneur and early adopter of new tech. I've owned just about every Apple product that has come out since the Apple II.</p>
                 <p>As I get older, traditional search engines have become really frustrating. I find asking AI much more effective. But one thing you still couldn't do was have a watchlist that alerts you to events that matter to you. I found it very hard using existing tools to find out if former friends, classmates, colleagues and even famous figures were dead or alive. So I built Dead or Alive — a straight answer to a simple question.</p>
                 <p>We partner with Legacy, the largest obituary platform in the United States, covering more than 70% of all U.S. deaths through partnerships with thousands of newspapers and funeral homes. Dead or Alive monitors Legacy continuously — when someone on your watchlist passes away, you'll know.</p>
@@ -689,7 +676,7 @@ function App() {
                   <div>
                     <p className="font-bold text-white text-lg">Bill Spencer</p>
                     <p className="text-red-400 italic">Idea Hamster 🐹</p>
-                    <a href="mailto:contact@dora.watch" className="text-red-400 text-sm mt-1 block">contact@dora.watch</a>
+                    <a href="mailto:contact@memorywatch.com" className="text-red-400 text-sm mt-1 block">contact@memorywatch.com</a>
                   </div>
                 </div>
               </div>
@@ -703,14 +690,14 @@ function App() {
             <div className={cardClass}>
               <BackButton onClick={() => setPage('settings')} />
               <h2 className="text-3xl font-bold mb-2 text-white">Privacy Policy</h2>
-              <p className="text-gray-400 text-sm mb-4">Last updated: March 18, 2026</p>
-              <div className="space-y-4 text-gray-100 text-lg leading-relaxed font-medium">
-                <div><h3 className="font-bold text-white mb-1 text-xl">1. Information We Collect</h3><p>We collect only what is necessary: your email address, watchlist names, search queries, and anonymous usage data.</p></div>
-                <div><h3 className="font-bold text-white mb-1 text-xl">2. How We Use Your Information</h3><p>We do not sell your personal information. Ever.</p></div>
-                <div><h3 className="font-bold text-white mb-1 text-xl">3. Data Sources</h3><p>Search results are powered by Legacy obituary feeds and Wikipedia.</p></div>
-                <div><h3 className="font-bold text-white mb-1 text-xl">4. Data Storage</h3><p>Your data is stored securely on Render.com servers in the United States.</p></div>
-                <div><h3 className="font-bold text-white mb-1 text-xl">5. Your Rights</h3><p>You may delete your account and all data from Settings at any time.</p></div>
-                <div><h3 className="font-bold text-white mb-1 text-xl">6. Contact</h3><a href="mailto:contact@dora.watch" className="text-red-400">contact@dora.watch</a></div>
+              <p className="text-gray-400 text-sm mb-4">Last updated: March 17, 2026</p>
+              <div className="space-y-4 text-gray-200 text-base leading-relaxed">
+                <div><h3 className="font-bold text-white mb-1">1. Information We Collect</h3><p>We collect only what is necessary: your email address, watchlist names, search queries, and anonymous usage data.</p></div>
+                <div><h3 className="font-bold text-white mb-1">2. How We Use Your Information</h3><p>We do not sell your personal information. Ever.</p></div>
+                <div><h3 className="font-bold text-white mb-1">3. Data Sources</h3><p>Search results are powered by Legacy obituary feeds and Wikipedia.</p></div>
+                <div><h3 className="font-bold text-white mb-1">4. Data Storage</h3><p>Your data is stored securely on Render.com servers in the United States.</p></div>
+                <div><h3 className="font-bold text-white mb-1">5. Your Rights</h3><p>You may delete your account and all data from Settings at any time.</p></div>
+                <div><h3 className="font-bold text-white mb-1">6. Contact</h3><a href="mailto:contact@memorywatch.com" className="text-red-400">contact@memorywatch.com</a></div>
               </div>
               <BackButton onClick={() => setPage('settings')} />
             </div>
