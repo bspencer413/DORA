@@ -32,6 +32,19 @@
     html, body { height: 100%; overflow-x: hidden; }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
     .tap-pulse { animation: pulse 1.8s ease-in-out infinite; }
+    .modal-drawer {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+      background: #1a1a2e; border-radius: 20px 20px 0 0;
+      border-top: 1px solid #7f1d1d;
+      max-height: 85vh; overflow-y: auto;
+      transform: translateY(0);
+      transition: transform 0.3s ease;
+      padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    }
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 99;
+      background: rgba(0,0,0,0.6);
+    }
   </style>
 </head>
 <body style="margin:0;padding:0;">
@@ -42,11 +55,11 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.0.8';
+const APP_VERSION = '1.0.9';
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
-const PT = isPhone ? '33vh' : isTablet ? '44vh' : '40vh';
+const PT = isPhone ? '38vh' : isTablet ? '48vh' : '44vh';
 const TAP_TOP = isPhone ? '82%' : '84%';
 
 const toTitleCase = (str) => {
@@ -57,28 +70,28 @@ const toTitleCase = (str) => {
 };
 
 const HomeIcon = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
   </svg>
 );
 const HeartIcon = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
   </svg>
 );
 const SearchIcon = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
   </svg>
 );
 const SettingsIcon = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
   </svg>
 );
 const BellIcon = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
   </svg>
 );
@@ -118,7 +131,7 @@ const ClearableInput = ({ value, onChange, onBlur, onKeyPress, placeholder, type
   <div className="relative">
     <input type={type} placeholder={placeholder} value={value} onChange={onChange} onBlur={onBlur} onKeyPress={onKeyPress} maxLength={maxLength} className={inputClass + ' pr-10'} />
     {value && value.length > 0 && (
-      <button onClick={() => onChange({ target: { value: '' } })} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white text-lg font-bold leading-none" type="button">✕</button>
+      <button onClick={() => onChange({ target: { value: '' } })} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white text-lg font-bold leading-none" type="button">X</button>
     )}
   </div>
 );
@@ -128,7 +141,7 @@ const CardPageHeader = ({ title, subtitle, onHome }) => (
     <div className="flex items-center justify-between">
       <div className="w-10" />
       <h2 className="text-xl font-black text-white tracking-wide text-center flex-1">{title}</h2>
-      <button onClick={onHome} className="flex flex-col items-center text-gray-500 hover:text-red-400 transition-colors w-10">
+      <button onClick={onHome} className="flex flex-col items-center text-white hover:text-red-400 transition-colors w-10">
         <HomeIcon />
         <span className="text-xs">Home</span>
       </button>
@@ -161,8 +174,8 @@ function isDeceasedCheck(extract, description, deathDate, type) {
   if (type === 'disambiguation') return false;
   if (deathDate) return true;
   const firstSentence = extract.split('.')[0];
-  const hasDeathInBrackets = /\(\d{4}\s*[-–—]\s*\d{4}\)/.test(firstSentence);
-  const hasYearsInDescription = /\(\d{4}\s*[-–—]\s*\d{4}\)/.test(description);
+  const hasDeathInBrackets = /\(\d{4}\s*[-]+\s*\d{4}\)/.test(firstSentence);
+  const hasYearsInDescription = /\(\d{4}\s*[-]+\s*\d{4}\)/.test(description);
   const hasBornOnly = /\([^)]*born\s+\w+\s+\d+,\s+\d{4}\)/.test(firstSentence);
   if (hasBornOnly && !hasDeathInBrackets && !hasYearsInDescription) return false;
   const isPastTense = /^[^.]*\bwas (an?|the)\b[^.]*\./.test(extract) && !/\([^)]*born/.test(firstSentence) && !/born\s+\d{4}/.test(description);
@@ -197,11 +210,19 @@ function App() {
   const [editingName, setEditingName] = useState('');
   const [showDangerZone, setShowDangerZone] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [drawerProfile, setDrawerProfile] = useState(null);
 
   useEffect(() => {
     const t = localStorage.getItem('doa_token');
     const u = localStorage.getItem('doa_user');
     if (t && u) { setUser(JSON.parse(u)); setAuth(true); setPage('home'); loadWatchlist(); loadNotifications(); }
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        setTimeout(() => { document.querySelectorAll('input').forEach(i => i.blur()); }, 100);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
   const loadWatchlist = async () => {
@@ -272,6 +293,11 @@ function App() {
       const deceased = isDeceasedCheck(extract, description, w.death_date, type);
       return { title: w.title, extract, thumbnail: w.thumbnail?.source, birthDate: w.birth_date || null, deathDate: deceased ? (w.death_date || 'deceased') : null, description, isDisambiguation: false };
     } catch (e) { return null; }
+  };
+
+  const openWatchlistDrawer = async (name) => {
+    const profile = await fetchWikiProfile(name);
+    setDrawerProfile({ profile, name });
   };
 
   const isOnWatchlist = (name) => watchlist.some(w => w.name.toLowerCase() === name.toLowerCase());
@@ -355,32 +381,32 @@ function App() {
     return (
       <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
         <div className={`px-5 py-2 flex items-center gap-3 ${profile.deathDate ? 'bg-gray-800' : isDisambig ? 'bg-yellow-600' : 'bg-green-700'}`}>
-          <span className="text-white font-black tracking-widest text-sm">{profile.deathDate ? '⚫ DEAD' : isDisambig ? '🟡 UNSURE' : '🟢 ALIVE'}</span>
+          <span className="text-white font-black tracking-widest text-sm">{profile.deathDate ? 'DEAD' : isDisambig ? 'UNSURE' : 'ALIVE'}</span>
           {profile.deathDate && profile.deathDate !== 'deceased' && <span className="text-white/80 text-xs ml-auto">Died: {profile.deathDate}</span>}
         </div>
         <div className="bg-gray-900/70 p-4">
           <div className="flex gap-3 items-start mb-3">
-            {profile.thumbnail ? <img src={profile.thumbnail} alt={profile.title} className="w-16 h-16 rounded-full object-cover border-2 border-red-600/50 shrink-0" /> : <div className="w-16 h-16 rounded-full bg-red-900/40 flex items-center justify-center shrink-0 text-2xl">👤</div>}
+            {profile.thumbnail ? <img src={profile.thumbnail} alt={profile.title} className="w-16 h-16 rounded-full object-cover border-2 border-red-600/50 shrink-0" /> : <div className="w-16 h-16 rounded-full bg-red-900/40 flex items-center justify-center shrink-0 text-2xl">?</div>}
             <div className="flex-1">
               <h2 className="text-white text-lg font-bold mb-1">{profile.title}</h2>
-              {!isDisambig && <p className="text-red-300 text-sm italic mb-1">{profile.description}</p>}
-              {profile.birthDate && <p className="text-red-400 text-xs">🎂 Born: {profile.birthDate}</p>}
+              {profile.birthDate && <p className="text-red-300 text-sm font-bold">Born: {profile.birthDate}</p>}
+              {!isDisambig && <p className="text-red-400 text-xs italic mt-1">{profile.description}</p>}
             </div>
           </div>
-          {!isDisambig && profile.extract && <p className="text-gray-100 text-sm leading-relaxed mb-3">{profile.extract.split('. ').slice(0, 2).join('. ') + '.'}</p>}
-          {isDisambig && <div className="p-2 bg-yellow-500/20 border border-yellow-400/30 rounded-xl mb-3"><p className="text-yellow-200 text-sm text-center">⚠️ Multiple people share this name</p></div>}
-          {profile.deathDate && <div className="p-2 bg-gray-700/50 border border-gray-600/30 rounded-xl mb-3"><p className="text-gray-200 text-sm text-center">⚫ This person has passed away</p></div>}
+          {!isDisambig && profile.extract && <p className="text-gray-100 text-sm leading-relaxed mb-3">{profile.extract}</p>}
+          {isDisambig && <div className="p-2 bg-yellow-500/20 border border-yellow-400/30 rounded-xl mb-3"><p className="text-yellow-200 text-sm text-center">Multiple people share this name</p></div>}
+          {profile.deathDate && <div className="p-2 bg-gray-700/50 border border-gray-600/30 rounded-xl mb-3"><p className="text-gray-200 text-sm text-center">This person has passed away</p></div>}
           {showAddButton && (
             <div className="space-y-2 mb-2">
               {!profile.deathDate && (alreadyWatching
-                ? <button onClick={() => setPage('watchlist')} className="w-full py-2 bg-green-700/30 border border-green-500/40 text-green-200 rounded-xl text-sm text-center">✅ Already on your watchlist</button>
+                ? <button onClick={() => setPage('watchlist')} className="w-full py-2 bg-green-700/30 border border-green-500/40 text-green-200 rounded-xl text-sm text-center">Already on your watchlist</button>
                 : !isDisambig && <button onClick={() => addWatchFromSearch(profile.title)} disabled={loading} className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50"><PlusIcon /> Add to Watchlist</button>
               )}
-              <button onClick={clearSearch} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center">✕ Clear Search</button>
+              <button onClick={clearSearch} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center">Clear Search</button>
             </div>
           )}
           <div className="p-2 bg-red-900/20 border border-red-800/20 rounded-xl">
-            <p className="text-red-200 text-xs">💀 Data provided by Wikipedia. Dead or Alive donates a portion of revenues to the Wikimedia Foundation.</p>
+            <p className="text-red-200 text-xs">Data provided by Wikipedia. DORA donates a portion of revenues to the Wikimedia Foundation.</p>
           </div>
         </div>
       </div>
@@ -396,25 +422,25 @@ function App() {
     return (
       <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
         <div className={`px-5 py-2 ${isDeceased ? 'bg-gray-800' : isDisambig ? 'bg-yellow-600' : notFound ? 'bg-blue-700' : 'bg-green-700'}`}>
-          <span className="text-white font-black tracking-widest text-sm">{isDeceased ? '⚫ DEAD' : isDisambig ? '🟡 UNSURE' : notFound ? '🔍 NOT IN WIKIPEDIA' : '🟢 ALIVE'}</span>
+          <span className="text-white font-black tracking-widest text-sm">{isDeceased ? 'DEAD' : isDisambig ? 'UNSURE' : notFound ? 'NOT IN WIKIPEDIA' : 'ALIVE'}</span>
         </div>
         <div className="bg-gray-900/70 p-4">
           {profile && !notFound && (
             <>
               <div className="flex gap-3 items-start mb-3">
-                {profile.thumbnail ? <img src={profile.thumbnail} alt={profile.title} className="w-16 h-16 rounded-full object-cover border-2 border-red-600/50 shrink-0" /> : <div className="w-16 h-16 rounded-full bg-red-900/40 flex items-center justify-center shrink-0 text-2xl">👤</div>}
+                {profile.thumbnail ? <img src={profile.thumbnail} alt={profile.title} className="w-16 h-16 rounded-full object-cover border-2 border-red-600/50 shrink-0" /> : <div className="w-16 h-16 rounded-full bg-red-900/40 flex items-center justify-center shrink-0 text-2xl">?</div>}
                 <div className="flex-1">
                   <h2 className="text-white text-lg font-bold mb-1">{profile.title}</h2>
-                  {!isDisambig && <p className="text-red-300 text-sm italic">{profile.description}</p>}
-                  {profile.birthDate && <p className="text-red-400 text-xs mt-1">🎂 Born: {profile.birthDate}</p>}
+                  {profile.birthDate && <p className="text-red-300 text-sm font-bold">Born: {profile.birthDate}</p>}
+                  {!isDisambig && <p className="text-red-400 text-xs italic mt-1">{profile.description}</p>}
                 </div>
               </div>
-              {!isDisambig && profile.extract && <p className="text-gray-100 text-sm leading-relaxed mb-3">{profile.extract.split('. ').slice(0, 2).join('. ') + '.'}</p>}
+              {!isDisambig && profile.extract && <p className="text-gray-100 text-sm leading-relaxed mb-3">{profile.extract}</p>}
             </>
           )}
           {notFound && <div className="mb-3"><p className="text-white text-base font-bold mb-1">"{name}"</p><p className="text-gray-300 text-sm">No Wikipedia result found.</p></div>}
-          {isDisambig && <div className="p-2 bg-yellow-500/20 border border-yellow-400/30 rounded-xl mb-3"><p className="text-yellow-200 text-sm text-center">⚠️ Multiple people share this name</p></div>}
-          {isDeceased && <div className="p-2 bg-gray-700/50 border border-gray-600/30 rounded-xl mb-3"><p className="text-gray-200 text-sm text-center">⚫ This person has passed away.{profile.deathDate && profile.deathDate !== 'deceased' ? ` Died: ${profile.deathDate}` : ''}</p></div>}
+          {isDisambig && <div className="p-2 bg-yellow-500/20 border border-yellow-400/30 rounded-xl mb-3"><p className="text-yellow-200 text-sm text-center">Multiple people share this name</p></div>}
+          {isDeceased && <div className="p-2 bg-gray-700/50 border border-gray-600/30 rounded-xl mb-3"><p className="text-gray-200 text-sm text-center">This person has passed away.{profile.deathDate && profile.deathDate !== 'deceased' ? ` Died: ${profile.deathDate}` : ''}</p></div>}
           {!isDeceased && (
             <div className="space-y-2 mt-2">
               <p className="text-white/80 text-sm text-center font-medium border-t border-white/10 pt-2">
@@ -429,9 +455,52 @@ function App() {
               <button onClick={clearWatchlistCheck} className="w-full py-1.5 text-white/40 text-xs text-center">Cancel</button>
             </div>
           )}
-          {isDeceased && <button onClick={clearWatchlistCheck} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center mt-2">← Try Another Name</button>}
+          {isDeceased && <button onClick={clearWatchlistCheck} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center mt-2">Try Another Name</button>}
         </div>
       </div>
+    );
+  };
+
+  const WikiDrawer = () => {
+    if (!drawerProfile) return null;
+    const { profile, name } = drawerProfile;
+    return (
+      <>
+        <div className="modal-overlay" onClick={() => setDrawerProfile(null)} />
+        <div className="modal-drawer">
+          <div className="flex justify-between items-center px-4 pt-4 pb-2 border-b border-red-900/30">
+            <h3 className="text-white font-bold text-lg">{name}</h3>
+            <button onClick={() => setDrawerProfile(null)} className="text-gray-400 hover:text-white text-2xl font-bold">X</button>
+          </div>
+          <div className="p-4">
+            {!profile ? (
+              <div className="text-center py-8">
+                <p className="text-4xl mb-3">?</p>
+                <p className="text-white font-bold text-lg">Not in Wikipedia</p>
+                <p className="text-gray-300 text-sm mt-2">No Wikipedia entry found for "{name}"</p>
+              </div>
+            ) : (
+              <>
+                <div className={`px-4 py-2 rounded-xl mb-4 flex items-center gap-3 ${profile.deathDate ? 'bg-gray-700' : profile.isDisambiguation ? 'bg-yellow-600' : 'bg-green-700'}`}>
+                  <span className="text-white font-black">{profile.deathDate ? 'DEAD' : profile.isDisambiguation ? 'UNSURE' : 'ALIVE'}</span>
+                  {profile.deathDate && profile.deathDate !== 'deceased' && <span className="text-white/80 text-sm ml-auto">Died: {profile.deathDate}</span>}
+                </div>
+                <div className="flex gap-3 items-start mb-4">
+                  {profile.thumbnail ? <img src={profile.thumbnail} alt={profile.title} className="w-20 h-20 rounded-full object-cover border-2 border-red-600/50 shrink-0" /> : <div className="w-20 h-20 rounded-full bg-red-900/40 flex items-center justify-center shrink-0 text-3xl">?</div>}
+                  <div className="flex-1">
+                    <h2 className="text-white text-xl font-bold mb-1">{profile.title}</h2>
+                    {profile.birthDate && <p className="text-red-300 text-sm font-bold">Born: {profile.birthDate}</p>}
+                    {!profile.isDisambiguation && <p className="text-red-400 text-xs italic mt-1">{profile.description}</p>}
+                  </div>
+                </div>
+                {!profile.isDisambiguation && profile.extract && <p className="text-gray-100 text-sm leading-relaxed mb-4">{profile.extract}</p>}
+                {profile.isDisambiguation && <div className="p-3 bg-yellow-500/20 border border-yellow-400/30 rounded-xl mb-4"><p className="text-yellow-200 text-sm text-center">Multiple people share this name</p></div>}
+              </>
+            )}
+            <button onClick={() => setDrawerProfile(null)} className="w-full py-3 bg-red-900/40 border border-red-800/50 text-white rounded-xl text-sm mt-2">Close</button>
+          </div>
+        </div>
+      </>
     );
   };
 
@@ -439,8 +508,8 @@ function App() {
     return (
       <div onClick={() => setPage('login')} style={{ minHeight: '100dvh', width: '100%', cursor: 'pointer', position: 'relative', ...POSTER_STYLE }}>
         <div style={{ position: 'absolute', top: TAP_TOP, left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
-          <div className="tap-pulse" style={{ color: 'white', fontSize: isPhone ? '1.2rem' : '1.1rem', fontWeight: '900', letterSpacing: '0.12em', textShadow: '0 2px 8px rgba(0,0,0,0.9)', textAlign: 'center' }}>⬇ TAP TO ENTER ⬇</div>
-          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem' }}>🎁 Free during beta</div>
+          <div className="tap-pulse" style={{ color: 'white', fontSize: isPhone ? '1.2rem' : '1.1rem', fontWeight: '900', letterSpacing: '0.12em', textShadow: '0 2px 8px rgba(0,0,0,0.9)', textAlign: 'center' }}>TAP TO ENTER</div>
+          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem' }}>Free during beta</div>
         </div>
       </div>
     );
@@ -454,14 +523,14 @@ function App() {
             <div className="text-center">
               <h1 className="text-white text-lg font-black tracking-widest">DEAD OR ALIVE</h1>
               <p className="text-red-300 text-base mt-1 font-bold">Find out if the people you remember are dead or alive</p>
-              <p className="text-white/50 text-xs mt-1">🎁 Free during beta</p>
+              <p className="text-white/50 text-xs mt-1">Free during beta</p>
             </div>
             <input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && doAuth()} className="w-full px-4 py-2 rounded-xl bg-white/15 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-red-500 text-base" />
             <div className="relative">
               <input type={showPassword ? 'text' : 'password'} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && doAuth()} className="w-full px-4 py-2 rounded-xl bg-white/15 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-red-500 text-base" />
               <button onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60">{showPassword ? <EyeOffIcon /> : <EyeIcon />}</button>
             </div>
-            {backendWaking && <p className="text-white/60 text-xs text-center animate-pulse">⏳ Waking up the server...</p>}
+            {backendWaking && <p className="text-white/60 text-xs text-center animate-pulse">Waking up the server...</p>}
             <div className="grid grid-cols-2 gap-3">
               <button onClick={() => { setMode('login'); doAuth(); }} disabled={loading} className="py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl disabled:opacity-50 text-base">{loading && mode === 'login' ? '...' : 'Sign In'}</button>
               <button onClick={() => { setMode('register'); doAuth(); }} disabled={loading} className="py-2 bg-white/20 hover:bg-white/30 text-white font-bold rounded-xl disabled:opacity-50 text-base border border-white/30">{loading && mode === 'register' ? '...' : 'Register'}</button>
@@ -475,6 +544,7 @@ function App() {
 
   return (
     <PageWrapper>
+      <WikiDrawer />
       <div className={containerClass}>
 
         {page === 'home' && (
@@ -482,7 +552,7 @@ function App() {
             <div className={cardClass + " text-center py-2"}>
               <h2 className="text-xl font-black tracking-widest text-white">DEAD OR ALIVE</h2>
               <p className="text-red-300 text-sm font-bold tracking-wide">Find out if people you miss are dead or alive.</p>
-              <p className="text-white/90 text-sm mt-1">Welcome, {user?.name}! 👋 Monitoring <span className="font-bold text-white">{watchlist.length}</span> people</p>
+              <p className="text-white/90 text-sm mt-1">Welcome, {user?.name}! Monitoring <span className="font-bold text-white">{watchlist.length}</span> people</p>
             </div>
             <div className="grid grid-cols-2 gap-2 items-stretch">
               <button onClick={() => setPage('search')} className={cardClass + " text-left w-full flex flex-col py-3"}>
@@ -502,9 +572,10 @@ function App() {
               </button>
             </div>
             <button onClick={() => setPage('about')} className="w-full py-2 bg-red-900/50 backdrop-blur-sm rounded-xl border border-red-700/50 text-left px-4">
-              <p className="text-white font-bold text-sm">💀 About Dead or Alive</p>
-              <p className="text-red-300 text-xs mt-0.5">Discover people you miss and find out if they are dead or alive →</p>
+              <p className="text-white font-bold text-sm">About Dead or Alive</p>
+              <p className="text-red-300 text-xs mt-0.5">Discover people you miss and find out if they are dead or alive</p>
             </button>
+            <p className="text-white/30 text-center text-xs">v{APP_VERSION}</p>
           </div>
         )}
 
@@ -515,7 +586,7 @@ function App() {
               {!watchlistChecked ? (
                 <div className="space-y-3">
                   <ClearableInput value={nw.name} onChange={(e) => setNw({...nw, name: e.target.value})} onBlur={(e) => setNw({...nw, name: toTitleCase(e.target.value)})} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Full Name" inputClass={iClass} />
-                  <ClearableInput value={nw.location} onChange={(e) => setNw({...nw, location: e.target.value})} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Location (optional)" inputClass={iClass} />
+                  <ClearableInput value={nw.location} onChange={(e) => setNw({...nw, location: e.target.value})} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="City and/or State (optional)" inputClass={iClass} />
                   <ClearableInput value={nw.birthYear} onChange={(e) => setNw({...nw, birthYear: e.target.value.replace(/\D/g, '').slice(0, 4)})} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Birth Year (optional)" maxLength={4} inputClass={iClass} />
                   <button onClick={checkWatch} disabled={watchlistChecking} className="w-full py-3 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 text-base font-bold">
                     <SearchIcon /> {watchlistChecking ? 'Checking...' : 'Check Name'}
@@ -525,7 +596,7 @@ function App() {
             </div>
             <div className={cardClass}>
               <h2 className="text-xl font-bold mb-0.5 text-white text-center">Your Watchlist ({watchlist.length})</h2>
-              <p className="text-sm text-gray-200 mb-3 text-center">People you are currently monitoring</p>
+              <p className="text-sm text-gray-200 mb-3 text-center">Tap a name to see their bio</p>
               {watchlist.length === 0 ? <p className="text-gray-400 text-center py-6">No one on your watchlist yet</p> : (
                 <div className="space-y-3">
                   {watchlist.map(w => (
@@ -541,10 +612,10 @@ function App() {
                       ) : (
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
-                            <button onClick={() => { setSName(w.name); setPage('search'); }} className="text-left">
-                              <h3 className="font-semibold text-base text-white hover:text-red-300">{w.name}</h3>
+                            <button onClick={() => openWatchlistDrawer(w.name)} className="text-left w-full">
+                              <h3 className="font-semibold text-base text-white hover:text-red-300 underline decoration-dotted">{w.name}</h3>
                             </button>
-                            <div className="text-sm text-gray-300">{w.location && <span>{w.location}</span>}{w.dob && <span> • Born: {w.dob}</span>}</div>
+                            <div className="text-sm text-gray-300">{w.location && <span>{w.location}</span>}{w.dob && <span> - Born: {w.dob}</span>}</div>
                             <div className="flex items-center gap-1 mt-1"><CheckIcon /><span className="text-xs text-green-400">Active</span></div>
                           </div>
                           <div className="flex gap-2">
@@ -567,7 +638,7 @@ function App() {
               <CardPageHeader title="Search" subtitle="Look up anyone by name — dead or alive" onHome={() => setPage('home')} />
               <div className="space-y-3">
                 <ClearableInput value={sName} onChange={(e) => { setSName(e.target.value); setWikiProfile(null); setResults([]); setSearched(false); }} onKeyPress={(e) => e.key === 'Enter' && doSearch()} placeholder="Name (first, last, or full)" inputClass={iClass} />
-                <ClearableInput value={sLoc} onChange={(e) => setSLoc(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && doSearch()} placeholder="Location (optional)" inputClass={iClass} />
+                <ClearableInput value={sLoc} onChange={(e) => setSLoc(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && doSearch()} placeholder="City and/or State (optional)" inputClass={iClass} />
                 <ClearableInput value={sBirthYear} onChange={(e) => setSBirthYear(e.target.value.replace(/\D/g, '').slice(0, 4))} onKeyPress={(e) => e.key === 'Enter' && doSearch()} placeholder="Birth Year (optional)" maxLength={4} inputClass={iClass} />
                 <button onClick={doSearch} disabled={loading} className="w-full py-2.5 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 text-base font-bold">
                   <SearchIcon /> {loading ? 'Searching...' : 'Search'}
@@ -577,7 +648,7 @@ function App() {
             {wikiProfile && !loading && <WikiCard profile={wikiProfile} showAddButton={true} />}
             {!loading && searched && !wikiProfile && results.length === 0 && (
               <div className={cardClass + " text-center"}>
-                <p className="text-3xl mb-2">🔍</p>
+                <p className="text-3xl mb-2">?</p>
                 <h3 className="font-bold text-white text-xl mb-1">No results for "{sName}"</h3>
                 <p className="text-gray-300 text-base">Try checking spelling or a middle name.</p>
               </div>
@@ -597,10 +668,9 @@ function App() {
                         {r.age && <p>Age: {r.age}</p>}
                         <p>Location: {r.location || 'Unknown'}</p>
                         <p>Date: {r.date || 'Unknown'}</p>
-                        <p>Source: {r.source}</p>
                       </div>
                       {r.obit_text && <p className="text-sm text-gray-300 mt-2 leading-relaxed border-t border-red-900/30 pt-2">{r.obit_text.slice(0, 300)}{r.obit_text.length > 300 ? '...' : ''}</p>}
-                      {r.link && <a href={r.link} target="_blank" rel="noopener noreferrer" className="text-red-400 text-xs mt-2 block">Read full obituary →</a>}
+                      {r.link && <a href={r.link} target="_blank" rel="noopener noreferrer" className="text-red-400 text-xs mt-2 block">Read full obituary</a>}
                     </div>
                   ))}
                 </div>
@@ -615,7 +685,7 @@ function App() {
               <CardPageHeader title="Alerts" subtitle="Status changes for people on your watchlist" onHome={() => setPage('home')} />
               {notifications.length === 0 ? (
                 <div className="text-center py-4">
-                  <p className="text-4xl mb-2">🔔</p>
+                  <p className="text-4xl mb-2">!</p>
                   <p className="text-white font-bold text-xl">No alerts yet</p>
                   <p className="text-gray-200 text-base mt-1">We'll alert you when someone on your watchlist passes away</p>
                 </div>
@@ -624,7 +694,7 @@ function App() {
                   {notifications.map(n => (
                     <div key={n.id} className="p-3 bg-red-950/50 border border-red-800 rounded-xl">
                       <div className="flex items-start gap-3">
-                        <span className="text-xl">⚫</span>
+                        <span className="text-xl">*</span>
                         <div className="flex-1">
                           <h3 className="font-bold text-white text-base">{n.name}</h3>
                           <p className="text-gray-300 text-sm mt-1">{n.message}</p>
@@ -645,19 +715,19 @@ function App() {
               <CardPageHeader title="Settings" subtitle="Manage your account and preferences" onHome={() => setPage('home')} />
               <div className="p-3 bg-gray-800/50 rounded-lg mb-3"><p className="font-medium text-gray-200 text-sm text-center">{user?.email}</p></div>
               <div className="space-y-2">
-                <button onClick={() => setPage('about')} className="w-full py-2.5 bg-red-900/30 text-red-200 rounded-lg text-sm font-medium text-left px-4 border border-red-900/30">💀 About Dead or Alive</button>
-                <button onClick={() => setPage('privacy')} className="w-full py-2.5 bg-red-900/30 text-red-200 rounded-lg text-sm font-medium text-left px-4 border border-red-900/30">🔒 Privacy Policy</button>
+                <button onClick={() => setPage('about')} className="w-full py-2.5 bg-red-900/30 text-red-200 rounded-lg text-sm font-medium text-left px-4 border border-red-900/30">About Dead or Alive</button>
+                <button onClick={() => setPage('privacy')} className="w-full py-2.5 bg-red-900/30 text-red-200 rounded-lg text-sm font-medium text-left px-4 border border-red-900/30">Privacy Policy</button>
               </div>
             </div>
             <button onClick={doLogout} className="w-full py-3 bg-red-700 text-white rounded-lg text-base font-bold">Sign Out</button>
             <div className="pt-3 border-t border-red-900/30">
-              <button onClick={() => setShowDangerZone(!showDangerZone)} className="w-full py-2 text-gray-500 text-sm text-center">{showDangerZone ? '▲ Hide' : '▼ Account Removal'}</button>
+              <button onClick={() => setShowDangerZone(!showDangerZone)} className="w-full py-2 text-gray-500 text-sm text-center">{showDangerZone ? 'Hide' : 'Account Removal'}</button>
               {showDangerZone && (
                 <div className="mt-3 space-y-3">
                   {!showDeleteConfirm
                     ? <button onClick={() => setShowDeleteConfirm(true)} className="w-full py-3 bg-gray-900/70 border border-red-800 text-red-500 rounded-lg text-sm">Delete Account</button>
                     : <div className="bg-red-950/90 border border-red-800 rounded-2xl p-5 space-y-3">
-                        <h3 className="font-bold text-red-400 text-lg">⚠️ Are you sure?</h3>
+                        <h3 className="font-bold text-red-400 text-lg">Are you sure?</h3>
                         <p className="text-red-300 text-base">This will permanently delete your account and all watchlist data.</p>
                         <button onClick={doDeleteAccount} className="w-full py-3 bg-red-700 text-white rounded-lg font-bold">Yes, Permanently Delete My Account</button>
                         <button onClick={() => { setShowDeleteConfirm(false); setShowDangerZone(false); }} className="w-full py-3 bg-gray-800 border border-gray-600 text-gray-300 rounded-lg font-medium">Cancel</button>
@@ -673,21 +743,20 @@ function App() {
           <div className="space-y-4" style={{ paddingTop: '1rem' }}>
             <div className={cardClass}>
               <CardPageHeader title="About Dead or Alive" onHome={() => setPage('home')} />
-              <p className="text-red-300 italic text-lg leading-relaxed mb-4">F. Dead or Alive.</p>
-              <div className="space-y-3 text-gray-200 text-base leading-relaxed">
-                <p>Dead or Alive was produced by three brains — mine, ChatGPT, and Claude (Anthropic). I'm a retired 74 year old former high-tech entrepreneur and early adopter of new tech. I've owned just about every Apple product that has come out since the Apple II.</p>
-                <p>As I get older, traditional search engines have become really frustrating. I find asking AI much more effective. But one thing you still couldn't do was have a watchlist that alerts you to events that matter to you. I found it very hard using existing tools to find out if former friends, classmates, colleagues and even famous figures were dead or alive. So I built Dead or Alive — a straight answer to a simple question.</p>
-                <p>We partner with Legacy, the largest obituary platform in the United States, covering more than 70% of all U.S. deaths through partnerships with thousands of newspapers and funeral homes. Dead or Alive monitors Legacy continuously — when someone on your watchlist passes away, you'll know.</p>
-                <p>We also partner with Wikipedia for biographical information on notable people. The intelligent ALIVE/DEAD detection engine was developed with Claude by Anthropic. A portion of proceeds will be donated to Wikipedia.</p>
+              <p className="text-red-300 italic text-base leading-relaxed mb-4">Find people you miss. Find out if they are dead or alive.</p>
+              <div className="space-y-3 text-gray-200 text-sm leading-relaxed">
+                <p>Dead or Alive was built by three brains — mine, ChatGPT, and Claude (Anthropic). I'm a retired 74 year old former high-tech entrepreneur. As I get older, I look at the obituaries and wonder about old friends. Did they make it? Are they still out there?</p>
+                <p>Traditional search engines are frustrating for this. So I built Dead or Alive — a straight answer to a simple question, with a watchlist that alerts you the moment someone passes away.</p>
+                <p>We partner with Legacy, the largest obituary platform in the US, covering more than 70% of all U.S. deaths. We also partner with Wikipedia for biographical information on notable people.</p>
                 <p>If you have thoughts on how to improve Dead or Alive, please reach out!</p>
               </div>
-              <div className="mt-5 pt-5 border-t border-red-900/30">
+              <div className="mt-4 pt-4 border-t border-red-900/30">
                 <div className="flex items-center gap-4">
-                  <img src={BILL_PHOTO} alt="Bill Spencer" className="w-16 h-16 rounded-full object-cover border-2 border-red-600 shadow-lg" />
+                  <img src={BILL_PHOTO} alt="Bill Spencer" className="w-14 h-14 rounded-full object-cover border-2 border-red-600 shadow-lg" />
                   <div>
-                    <p className="font-bold text-white text-lg">Bill Spencer</p>
-                    <p className="text-red-400 italic">Idea Hamster 🐹</p>
-                    <a href="mailto:bspencer413@me.com" className="text-red-400 text-sm mt-1 block">bspencer413@me.com</a>
+                    <p className="font-bold text-white text-base">Bill Spencer</p>
+                    <p className="text-red-400 italic text-sm">Idea Hamster</p>
+                    <a href="mailto:bspencer413@me.com" className="text-red-400 text-xs mt-1 block">bspencer413@me.com</a>
                   </div>
                 </div>
               </div>
@@ -700,7 +769,7 @@ function App() {
             <div className={cardClass}>
               <CardPageHeader title="Privacy Policy" onHome={() => setPage('home')} />
               <p className="text-gray-400 text-sm mb-4">Last updated: March 17, 2026</p>
-              <div className="space-y-4 text-gray-200 text-base leading-relaxed">
+              <div className="space-y-4 text-gray-200 text-sm leading-relaxed">
                 <div><h3 className="font-bold text-white mb-1">1. Information We Collect</h3><p>We collect only what is necessary: your email address, watchlist names, search queries, and anonymous usage data.</p></div>
                 <div><h3 className="font-bold text-white mb-1">2. How We Use Your Information</h3><p>We do not sell your personal information. Ever.</p></div>
                 <div><h3 className="font-bold text-white mb-1">3. Data Sources</h3><p>Search results are powered by Legacy obituary feeds and Wikipedia.</p></div>
@@ -714,18 +783,19 @@ function App() {
 
       </div>
 
-      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(10,0,0,0.92)', backdropFilter: 'blur(8px)', borderTop: '1px solid #7f1d1d', padding: '0.75rem 1rem', paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(10,0,0,0.95)', backdropFilter: 'blur(8px)', borderTop: '1px solid #7f1d1d', padding: '0.5rem 1rem', paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
         <div className="flex justify-around max-w-sm mx-auto">
-          <button onClick={() => setPage('home')} className={`flex flex-col items-center gap-1 px-4 py-2 ${page === 'home' ? 'text-red-500' : 'text-gray-600'}`}><HomeIcon /><span className="text-xs">Home</span></button>
-          <button onClick={() => setPage('search')} className={`flex flex-col items-center gap-1 px-4 py-2 ${page === 'search' ? 'text-red-500' : 'text-gray-600'}`}><SearchIcon /><span className="text-xs">Search</span></button>
-          <button onClick={() => setPage('watchlist')} className={`flex flex-col items-center gap-1 px-4 py-2 ${page === 'watchlist' ? 'text-red-500' : 'text-gray-600'}`}><HeartIcon /><span className="text-xs">Watchlist</span></button>
-          <button onClick={() => setPage('notifications')} className={`flex flex-col items-center gap-1 px-4 py-2 relative ${page === 'notifications' ? 'text-red-500' : 'text-gray-600'}`}>
+          <button onClick={() => setPage('home')} className={`flex flex-col items-center gap-0.5 px-3 py-1 ${page === 'home' ? 'text-red-500' : 'text-gray-400'}`}><HomeIcon /><span className="text-xs font-medium">Home</span></button>
+          <button onClick={() => setPage('search')} className={`flex flex-col items-center gap-0.5 px-3 py-1 ${page === 'search' ? 'text-red-500' : 'text-gray-400'}`}><SearchIcon /><span className="text-xs font-medium">Search</span></button>
+          <button onClick={() => setPage('watchlist')} className={`flex flex-col items-center gap-0.5 px-3 py-1 ${page === 'watchlist' ? 'text-red-500' : 'text-gray-400'}`}><HeartIcon /><span className="text-xs font-medium">Watchlist</span></button>
+          <button onClick={() => setPage('notifications')} className={`flex flex-col items-center gap-0.5 px-3 py-1 relative ${page === 'notifications' ? 'text-red-500' : 'text-gray-400'}`}>
             <BellIcon />
-            {unreadCount > 0 && <span className="absolute top-1 right-2 bg-red-600 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">{unreadCount > 9 ? '9+' : unreadCount}</span>}
-            <span className="text-xs">Alerts</span>
+            {unreadCount > 0 && <span className="absolute top-0 right-1 bg-red-600 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">{unreadCount > 9 ? '9+' : unreadCount}</span>}
+            <span className="text-xs font-medium">Alerts</span>
           </button>
-          <button onClick={() => setPage('settings')} className={`flex flex-col items-center gap-1 px-4 py-2 ${page === 'settings' ? 'text-red-500' : 'text-gray-600'}`}><SettingsIcon /><span className="text-xs">Settings</span></button>
+          <button onClick={() => setPage('settings')} className={`flex flex-col items-center gap-0.5 px-3 py-1 ${page === 'settings' ? 'text-red-500' : 'text-gray-400'}`}><SettingsIcon /><span className="text-xs font-medium">Settings</span></button>
         </div>
+        <p className="text-center text-gray-600 text-xs mt-1">v{APP_VERSION}</p>
       </div>
     </PageWrapper>
   );
