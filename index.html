@@ -42,7 +42,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.0.7g';
+const APP_VERSION = '1.0.8';
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
@@ -123,10 +123,6 @@ const ClearableInput = ({ value, onChange, onBlur, onKeyPress, placeholder, type
   </div>
 );
 
-const BackButton = ({ onClick }) => (
-  <button onClick={onClick} className="text-red-400 flex items-center gap-1 text-sm py-2 mb-2">← Back to Settings</button>
-);
-
 const CardPageHeader = ({ title, subtitle, onHome }) => (
   <div className="mb-3 pb-2 border-b border-red-900/30">
     <div className="flex items-center justify-between">
@@ -160,6 +156,7 @@ const PageWrapper = ({ children }) => (
     <div style={{ position: 'relative', zIndex: 10 }}>{children}</div>
   </div>
 );
+
 function isDeceasedCheck(extract, description, deathDate, type) {
   if (type === 'disambiguation') return false;
   if (deathDate) return true;
@@ -173,7 +170,6 @@ function isDeceasedCheck(extract, description, deathDate, type) {
   const diedInDescription = /\b(died|death|deceased)\b/i.test(description);
   return hasDeathInBrackets || hasYearsInDescription || isPastTense || diedInExtract || diedInDescription;
 }
-
 
 function App() {
   const [page, setPage] = useState('landing');
@@ -282,8 +278,7 @@ function App() {
 
   const checkWatch = async () => {
     const name = toTitleCase(nw.name);
-    if (!name.trim()) return;
-    if (name.trim().split(' ').filter(p => p.length > 0).length < 2) { alert('Please enter a first and last name.'); return; }
+    if (!name.trim() || name.trim().length < 2) { alert('Please enter a name to search.'); return; }
     if (isOnWatchlist(name)) { alert(`${name} is already on your watchlist!`); return; }
     setWatchlistChecking(true); setWatchlistCheck(null); setWatchlistChecked(false);
     try { const profile = await fetchWikiProfile(name); setWatchlistCheck({ profile, name }); setWatchlistChecked(true); }
@@ -331,8 +326,7 @@ function App() {
   };
 
   const doSearch = async () => {
-    if (!sName.trim()) return;
-    if (sName.trim().split(' ').filter(p => p.length > 0).length < 2) { alert('Please enter a first and last name.'); return; }
+    if (!sName.trim() || sName.trim().length < 2) { alert('Please enter a name to search.'); return; }
     setLoading(true); setWikiProfile(null); setResults([]); setSearched(false);
     try {
       const token = localStorage.getItem('doa_token');
@@ -520,7 +514,7 @@ function App() {
               <CardPageHeader title="Watchlist" subtitle="Add a person to monitor — we'll alert you when their status changes" onHome={() => setPage('home')} />
               {!watchlistChecked ? (
                 <div className="space-y-3">
-                  <ClearableInput value={nw.name} onChange={(e) => setNw({...nw, name: e.target.value})} onBlur={(e) => setNw({...nw, name: toTitleCase(e.target.value)})} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Full Name (First and Last)" inputClass={iClass} />
+                  <ClearableInput value={nw.name} onChange={(e) => setNw({...nw, name: e.target.value})} onBlur={(e) => setNw({...nw, name: toTitleCase(e.target.value)})} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Full Name" inputClass={iClass} />
                   <ClearableInput value={nw.location} onChange={(e) => setNw({...nw, location: e.target.value})} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Location (optional)" inputClass={iClass} />
                   <ClearableInput value={nw.birthYear} onChange={(e) => setNw({...nw, birthYear: e.target.value.replace(/\D/g, '').slice(0, 4)})} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Birth Year (optional)" maxLength={4} inputClass={iClass} />
                   <button onClick={checkWatch} disabled={watchlistChecking} className="w-full py-3 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 text-base font-bold">
@@ -547,7 +541,9 @@ function App() {
                       ) : (
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
-                            <h3 className="font-semibold text-base text-white">{w.name}</h3>
+                            <button onClick={() => { setSName(w.name); setPage('search'); }} className="text-left">
+                              <h3 className="font-semibold text-base text-white hover:text-red-300">{w.name}</h3>
+                            </button>
                             <div className="text-sm text-gray-300">{w.location && <span>{w.location}</span>}{w.dob && <span> • Born: {w.dob}</span>}</div>
                             <div className="flex items-center gap-1 mt-1"><CheckIcon /><span className="text-xs text-green-400">Active</span></div>
                           </div>
@@ -570,7 +566,7 @@ function App() {
             <div className={cardClass}>
               <CardPageHeader title="Search" subtitle="Look up anyone by name — dead or alive" onHome={() => setPage('home')} />
               <div className="space-y-3">
-                <ClearableInput value={sName} onChange={(e) => { setSName(e.target.value); setWikiProfile(null); setResults([]); setSearched(false); }} onKeyPress={(e) => e.key === 'Enter' && doSearch()} placeholder="Full Name (First and Last)" inputClass={iClass} />
+                <ClearableInput value={sName} onChange={(e) => { setSName(e.target.value); setWikiProfile(null); setResults([]); setSearched(false); }} onKeyPress={(e) => e.key === 'Enter' && doSearch()} placeholder="Name (first, last, or full)" inputClass={iClass} />
                 <ClearableInput value={sLoc} onChange={(e) => setSLoc(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && doSearch()} placeholder="Location (optional)" inputClass={iClass} />
                 <ClearableInput value={sBirthYear} onChange={(e) => setSBirthYear(e.target.value.replace(/\D/g, '').slice(0, 4))} onKeyPress={(e) => e.key === 'Enter' && doSearch()} placeholder="Birth Year (optional)" maxLength={4} inputClass={iClass} />
                 <button onClick={doSearch} disabled={loading} className="w-full py-2.5 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 text-base font-bold">
@@ -604,6 +600,7 @@ function App() {
                         <p>Source: {r.source}</p>
                       </div>
                       {r.obit_text && <p className="text-sm text-gray-300 mt-2 leading-relaxed border-t border-red-900/30 pt-2">{r.obit_text.slice(0, 300)}{r.obit_text.length > 300 ? '...' : ''}</p>}
+                      {r.link && <a href={r.link} target="_blank" rel="noopener noreferrer" className="text-red-400 text-xs mt-2 block">Read full obituary →</a>}
                     </div>
                   ))}
                 </div>
@@ -675,8 +672,7 @@ function App() {
         {page === 'about' && (
           <div className="space-y-4" style={{ paddingTop: '1rem' }}>
             <div className={cardClass}>
-              <BackButton onClick={() => setPage('settings')} />
-              <h2 className="text-3xl font-black mb-2 text-white tracking-wide">About Dead or Alive</h2>
+              <CardPageHeader title="About Dead or Alive" onHome={() => setPage('home')} />
               <p className="text-red-300 italic text-lg leading-relaxed mb-4">F. Dead or Alive.</p>
               <div className="space-y-3 text-gray-200 text-base leading-relaxed">
                 <p>Dead or Alive was produced by three brains — mine, ChatGPT, and Claude (Anthropic). I'm a retired 74 year old former high-tech entrepreneur and early adopter of new tech. I've owned just about every Apple product that has come out since the Apple II.</p>
@@ -695,7 +691,6 @@ function App() {
                   </div>
                 </div>
               </div>
-              <BackButton onClick={() => setPage('settings')} />
             </div>
           </div>
         )}
@@ -703,8 +698,7 @@ function App() {
         {page === 'privacy' && (
           <div className="space-y-4" style={{ paddingTop: '1rem' }}>
             <div className={cardClass}>
-              <BackButton onClick={() => setPage('settings')} />
-              <h2 className="text-3xl font-bold mb-2 text-white">Privacy Policy</h2>
+              <CardPageHeader title="Privacy Policy" onHome={() => setPage('home')} />
               <p className="text-gray-400 text-sm mb-4">Last updated: March 17, 2026</p>
               <div className="space-y-4 text-gray-200 text-base leading-relaxed">
                 <div><h3 className="font-bold text-white mb-1">1. Information We Collect</h3><p>We collect only what is necessary: your email address, watchlist names, search queries, and anonymous usage data.</p></div>
@@ -714,7 +708,6 @@ function App() {
                 <div><h3 className="font-bold text-white mb-1">5. Your Rights</h3><p>You may delete your account and all data from Settings at any time.</p></div>
                 <div><h3 className="font-bold text-white mb-1">6. Contact</h3><a href="mailto:bspencer413@me.com" className="text-red-400">bspencer413@me.com</a></div>
               </div>
-              <BackButton onClick={() => setPage('settings')} />
             </div>
           </div>
         )}
