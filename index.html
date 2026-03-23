@@ -7,19 +7,13 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>Dead or Alive -- DORA</title>
-  <meta name="description" content="DORA -- Dead or Alive. The only app with a death watchlist. Add anyone to your watchlist and get notified the moment they pass away.">
+  <meta name="description" content="DORA -- Dead or Alive. The only app with a death watchlist.">
   <meta name="robots" content="index, follow">
-  <meta name="author" content="DORA">
   <link rel="canonical" href="https://dora.watch">
   <meta property="og:title" content="DORA -- Dead or Alive. Know Instantly.">
-  <meta property="og:description" content="The only death watchlist app. Add friends, family, colleagues or celebrities -- get notified the moment they pass away.">
   <meta property="og:url" content="https://dora.watch">
   <meta property="og:type" content="website">
   <meta property="og:image" content="https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="DORA -- Dead or Alive Death Watchlist">
-  <meta name="twitter:description" content="Add anyone to your death watchlist. Get notified instantly when they pass away.">
-  <meta name="twitter:image" content="https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png">
   <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiRGVhZCBvciBBbGl2ZSIsInNob3J0X25hbWUiOiJET1JBIiwic3RhcnRfdXJsIjoiLyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiM3ZjFkMWQiLCJ0aGVtZV9jb2xvciI6IiNkYzI2MjYiLCJpY29ucyI6W3sic3JjIjoiaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL2JzcGVuY2VyNDEzL0RPUkEvbWFpbi9kb3JhX2ljb24ucG5nIiwic2l6ZXMiOiI1MTJ4NTEyIiwidHlwZSI6ImltYWdlL3BuZyJ9XX0=">
   <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/bspencer413/DORA/main/dora_icon.png">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -35,340 +29,227 @@
       position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
       background: #1a1a2e; border-radius: 20px 20px 0 0;
       border-top: 1px solid #7f1d1d;
-      max-height: 85vh; overflow-y: auto;
+      max-height: 80vh; overflow-y: auto;
       padding-bottom: max(1rem, env(safe-area-inset-bottom));
     }
-    .modal-overlay {
-      position: fixed; inset: 0; z-index: 99;
-      background: rgba(0,0,0,0.6);
-    }
+    .modal-overlay { position: fixed; inset: 0; z-index: 99; background: rgba(0,0,0,0.6); }
   </style>
 </head>
 <body style="margin:0;padding:0;">
 <div id="root"></div>
 <script type="text/babel">
-const { useState, useEffect, useCallback } = React;
+const { useState, useEffect } = React;
 
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.2.0';
-
-const isPhone = window.innerWidth < 500;
-const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
-const PT = isPhone ? '38vh' : isTablet ? '48vh' : '44vh';
-const TAP_TOP = isPhone ? '82%' : '84%';
-
-const toTitleCase = function(str) {
-  if (!str) return str;
-  return str
-    .replace(/\w\S*/g, function(txt) { return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase(); })
-    .replace(/'\w/g, function(txt) { return txt.toUpperCase(); });
-};
+const APP_VERSION = '1.3.0';
 
 const POSTER_STYLE = {
   backgroundColor: '#2c1a0e',
   backgroundImage: 'url(' + WANTED_BG + ')',
-  backgroundSize: 'contain',
+  backgroundSize: 'cover',
   backgroundPosition: 'center top',
   backgroundRepeat: 'no-repeat',
   backgroundAttachment: 'fixed',
 };
 
-const WATCHLIST_BG_STYLE = {
-  backgroundColor: '#1a0a00',
-  backgroundImage: 'url(' + WANTED_BG + ')',
-  backgroundSize: 'cover',
-  backgroundPosition: 'center center',
-  backgroundRepeat: 'no-repeat',
-  backgroundAttachment: 'fixed',
-};
+// Name normalization -- strips middle names/initials for Wikipedia lookup
+function normalizeForWiki(name) {
+  if (!name) return name;
+  name = name.trim();
+  // Handle "Last, First" format
+  if (name.indexOf(',') > -1) {
+    var parts = name.split(',');
+    name = parts[1].trim() + ' ' + parts[0].trim();
+  }
+  var words = name.split(/\s+/);
+  // Remove single-letter words (middle initials) and words ending in period
+  var filtered = words.filter(function(w) {
+    return w.length > 1 && w.indexOf('.') === -1;
+  });
+  // Keep first and last only if 3+ words after filtering
+  var result = filtered.length >= 2 ? filtered[0] + ' ' + filtered[filtered.length - 1] : filtered.join(' ');
+  return result.replace(/\w\S*/g, function(txt) { return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase(); });
+}
 
-// Icons
-const HeartIcon = function() {
-  return React.createElement('svg', {className:'w-7 h-7',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},
-    React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z'}));
-};
-const InfoIcon = function() {
-  return React.createElement('svg', {className:'w-7 h-7',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},
-    React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'}));
-};
-const BellIcon = function(props) {
-  return React.createElement('svg', {className:'w-7 h-7',fill:'none',stroke: props.red ? '#dc2626' : 'currentColor',viewBox:'0 0 24 24'},
-    React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9'}));
-};
-const PlusIcon = function() {
-  return React.createElement('svg', {className:'w-5 h-5',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},
-    React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M12 4v16m8-8H4'}));
-};
-const TrashIcon = function() {
-  return React.createElement('svg', {className:'w-5 h-5',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},
-    React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16'}));
-};
-const EditIcon = function() {
-  return React.createElement('svg', {className:'w-5 h-5',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},
-    React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'}));
-};
-const SearchIcon = function() {
-  return React.createElement('svg', {className:'w-5 h-5',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},
-    React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'}));
-};
-const RefreshIcon = function() {
-  return React.createElement('svg', {className:'w-4 h-4',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},
-    React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'}));
-};
-const EyeIcon = function() {
-  return React.createElement('svg', {className:'w-5 h-5',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},
-    React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M15 12a3 3 0 11-6 0 3 3 0 016 0z'}),
-    React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z'}));
-};
-const EyeOffIcon = function() {
-  return React.createElement('svg', {className:'w-5 h-5',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},
-    React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21'}));
-};
+function toTitleCase(str) {
+  if (!str) return str;
+  return str.replace(/\w\S*/g, function(txt) { return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase(); });
+}
 
 function isDeceasedCheck(extract, description, deathDate, type) {
   if (type === 'disambiguation') return false;
   if (deathDate) return true;
-  var firstSentence = extract.split('.')[0];
-  var hasDeathInBrackets = /\(\d{4}\s*[-\u2013\u2014]+\s*\d{4}\)/.test(firstSentence);
-  var hasYearsInDescription = /\(\d{4}\s*[-\u2013\u2014]+\s*\d{4}\)/.test(description);
-  var hasBornOnly = /\([^)]*born\s+\w+\s+\d+,\s+\d{4}\)/.test(firstSentence);
-  if (hasBornOnly && !hasDeathInBrackets && !hasYearsInDescription) return false;
-  var isPastTense = /^[^.]*\bwas (an?|the)\b[^.]*\./.test(extract) && !/\([^)]*born/.test(firstSentence) && !/born\s+\d{4}/.test(description);
-  var diedInExtract = /\b(died|death|passed away|deceased)\b/i.test(extract);
-  var diedInDescription = /\b(died|death|deceased)\b/i.test(description);
-  return hasDeathInBrackets || hasYearsInDescription || isPastTense || diedInExtract || diedInDescription;
+  var first = extract ? extract.split('.')[0] : '';
+  if (/\(\d{4}\s*[-\u2013\u2014]+\s*\d{4}\)/.test(first)) return true;
+  if (/\(\d{4}\s*[-\u2013\u2014]+\s*\d{4}\)/.test(description)) return true;
+  if (/\([^)]*born\s+\w+\s+\d+,\s+\d{4}\)/.test(first)) return false;
+  if (/\b(died|death|passed away|deceased)\b/i.test(extract)) return true;
+  if (/\b(died|death|deceased)\b/i.test(description)) return true;
+  return false;
+}
+
+// SVG Icons
+function HomeIcon() {
+  return React.createElement('svg', {className:'w-6 h-6',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},
+    React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6'}));
+}
+function HeartIcon() {
+  return React.createElement('svg', {className:'w-6 h-6',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},
+    React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z'}));
+}
+function InfoIcon() {
+  return React.createElement('svg', {className:'w-6 h-6',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},
+    React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'}));
+}
+function BellIcon(props) {
+  return React.createElement('svg', {className:'w-6 h-6',fill:'none',stroke: props.red ? '#dc2626' : 'currentColor',viewBox:'0 0 24 24'},
+    React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9'}));
+}
+function SearchIcon() {
+  return React.createElement('svg', {className:'w-5 h-5',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},
+    React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'}));
+}
+function PlusIcon() {
+  return React.createElement('svg', {className:'w-5 h-5',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},
+    React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M12 4v16m8-8H4'}));
+}
+function TrashIcon() {
+  return React.createElement('svg', {className:'w-5 h-5',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},
+    React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16'}));
+}
+function EditIcon() {
+  return React.createElement('svg', {className:'w-5 h-5',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},
+    React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'}));
+}
+function EyeIcon() {
+  return React.createElement('svg', {className:'w-5 h-5',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},
+    React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M15 12a3 3 0 11-6 0 3 3 0 016 0z'}),
+    React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z'}));
+}
+function EyeOffIcon() {
+  return React.createElement('svg', {className:'w-5 h-5',fill:'none',stroke:'currentColor',viewBox:'0 0 24 24'},
+    React.createElement('path',{strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:2,d:'M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21'}));
 }
 
 function App() {
-  var stateHook = useState('landing');
-  var page = stateHook[0]; var setPage = stateHook[1];
-
-  var authHook = useState(false);
-  var auth = authHook[0]; var setAuth = authHook[1];
-
-  var userHook = useState(null);
-  var user = userHook[0]; var setUser = userHook[1];
-
-  var watchlistHook = useState([]);
-  var watchlist = watchlistHook[0]; var setWatchlist = watchlistHook[1];
-
-  var notifHook = useState([]);
-  var notifications = notifHook[0]; var setNotifications = notifHook[1];
-
-  var loadingHook = useState(false);
-  var loading = loadingHook[0]; var setLoading = loadingHook[1];
-
-  var backendWakingHook = useState(false);
-  var backendWaking = backendWakingHook[0]; var setBackendWaking = backendWakingHook[1];
-
-  var modeHook = useState('login');
-  var mode = modeHook[0]; var setMode = modeHook[1];
-
-  var emailHook = useState('');
-  var email = emailHook[0]; var setEmail = emailHook[1];
-
-  var passwordHook = useState('');
-  var password = passwordHook[0]; var setPassword = passwordHook[1];
-
-  var showPwHook = useState(false);
-  var showPassword = showPwHook[0]; var setShowPassword = showPwHook[1];
-
-  var nwHook = useState({ name: '', location: '', birthYear: '' });
-  var nw = nwHook[0]; var setNw = nwHook[1];
-
-  var checkResultHook = useState(null);
-  var checkResult = checkResultHook[0]; var setCheckResult = checkResultHook[1];
-
-  var checkingHook = useState(false);
-  var checking = checkingHook[0]; var setChecking = checkingHook[1];
-
-  var checkedHook = useState(false);
-  var checked = checkedHook[0]; var setChecked = checkedHook[1];
-
-  var editingIdHook = useState(null);
-  var editingId = editingIdHook[0]; var setEditingId = editingIdHook[1];
-
-  var editingNameHook = useState('');
-  var editingName = editingNameHook[0]; var setEditingName = editingNameHook[1];
-
-  var drawerItemHook = useState(null);
-  var drawerItem = drawerItemHook[0]; var setDrawerItem = drawerItemHook[1];
-
-  var drawerRefreshingHook = useState(false);
-  var drawerRefreshing = drawerRefreshingHook[0]; var setDrawerRefreshing = drawerRefreshingHook[1];
-
-  var drawerLiveHook = useState(null);
-  var drawerLive = drawerLiveHook[0]; var setDrawerLive = drawerLiveHook[1];
-
-  var showDangerHook = useState(false);
-  var showDanger = showDangerHook[0]; var setShowDanger = showDangerHook[1];
-
-  var showDeleteHook = useState(false);
-  var showDeleteConfirm = showDeleteHook[0]; var setShowDeleteConfirm = showDeleteHook[1];
+  var pageH = useState('landing'); var page = pageH[0]; var setPage = pageH[1];
+  var authH = useState(false); var auth = authH[0]; var setAuth = authH[1];
+  var userH = useState(null); var user = userH[0]; var setUser = userH[1];
+  var wlH = useState([]); var watchlist = wlH[0]; var setWatchlist = wlH[1];
+  var notifH = useState([]); var notifications = notifH[0]; var setNotifications = notifH[1];
+  var loadH = useState(false); var loading = loadH[0]; var setLoading = loadH[1];
+  var wakeH = useState(false); var backendWaking = wakeH[0]; var setBackendWaking = wakeH[1];
+  var modeH = useState('login'); var mode = modeH[0]; var setMode = modeH[1];
+  var emailH = useState(''); var email = emailH[0]; var setEmail = emailH[1];
+  var pwH = useState(''); var password = pwH[0]; var setPassword = pwH[1];
+  var showPwH = useState(false); var showPw = showPwH[0]; var setShowPw = showPwH[1];
+  var nameH = useState(''); var searchName = nameH[0]; var setSearchName = nameH[1];
+  var resultH = useState(null); var result = resultH[0]; var setResult = resultH[1];
+  var searchingH = useState(false); var searching = searchingH[0]; var setSearching = searchingH[1];
+  var diH = useState(null); var drawerItem = diH[0]; var setDrawerItem = diH[1];
+  var drH = useState(false); var drawerRefreshing = drH[0]; var setDrawerRefreshing = drH[1];
+  var dlH = useState(null); var drawerLive = dlH[0]; var setDrawerLive = dlH[1];
+  var eidH = useState(null); var editingId = eidH[0]; var setEditingId = eidH[1];
+  var enH = useState(''); var editingName = enH[0]; var setEditingName = enH[1];
+  var sdH = useState(false); var showDanger = sdH[0]; var setShowDanger = sdH[1];
+  var sdcH = useState(false); var showDelConfirm = sdcH[0]; var setShowDelConfirm = sdcH[1];
 
   useEffect(function() {
     var t = localStorage.getItem('doa_token');
     var u = localStorage.getItem('doa_user');
-    if (t && u) {
-      setUser(JSON.parse(u));
-      setAuth(true);
-      setPage('watchlist');
-      loadWatchlist();
-      loadNotifications();
-    }
+    if (t && u) { setUser(JSON.parse(u)); setAuth(true); setPage('watchlist'); loadWatchlist(); loadNotifications(); }
   }, []);
 
   function loadWatchlist() {
     var token = localStorage.getItem('doa_token');
     return fetch(API_BASE + '/watchlist', { headers: { 'Authorization': 'Bearer ' + token } })
-      .then(function(r) { return r.json(); })
-      .then(function(data) { setWatchlist(data); })
-      .catch(function(e) { console.error(e); });
+      .then(function(r) { return r.json(); }).then(function(d) { setWatchlist(d); }).catch(function() {});
   }
-
   function loadNotifications() {
     var token = localStorage.getItem('doa_token');
     return fetch(API_BASE + '/notifications', { headers: { 'Authorization': 'Bearer ' + token } })
-      .then(function(r) { return r.json(); })
-      .then(function(data) { setNotifications(data); })
-      .catch(function(e) { console.error(e); });
+      .then(function(r) { return r.json(); }).then(function(d) { setNotifications(d); }).catch(function() {});
   }
 
   function doAuth() {
     if (!email || !password) return;
-    setLoading(true);
-    setBackendWaking(false);
-    var wakeTimer = setTimeout(function() { setBackendWaking(true); }, 3000);
-    var endpoint = mode === 'login' ? 'login' : 'register';
-    fetch(API_BASE + '/auth/' + endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    setLoading(true); setBackendWaking(false);
+    var wt = setTimeout(function() { setBackendWaking(true); }, 3000);
+    fetch(API_BASE + '/auth/' + (mode === 'login' ? 'login' : 'register'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email, password: password })
     })
-    .then(function(r) {
-      clearTimeout(wakeTimer);
-      setBackendWaking(false);
-      if (!r.ok) return r.json().then(function(err) { throw new Error(err.detail || 'Auth failed'); });
-      return r.json();
-    })
-    .then(function(data) {
-      localStorage.setItem('doa_token', data.access_token);
+    .then(function(r) { clearTimeout(wt); setBackendWaking(false); if (!r.ok) return r.json().then(function(e) { throw new Error(e.detail || 'Auth failed'); }); return r.json(); })
+    .then(function(d) {
+      localStorage.setItem('doa_token', d.access_token);
       var u = { email: email, name: email.split('@')[0] };
       localStorage.setItem('doa_user', JSON.stringify(u));
-      setUser(u);
-      setAuth(true);
-      setPage('watchlist');
-      loadWatchlist();
-      loadNotifications();
+      setUser(u); setAuth(true); setPage('watchlist'); loadWatchlist(); loadNotifications();
     })
-    .catch(function(err) {
-      clearTimeout(wakeTimer);
-      setBackendWaking(false);
-      alert('Error: ' + err.message);
-    })
+    .catch(function(e) { clearTimeout(wt); setBackendWaking(false); alert('Error: ' + e.message); })
     .finally(function() { setLoading(false); });
   }
 
   function doLogout() {
-    localStorage.removeItem('doa_token');
-    localStorage.removeItem('doa_user');
-    setAuth(false);
-    setUser(null);
-    setWatchlist([]);
-    setNotifications([]);
-    setCheckResult(null);
-    setChecked(false);
-    setPage('landing');
+    localStorage.removeItem('doa_token'); localStorage.removeItem('doa_user');
+    setAuth(false); setUser(null); setWatchlist([]); setNotifications([]); setResult(null); setSearchName(''); setPage('landing');
   }
 
   function doDeleteAccount() {
     var token = localStorage.getItem('doa_token');
     fetch(API_BASE + '/account', { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } })
-      .then(function(r) {
-        if (!r.ok) throw new Error('Failed');
-        doLogout();
-        alert('Your account has been permanently deleted.');
-      })
-      .catch(function(err) { alert('Error: ' + err.message); });
+      .then(function(r) { if (!r.ok) throw new Error('Failed'); doLogout(); alert('Account deleted.'); })
+      .catch(function(e) { alert('Error: ' + e.message); });
   }
 
-  function fetchWikiProfile(name) {
-    return fetch('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(toTitleCase(name)))
+  function fetchWiki(name) {
+    // Normalize name for Wikipedia lookup (strip middle initials/names)
+    var wikiName = normalizeForWiki(name);
+    return fetch('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(wikiName))
       .then(function(r) { return r.json(); })
       .then(function(w) {
         if (!w.extract) return null;
-        var extract = w.extract || '';
-        var description = w.description || '';
-        var type = w.type || '';
-        if (type === 'disambiguation') {
-          return { title: w.title.replace(' (disambiguation)', ''), extract: extract, thumbnail: w.thumbnail ? w.thumbnail.source : null, birthDate: null, deathDate: null, description: description, isDisambiguation: true };
-        }
+        var extract = w.extract || '', description = w.description || '', type = w.type || '';
+        if (type === 'disambiguation') return { title: w.title.replace(' (disambiguation)', ''), extract: extract, thumbnail: w.thumbnail ? w.thumbnail.source : null, birthDate: null, deathDate: null, description: description, isDisambiguation: true };
         var deceased = isDeceasedCheck(extract, description, w.death_date, type);
-        return {
-          title: w.title,
-          extract: extract,
-          thumbnail: w.thumbnail ? w.thumbnail.source : null,
-          birthDate: w.birth_date || null,
-          deathDate: deceased ? (w.death_date || 'deceased') : null,
-          description: description,
-          isDisambiguation: false
-        };
+        return { title: w.title, extract: extract, thumbnail: w.thumbnail ? w.thumbnail.source : null, birthDate: w.birth_date || null, deathDate: deceased ? (w.death_date || 'deceased') : null, description: description, isDisambiguation: false };
       })
       .catch(function() { return null; });
   }
 
-  function fetchLegacyOneoff(name) {
+  function fetchLegacy(name) {
     var token = localStorage.getItem('doa_token');
-    return fetch(API_BASE + '/legacy/search?name=' + encodeURIComponent(name), {
-      headers: { 'Authorization': 'Bearer ' + token }
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(data) { return data.results || []; })
-    .catch(function() { return []; });
+    return fetch(API_BASE + '/legacy/search?name=' + encodeURIComponent(name), { headers: { 'Authorization': 'Bearer ' + token } })
+      .then(function(r) { return r.json(); }).then(function(d) { return d.results || []; }).catch(function() { return []; });
   }
 
-  function isOnWatchlist(name) {
-    return watchlist.some(function(w) { return w.name.toLowerCase() === name.toLowerCase(); });
+  function doSearch() {
+    var name = toTitleCase(searchName.trim());
+    if (!name || name.length < 2) { alert('Please enter a name.'); return; }
+    setSearching(true); setResult(null);
+    Promise.all([fetchWiki(name), fetchLegacy(name)])
+      .then(function(res) { setResult({ profile: res[0], legacy: res[1], name: name }); })
+      .catch(function() { setResult({ profile: null, legacy: [], name: name }); })
+      .finally(function() { setSearching(false); });
   }
 
-  function checkName() {
-    var name = toTitleCase(nw.name);
-    if (!name || name.trim().length < 2) { alert('Please enter a name to search.'); return; }
-    if (isOnWatchlist(name)) { alert(name + ' is already on your watchlist!'); return; }
-    setChecking(true);
-    setCheckResult(null);
-    setChecked(false);
-    Promise.all([fetchWikiProfile(name), fetchLegacyOneoff(name)])
-      .then(function(results) {
-        setCheckResult({ profile: results[0], legacyResults: results[1], name: name });
-        setChecked(true);
-      })
-      .catch(function() {
-        setCheckResult({ profile: null, legacyResults: [], name: name });
-        setChecked(true);
-      })
-      .finally(function() { setChecking(false); });
-  }
-
-  function confirmAdd() {
-    if (!checkResult) return;
+  function addToWatchlist() {
+    if (!result) return;
     setLoading(true);
     var token = localStorage.getItem('doa_token');
     fetch(API_BASE + '/watchlist', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ name: checkResult.name, location: nw.location, dob: nw.birthYear })
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ name: result.name, location: '', dob: '' })
     })
     .then(function(r) { if (!r.ok) throw new Error('Failed'); return r.json(); })
     .then(function() {
-      loadWatchlist();
-      setCheckResult(null);
-      setChecked(false);
-      setNw({ name: '', location: '', birthYear: '' });
+      loadWatchlist(); loadNotifications();
+      setResult(null); setSearchName('');
+      setPage('alerts'); // go to alerts page after adding
     })
-    .catch(function(err) { alert('Error: ' + err.message); })
+    .catch(function(e) { alert('Error: ' + e.message); })
     .finally(function() { setLoading(false); });
   }
 
@@ -376,17 +257,11 @@ function App() {
     var token = localStorage.getItem('doa_token');
     fetch(API_BASE + '/watchlist/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } })
       .then(function(r) { if (!r.ok) throw new Error('Failed'); return loadWatchlist(); })
-      .catch(function(err) { alert('Error: ' + err.message); });
+      .catch(function(e) { alert('Error: ' + e.message); });
   }
 
-  function openDrawer(watchItem) {
-    setDrawerItem({
-      watchlistId: watchItem.id,
-      name: watchItem.name,
-      storedDescription: watchItem.wikipedia_description,
-      isDeceased: watchItem.is_deceased,
-      deathYear: watchItem.death_year
-    });
+  function openDrawer(w) {
+    setDrawerItem({ watchlistId: w.id, name: w.name, storedDescription: w.wikipedia_description, isDeceased: w.is_deceased, deathYear: w.death_year });
     setDrawerLive(null);
   }
 
@@ -394,66 +269,53 @@ function App() {
     if (!drawerItem) return;
     setDrawerRefreshing(true);
     var token = localStorage.getItem('doa_token');
-    fetch(API_BASE + '/watchlist/' + drawerItem.watchlistId + '/refresh', {
-      headers: { 'Authorization': 'Bearer ' + token }
-    })
-    .then(function(r) { if (!r.ok) throw new Error('Failed'); return r.json(); })
-    .then(function(data) {
-      setDrawerLive(data);
-      if (data.newly_deceased) {
-        loadWatchlist();
-        loadNotifications();
-      }
-    })
-    .catch(function() { alert('Could not refresh from Wikipedia right now.'); })
-    .finally(function() { setDrawerRefreshing(false); });
+    fetch(API_BASE + '/watchlist/' + drawerItem.watchlistId + '/refresh', { headers: { 'Authorization': 'Bearer ' + token } })
+      .then(function(r) { if (!r.ok) throw new Error('Failed'); return r.json(); })
+      .then(function(d) { setDrawerLive(d); if (d.newly_deceased) { loadWatchlist(); loadNotifications(); } })
+      .catch(function() { alert('Could not refresh right now.'); })
+      .finally(function() { setDrawerRefreshing(false); });
   }
 
-  function closeDrawer() {
-    setDrawerItem(null);
-    setDrawerLive(null);
-  }
+  function closeDrawer() { setDrawerItem(null); setDrawerLive(null); }
 
   var unreadCount = notifications.length;
-  var iClass = 'w-full px-4 py-2.5 border border-red-900/50 rounded-lg focus:ring-2 focus:ring-red-500 text-base bg-gray-900/60 text-white placeholder-gray-400';
-  var cardClass = 'bg-black/35 rounded-2xl p-3 shadow-lg border border-red-900/30 backdrop-blur-sm';
+  var cardClass = 'bg-black/40 rounded-2xl p-4 shadow-lg border border-red-900/30 backdrop-blur-sm';
+  var iClass = 'w-full px-4 py-3 border border-red-900/50 rounded-lg focus:ring-2 focus:ring-red-500 text-base bg-gray-900/60 text-white placeholder-gray-400';
 
-  // LANDING PAGE
+  // LANDING
   if (page === 'landing') {
     return React.createElement('div', {
       onClick: function() { setPage('login'); },
       style: Object.assign({ minHeight: '100dvh', width: '100%', cursor: 'pointer', position: 'relative' }, POSTER_STYLE)
     },
-      React.createElement('div', {
-        style: { position: 'absolute', top: TAP_TOP, left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }
-      },
-        React.createElement('div', { className: 'tap-pulse', style: { color: 'white', fontSize: isPhone ? '1.2rem' : '1.1rem', fontWeight: '900', letterSpacing: '0.12em', textShadow: '0 2px 8px rgba(0,0,0,0.9)', textAlign: 'center' } }, 'TAP TO ENTER'),
+      React.createElement('div', { style: { position: 'absolute', bottom: '15%', left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' } },
+        React.createElement('div', { className: 'tap-pulse', style: { color: 'white', fontSize: '1.2rem', fontWeight: '900', letterSpacing: '0.15em', textShadow: '0 2px 8px rgba(0,0,0,0.9)' } }, 'TAP TO ENTER'),
         React.createElement('div', { style: { color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem' } }, 'Free during beta')
       )
     );
   }
 
-  // LOGIN PAGE
+  // LOGIN
   if (page === 'login') {
     return React.createElement('div', {
-      style: Object.assign({ minHeight: '100dvh', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: PT, paddingLeft: '1.5rem', paddingRight: '1.5rem', paddingBottom: '2rem' }, POSTER_STYLE)
+      style: Object.assign({ minHeight: '100dvh', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }, POSTER_STYLE)
     },
       React.createElement('div', { style: { width: '100%', maxWidth: '22rem' } },
-        React.createElement('div', { className: 'bg-black/50 backdrop-blur-sm rounded-2xl p-4 shadow-2xl border border-red-900/40 space-y-3' },
+        React.createElement('div', { className: 'bg-black/60 backdrop-blur-sm rounded-2xl p-5 shadow-2xl border border-red-900/40 space-y-3' },
           React.createElement('div', { className: 'text-center' },
-            React.createElement('h1', { className: 'text-white text-lg font-black tracking-widest' }, 'DEAD OR ALIVE'),
-            React.createElement('p', { className: 'text-red-300 text-base mt-1 font-bold' }, 'Find out if the people you remember are dead or alive'),
-            React.createElement('p', { className: 'text-white/50 text-xs mt-1' }, 'Free during beta')
+            React.createElement('h1', { className: 'text-white text-xl font-black tracking-widest' }, 'DEAD OR ALIVE'),
+            React.createElement('p', { className: 'text-red-300 text-sm mt-1' }, 'Find out if the people you remember are dead or alive'),
+            React.createElement('p', { className: 'text-white/40 text-xs mt-1' }, 'Free during beta')
           ),
-          React.createElement('input', { type: 'email', placeholder: 'Email address', value: email, onChange: function(e) { setEmail(e.target.value); }, onKeyPress: function(e) { if (e.key === 'Enter') doAuth(); }, className: 'w-full px-4 py-2 rounded-xl bg-white/15 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-red-500 text-base' }),
+          React.createElement('input', { type: 'email', placeholder: 'Email address', value: email, onChange: function(e) { setEmail(e.target.value); }, onKeyPress: function(e) { if (e.key === 'Enter') doAuth(); }, className: 'w-full px-4 py-2.5 rounded-xl bg-white/15 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-red-500 text-base' }),
           React.createElement('div', { className: 'relative' },
-            React.createElement('input', { type: showPassword ? 'text' : 'password', placeholder: 'Password', value: password, onChange: function(e) { setPassword(e.target.value); }, onKeyPress: function(e) { if (e.key === 'Enter') doAuth(); }, className: 'w-full px-4 py-2 rounded-xl bg-white/15 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-red-500 text-base' }),
-            React.createElement('button', { onClick: function() { setShowPassword(!showPassword); }, className: 'absolute right-3 top-1/2 -translate-y-1/2 text-white/60' }, showPassword ? React.createElement(EyeOffIcon) : React.createElement(EyeIcon))
+            React.createElement('input', { type: showPw ? 'text' : 'password', placeholder: 'Password', value: password, onChange: function(e) { setPassword(e.target.value); }, onKeyPress: function(e) { if (e.key === 'Enter') doAuth(); }, className: 'w-full px-4 py-2.5 rounded-xl bg-white/15 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-red-500 text-base pr-10' }),
+            React.createElement('button', { onClick: function() { setShowPw(!showPw); }, className: 'absolute right-3 top-1/2 -translate-y-1/2 text-white/60' }, showPw ? React.createElement(EyeOffIcon) : React.createElement(EyeIcon))
           ),
           backendWaking && React.createElement('p', { className: 'text-white/60 text-xs text-center animate-pulse' }, 'Waking up the server...'),
           React.createElement('div', { className: 'grid grid-cols-2 gap-3' },
-            React.createElement('button', { onClick: function() { setMode('login'); doAuth(); }, disabled: loading, className: 'py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl disabled:opacity-50 text-base' }, loading && mode === 'login' ? '...' : 'Sign In'),
-            React.createElement('button', { onClick: function() { setMode('register'); doAuth(); }, disabled: loading, className: 'py-2 bg-white/20 hover:bg-white/30 text-white font-bold rounded-xl disabled:opacity-50 text-base border border-white/30' }, loading && mode === 'register' ? '...' : 'Register')
+            React.createElement('button', { onClick: function() { setMode('login'); doAuth(); }, disabled: loading, className: 'py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl disabled:opacity-50' }, loading && mode === 'login' ? '...' : 'Sign In'),
+            React.createElement('button', { onClick: function() { setMode('register'); doAuth(); }, disabled: loading, className: 'py-2.5 bg-white/20 hover:bg-white/30 text-white font-bold rounded-xl disabled:opacity-50 border border-white/30' }, loading && mode === 'register' ? '...' : 'Register')
           ),
           React.createElement('p', { className: 'text-white/40 text-xs text-center' }, "You'll stay signed in automatically")
         )
@@ -461,177 +323,175 @@ function App() {
     );
   }
 
-  // MODAL DRAWER
+  // DRAWER COMPONENT
   function WikiDrawer() {
     if (!drawerItem) return null;
-    var name = drawerItem.name;
-    var storedDescription = drawerItem.storedDescription;
-    var isDeceased = drawerItem.isDeceased;
-    var deathYear = drawerItem.deathYear;
+    var nm = drawerItem.name;
     var liveDesc = drawerLive && drawerLive.wikipedia_description;
-    var liveDeceased = drawerLive ? drawerLive.is_deceased : isDeceased;
-    var liveDeath = drawerLive ? drawerLive.death_year : deathYear;
-    var displayDesc = liveDesc || storedDescription;
-    var legacyResults = drawerLive && drawerLive.legacy_results ? drawerLive.legacy_results : [];
-
+    var liveDeceased = drawerLive ? drawerLive.is_deceased : drawerItem.isDeceased;
+    var liveDeath = drawerLive ? drawerLive.death_year : drawerItem.deathYear;
+    var displayDesc = liveDesc || drawerItem.storedDescription;
+    var legacyRes = (drawerLive && drawerLive.legacy_results) ? drawerLive.legacy_results : [];
     return React.createElement(React.Fragment, null,
       React.createElement('div', { className: 'modal-overlay', onClick: closeDrawer }),
       React.createElement('div', { className: 'modal-drawer' },
         React.createElement('div', { className: 'flex justify-between items-center px-4 pt-4 pb-2 border-b border-red-900/30' },
-          React.createElement('div', { className: 'flex-1' },
-            React.createElement('button', { onClick: refreshDrawer, disabled: drawerRefreshing, className: 'text-left', title: 'Tap to refresh from Wikipedia' },
-              React.createElement('span', { className: 'text-white font-bold text-lg underline decoration-dotted' }, name),
-              React.createElement('span', { className: 'ml-2 text-red-400/70 text-xs' }, drawerRefreshing ? 'Refreshing...' : '(tap to refresh)')
-            )
+          React.createElement('button', { onClick: refreshDrawer, disabled: drawerRefreshing, className: 'flex-1 text-left' },
+            React.createElement('span', { className: 'text-white font-bold text-lg underline decoration-dotted' }, nm),
+            React.createElement('span', { className: 'ml-2 text-red-400/70 text-xs' }, drawerRefreshing ? 'Refreshing...' : '(tap to refresh)')
           ),
-          React.createElement('button', { onClick: closeDrawer, className: 'text-gray-400 hover:text-white text-2xl font-bold ml-2' }, 'X')
+          React.createElement('button', { onClick: closeDrawer, className: 'text-gray-400 text-2xl font-bold ml-3' }, 'X')
         ),
         React.createElement('div', { className: 'p-4' },
-          React.createElement('div', { className: 'px-4 py-2 rounded-xl mb-4 flex items-center gap-3 ' + (liveDeceased ? 'bg-gray-700' : 'bg-green-700') },
-            React.createElement('span', { className: 'text-white font-black' }, liveDeceased ? 'DECEASED' : 'ALIVE'),
-            liveDeath && liveDeath !== 'deceased' && React.createElement('span', { className: 'text-white/80 text-sm ml-auto' }, 'Died: ' + liveDeath)
+          React.createElement('div', { className: 'px-3 py-2 rounded-xl mb-3 ' + (liveDeceased ? 'bg-gray-700' : 'bg-green-700') },
+            React.createElement('span', { className: 'text-white font-black text-sm' }, liveDeceased ? 'DECEASED' : 'ALIVE'),
+            liveDeath && liveDeath !== 'deceased' ? React.createElement('span', { className: 'text-white/80 text-xs ml-3' }, 'Died: ' + liveDeath) : null
           ),
           displayDesc
-            ? React.createElement('p', { className: 'text-gray-100 text-sm leading-relaxed mb-4' }, displayDesc)
-            : React.createElement('div', { className: 'text-center py-6 mb-4' },
-                React.createElement('p', { className: 'text-gray-400 text-sm' }, 'No bio stored yet.'),
-                React.createElement('p', { className: 'text-gray-500 text-xs mt-1' }, 'Tap the name above to fetch from Wikipedia.')
-              ),
-          liveDeceased && React.createElement('div', { className: 'p-3 bg-gray-700/50 border border-gray-600/30 rounded-xl mb-4' },
-            React.createElement('p', { className: 'text-gray-200 text-sm text-center' }, 'This person has passed away.')
-          ),
-          drawerLive && drawerLive.newly_deceased && React.createElement('div', { className: 'p-3 bg-red-900/60 border border-red-600 rounded-xl mb-4' },
-            React.createElement('p', { className: 'text-red-200 text-sm text-center font-bold' }, 'Status just updated -- this person has passed away. Notification sent.')
-          ),
-          legacyResults.length > 0 && React.createElement('div', { className: 'mb-4' },
-            React.createElement('p', { className: 'text-red-300 text-xs font-bold mb-2' }, 'LEGACY OBITUARY RECORDS'),
-            legacyResults.map(function(r, i) {
-              return React.createElement('div', { key: i, className: 'p-2 bg-gray-800/60 rounded-lg mb-2 border border-red-900/20' },
-                React.createElement('p', { className: 'text-white text-sm font-semibold' }, r.name),
-                r.date && React.createElement('p', { className: 'text-gray-400 text-xs' }, r.date),
-                r.location && React.createElement('p', { className: 'text-gray-400 text-xs' }, r.location),
-                r.link && React.createElement('a', { href: r.link, target: '_blank', rel: 'noopener noreferrer', className: 'text-red-400 text-xs' }, 'Read obituary')
-              );
-            })
-          ),
-          React.createElement('div', { className: 'p-2 bg-red-900/20 border border-red-800/20 rounded-xl mb-3' },
-            React.createElement('p', { className: 'text-red-200 text-xs' }, 'Data from Wikipedia and Legacy.com. DORA donates a portion of revenues to the Wikimedia Foundation.')
-          ),
-          React.createElement('button', { onClick: closeDrawer, className: 'w-full py-3 bg-red-900/40 border border-red-800/50 text-white rounded-xl text-sm mt-2' }, 'Close')
+            ? React.createElement('p', { className: 'text-gray-100 text-sm leading-relaxed mb-3' }, displayDesc)
+            : React.createElement('p', { className: 'text-gray-400 text-sm mb-3 text-center' }, 'Tap name above to load bio from Wikipedia'),
+          drawerLive && drawerLive.newly_deceased
+            ? React.createElement('div', { className: 'p-3 bg-red-900/60 border border-red-600 rounded-xl mb-3' },
+                React.createElement('p', { className: 'text-red-200 text-sm text-center font-bold' }, 'Status just updated -- this person has passed away. Notification sent.')
+              )
+            : null,
+          legacyRes.length > 0
+            ? React.createElement('div', { className: 'mb-3' },
+                React.createElement('p', { className: 'text-red-300 text-xs font-bold mb-2' }, 'LEGACY OBITUARY RECORDS'),
+                legacyRes.map(function(r, i) {
+                  return React.createElement('div', { key: i, className: 'p-2 bg-gray-800/60 rounded-lg mb-2 border border-red-900/20' },
+                    React.createElement('p', { className: 'text-white text-sm font-semibold' }, r.name),
+                    r.date ? React.createElement('p', { className: 'text-gray-400 text-xs' }, r.date) : null,
+                    r.location ? React.createElement('p', { className: 'text-gray-400 text-xs' }, r.location) : null,
+                    r.link ? React.createElement('a', { href: r.link, target: '_blank', rel: 'noopener noreferrer', className: 'text-red-400 text-xs' }, 'Read obituary') : null
+                  );
+                })
+              )
+            : null,
+          React.createElement('p', { className: 'text-red-200/50 text-xs mb-3' }, 'Data from Wikipedia and Legacy.com.'),
+          React.createElement('button', { onClick: closeDrawer, className: 'w-full py-2.5 bg-red-900/40 border border-red-800/50 text-white rounded-xl text-sm' }, 'Close')
         )
       )
     );
   }
 
-  // MAIN APP
-  var bgStyle = (page === 'watchlist') ? Object.assign({ minHeight: '100dvh', width: '100%', position: 'relative', paddingBottom: '5rem' }, WATCHLIST_BG_STYLE) : Object.assign({ minHeight: '100dvh', width: '100%', position: 'relative', paddingBottom: '5rem' }, POSTER_STYLE);
-  var overlayOpacity = (page === 'watchlist') ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.22)';
-
-  return React.createElement('div', { style: bgStyle },
-    React.createElement('div', { style: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: overlayOpacity } }),
+  // MAIN APP SHELL
+  return React.createElement('div', {
+    style: Object.assign({ minHeight: '100dvh', width: '100%', position: 'relative', paddingBottom: '5rem' }, POSTER_STYLE)
+  },
+    React.createElement('div', { style: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.50)' } }),
     React.createElement('div', { style: { position: 'relative', zIndex: 10 } },
       React.createElement(WikiDrawer),
-      React.createElement('div', { className: 'w-full max-w-sm mx-auto px-3' },
+      React.createElement('div', { className: 'w-full max-w-lg mx-auto px-4 pt-6' },
 
-        // WATCHLIST PAGE
-        page === 'watchlist' && React.createElement('div', { className: 'space-y-3', style: { paddingTop: PT } },
+        // -- WATCHLIST (SEARCH) PAGE -------------------------------------
+        page === 'watchlist' && React.createElement('div', { className: 'space-y-4' },
           React.createElement('div', { className: cardClass },
-            React.createElement('div', { className: 'mb-3 pb-2 border-b border-red-900/30 text-center' },
-              React.createElement('h2', { className: 'text-xl font-black text-white tracking-wide' }, 'WATCHLIST'),
-              React.createElement('p', { className: 'text-gray-300 text-xs mt-1' }, 'Add people you\'ve lost touch with -- we\'ll notify you if a memorial notice is published')
+            React.createElement('h2', { className: 'text-xl font-black text-white tracking-wide text-center mb-1' }, 'DEAD OR ALIVE'),
+            React.createElement('p', { className: 'text-gray-300 text-xs text-center mb-4' }, "Add people you've lost touch with -- we'll notify you if a memorial notice is published"),
+            React.createElement('div', { className: 'relative mb-3' },
+              React.createElement('input', {
+                type: 'text', placeholder: 'Enter full name', value: searchName,
+                onChange: function(e) { setSearchName(e.target.value); setResult(null); },
+                onKeyPress: function(e) { if (e.key === 'Enter') doSearch(); },
+                className: iClass + ' pr-10'
+              }),
+              searchName && React.createElement('button', { onClick: function() { setSearchName(''); setResult(null); }, className: 'absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg font-bold' }, 'X')
             ),
-            !checked
-              ? React.createElement('div', { className: 'space-y-3' },
-                  React.createElement('div', { className: 'relative' },
-                    React.createElement('input', { type: 'text', placeholder: 'Full Name', value: nw.name, onChange: function(e) { setNw(Object.assign({}, nw, { name: e.target.value })); }, onBlur: function(e) { setNw(Object.assign({}, nw, { name: toTitleCase(e.target.value) })); }, onKeyPress: function(e) { if (e.key === 'Enter') checkName(); }, className: iClass + ' pr-10' }),
-                    nw.name && React.createElement('button', { onClick: function() { setNw(Object.assign({}, nw, { name: '' })); }, className: 'absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg font-bold' }, 'X')
+            React.createElement('button', { onClick: doSearch, disabled: searching, className: 'w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg flex items-center justify-center gap-2 font-bold text-base disabled:opacity-50' },
+              React.createElement(SearchIcon), searching ? 'Searching...' : 'Search'
+            )
+          ),
+
+          // SEARCH RESULT CARD
+          result && React.createElement('div', { className: 'rounded-2xl overflow-hidden border border-red-800 shadow-lg' },
+            (function() {
+              var profile = result.profile;
+              var legacy = result.legacy || [];
+              var name = result.name;
+              var isDeceased = profile && profile.deathDate;
+              var isDisambig = profile && profile.isDisambiguation;
+              var notFound = !profile && legacy.length === 0;
+              var foundInLegacyOnly = !profile && legacy.length > 0;
+              var statusBg = isDeceased || foundInLegacyOnly ? 'bg-gray-800' : isDisambig ? 'bg-yellow-600' : notFound ? 'bg-gray-700' : 'bg-green-700';
+              var statusText = isDeceased || foundInLegacyOnly ? 'DECEASED' : isDisambig ? 'UNSURE' : notFound ? 'NO RESULTS' : 'ALIVE';
+              var canAdd = !isDeceased && !foundInLegacyOnly && !notFound;
+              var alreadyWatching = watchlist.some(function(w) { return w.name.toLowerCase() === name.toLowerCase(); });
+
+              return React.createElement('div', null,
+                React.createElement('div', { className: 'px-5 py-2 flex items-center gap-3 ' + statusBg },
+                  React.createElement('span', { className: 'text-white font-black tracking-widest text-sm' }, statusText)
+                ),
+                React.createElement('div', { className: 'bg-gray-900/80 p-4' },
+                  profile && !notFound && React.createElement('div', { className: 'mb-3' },
+                    React.createElement('div', { className: 'flex gap-3 items-start mb-2' },
+                      profile.thumbnail
+                        ? React.createElement('img', { src: profile.thumbnail, alt: profile.title, className: 'w-14 h-14 rounded-full object-cover border-2 border-red-600/50 shrink-0' })
+                        : null,
+                      React.createElement('div', { className: 'flex-1' },
+                        React.createElement('h2', { className: 'text-white text-base font-bold' }, profile.title),
+                        profile.birthDate ? React.createElement('p', { className: 'text-red-300 text-xs' }, 'Born: ' + profile.birthDate) : null,
+                        !isDisambig ? React.createElement('p', { className: 'text-red-400 text-xs italic' }, profile.description) : null
+                      )
+                    ),
+                    !isDisambig && profile.extract ? React.createElement('p', { className: 'text-gray-100 text-sm leading-relaxed' }, profile.extract) : null,
+                    isDisambig ? React.createElement('p', { className: 'text-yellow-200 text-sm text-center py-2' }, 'Multiple people share this name -- try adding a middle name') : null
                   ),
-                  React.createElement('div', { className: 'relative' },
-                    React.createElement('input', { type: 'text', placeholder: 'City and/or State (optional)', value: nw.location, onChange: function(e) { setNw(Object.assign({}, nw, { location: e.target.value })); }, onKeyPress: function(e) { if (e.key === 'Enter') checkName(); }, className: iClass + ' pr-10' }),
-                    nw.location && React.createElement('button', { onClick: function() { setNw(Object.assign({}, nw, { location: '' })); }, className: 'absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg font-bold' }, 'X')
+                  legacy.length > 0 && React.createElement('div', { className: 'mb-3' },
+                    React.createElement('p', { className: 'text-red-300 text-xs font-bold mb-2' }, 'LEGACY OBITUARY RECORDS'),
+                    legacy.map(function(r, i) {
+                      return React.createElement('div', { key: i, className: 'p-2 bg-gray-800/60 rounded-lg mb-2' },
+                        React.createElement('p', { className: 'text-white text-sm font-semibold' }, r.name),
+                        r.date ? React.createElement('p', { className: 'text-gray-400 text-xs' }, r.date) : null,
+                        r.location ? React.createElement('p', { className: 'text-gray-400 text-xs' }, r.location) : null,
+                        r.link ? React.createElement('a', { href: r.link, target: '_blank', rel: 'noopener noreferrer', className: 'text-red-400 text-xs' }, 'Read obituary') : null
+                      );
+                    })
                   ),
-                  React.createElement('div', { className: 'relative' },
-                    React.createElement('input', { type: 'text', placeholder: 'Birth Year (optional)', value: nw.birthYear, onChange: function(e) { setNw(Object.assign({}, nw, { birthYear: e.target.value.replace(/\D/g, '').slice(0, 4) })); }, onKeyPress: function(e) { if (e.key === 'Enter') checkName(); }, maxLength: 4, className: iClass + ' pr-10' }),
-                    nw.birthYear && React.createElement('button', { onClick: function() { setNw(Object.assign({}, nw, { birthYear: '' })); }, className: 'absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg font-bold' }, 'X')
-                  ),
-                  React.createElement('button', { onClick: checkName, disabled: checking, className: 'w-full py-3 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 text-base font-bold' },
-                    React.createElement(SearchIcon), checking ? 'Checking...' : 'Check Name'
+                  notFound && React.createElement('p', { className: 'text-gray-300 text-sm text-center py-2' }, 'No results found for "' + name + '" in Wikipedia or Legacy.'),
+                  canAdd && React.createElement('div', { className: 'mt-3 pt-3 border-t border-white/10' },
+                    alreadyWatching
+                      ? React.createElement('p', { className: 'text-green-400 text-sm text-center' }, name + ' is already on your watchlist')
+                      : React.createElement('button', { onClick: addToWatchlist, disabled: loading, className: 'w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50' },
+                          React.createElement(PlusIcon), loading ? 'Adding...' : 'Add to Watchlist'
+                        )
                   )
                 )
-              : React.createElement('div', null,
-                  checkResult && (function() {
-                    var profile = checkResult.profile;
-                    var legacyResults = checkResult.legacyResults || [];
-                    var name = checkResult.name;
-                    var isDeceased = profile && profile.deathDate;
-                    var isDisambig = profile && profile.isDisambiguation;
-                    var notFound = !profile;
-                    var statusBg = isDeceased ? 'bg-gray-800' : isDisambig ? 'bg-yellow-600' : notFound ? 'bg-blue-700' : 'bg-green-700';
-                    var statusText = isDeceased ? 'DEAD' : isDisambig ? 'UNSURE' : notFound ? 'NOT IN WIKIPEDIA' : 'ALIVE';
-                    return React.createElement('div', { className: 'rounded-2xl overflow-hidden border border-red-800 shadow-lg' },
-                      React.createElement('div', { className: 'px-5 py-2 ' + statusBg },
-                        React.createElement('span', { className: 'text-white font-black tracking-widest text-sm' }, statusText)
-                      ),
-                      React.createElement('div', { className: 'bg-gray-900/70 p-4' },
-                        profile && !notFound && React.createElement('div', null,
-                          React.createElement('div', { className: 'flex gap-3 items-start mb-3' },
-                            profile.thumbnail
-                              ? React.createElement('img', { src: profile.thumbnail, alt: profile.title, className: 'w-16 h-16 rounded-full object-cover border-2 border-red-600/50 shrink-0' })
-                              : React.createElement('div', { className: 'w-16 h-16 rounded-full bg-red-900/40 flex items-center justify-center shrink-0 text-2xl' }, '?'),
-                            React.createElement('div', { className: 'flex-1' },
-                              React.createElement('h2', { className: 'text-white text-lg font-bold mb-1' }, profile.title),
-                              profile.birthDate && React.createElement('p', { className: 'text-red-300 text-sm font-bold' }, 'Born: ' + profile.birthDate),
-                              !isDisambig && React.createElement('p', { className: 'text-red-400 text-xs italic mt-1' }, profile.description)
-                            )
-                          ),
-                          !isDisambig && profile.extract && React.createElement('p', { className: 'text-gray-100 text-sm leading-relaxed mb-3' }, profile.extract)
-                        ),
-                        notFound && React.createElement('div', { className: 'mb-3' },
-                          React.createElement('p', { className: 'text-white text-base font-bold mb-1' }, '"' + name + '"'),
-                          React.createElement('p', { className: 'text-gray-300 text-sm' }, 'No Wikipedia result found.')
-                        ),
-                        isDeceased && React.createElement('div', { className: 'p-2 bg-gray-700/50 border border-gray-600/30 rounded-xl mb-3' },
-                          React.createElement('p', { className: 'text-gray-200 text-sm text-center' }, 'This person has passed away.' + (profile.deathDate && profile.deathDate !== 'deceased' ? ' Died: ' + profile.deathDate : ''))
-                        ),
-                        legacyResults.length > 0 && React.createElement('div', { className: 'mb-3' },
-                          React.createElement('p', { className: 'text-red-300 text-xs font-bold mb-1' }, 'LEGACY OBITUARY RECORDS'),
-                          legacyResults.map(function(r, i) {
-                            return React.createElement('div', { key: i, className: 'p-2 bg-gray-800/60 rounded-lg mb-2' },
-                              React.createElement('p', { className: 'text-white text-sm font-semibold' }, r.name),
-                              r.date && React.createElement('p', { className: 'text-gray-400 text-xs' }, r.date),
-                              r.link && React.createElement('a', { href: r.link, target: '_blank', rel: 'noopener noreferrer', className: 'text-red-400 text-xs' }, 'Read obituary')
-                            );
-                          })
-                        ),
-                        !isDeceased && React.createElement('div', { className: 'space-y-2 mt-2' },
-                          React.createElement('p', { className: 'text-white/80 text-sm text-center font-medium border-t border-white/10 pt-2' },
-                            notFound ? 'Add "' + name + '" to watchlist?' : 'Add ' + (profile ? profile.title : name) + ' to watchlist?'
-                          ),
-                          React.createElement('button', { onClick: confirmAdd, disabled: loading, className: 'w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50' },
-                            React.createElement(PlusIcon), loading ? 'Adding...' : 'Yes, Add to Watchlist'
-                          ),
-                          React.createElement('button', { onClick: function() { setChecked(false); setCheckResult(null); }, className: 'w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center flex items-center justify-center gap-2' },
-                            React.createElement(EditIcon), 'Edit Name'
-                          ),
-                          React.createElement('button', { onClick: function() { setChecked(false); setCheckResult(null); setNw({ name: '', location: '', birthYear: '' }); }, className: 'w-full py-1.5 text-white/40 text-xs text-center' }, 'Cancel')
-                        ),
-                        isDeceased && React.createElement('button', { onClick: function() { setChecked(false); setCheckResult(null); setNw({ name: '', location: '', birthYear: '' }); }, className: 'w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center mt-2' }, 'Try Another Name')
-                      )
-                    );
-                  })()
-                )
+              );
+            })()
+          )
+        ),
+
+        // -- ALERTS PAGE (notifications + watchlist combined) -------------
+        page === 'alerts' && React.createElement('div', { className: 'space-y-4' },
+
+          // Death notifications section
+          notifications.length > 0 && React.createElement('div', { className: cardClass },
+            React.createElement('h2', { className: 'text-lg font-black text-white tracking-wide mb-3' }, 'DEATH ALERTS'),
+            React.createElement('div', { className: 'space-y-2' },
+              notifications.map(function(n) {
+                return React.createElement('div', { key: n.id, className: 'p-3 bg-red-950/60 border border-red-700 rounded-xl' },
+                  React.createElement('h3', { className: 'font-bold text-white text-sm' }, n.name),
+                  React.createElement('p', { className: 'text-gray-300 text-xs mt-1' }, n.message),
+                  n.link ? React.createElement('a', { href: n.link, target: '_blank', rel: 'noopener noreferrer', className: 'text-red-400 text-xs mt-1 block' }, 'Read obituary') : null,
+                  React.createElement('p', { className: 'text-gray-500 text-xs mt-1' }, new Date(n.created_at).toLocaleDateString())
+                );
+              })
+            )
           ),
+
+          // Watchlist section
           React.createElement('div', { className: cardClass },
-            React.createElement('h2', { className: 'text-xl font-bold mb-0.5 text-white text-center' }, 'Your Watchlist (' + watchlist.length + ')'),
-            React.createElement('p', { className: 'text-sm text-gray-200 mb-3 text-center' }, 'Tap a name to see their bio'),
+            React.createElement('h2', { className: 'text-lg font-black text-white tracking-wide mb-1' }, 'YOUR WATCHLIST (' + watchlist.length + ')'),
+            React.createElement('p', { className: 'text-gray-300 text-xs mb-3' }, 'Tap a name to see their bio and refresh status'),
             watchlist.length === 0
-              ? React.createElement('p', { className: 'text-gray-400 text-center py-6' }, 'No one on your watchlist yet')
-              : React.createElement('div', { className: 'space-y-3' },
+              ? React.createElement('p', { className: 'text-gray-400 text-center py-4 text-sm' }, 'No one on your watchlist yet. Use the Watchlist tab to add people.')
+              : React.createElement('div', { className: 'space-y-2' },
                   watchlist.map(function(w) {
-                    return React.createElement('div', { key: w.id, className: 'p-3 rounded-lg border ' + (w.is_deceased ? 'bg-gray-900/70 border-gray-600/50' : 'bg-gray-800/50 border-red-900/20') },
+                    return React.createElement('div', { key: w.id, className: 'p-3 rounded-lg border ' + (w.is_deceased ? 'bg-gray-900/70 border-gray-600/40' : 'bg-gray-800/50 border-red-900/20') },
                       editingId === w.id
                         ? React.createElement('div', { className: 'space-y-2' },
-                            React.createElement('input', { value: editingName, onChange: function(e) { setEditingName(e.target.value); }, placeholder: 'Enter name', className: 'w-full px-3 py-2 border border-red-700 rounded-lg text-base bg-gray-700 text-white placeholder-gray-400' }),
+                            React.createElement('input', { value: editingName, onChange: function(e) { setEditingName(e.target.value); }, placeholder: 'Enter name', className: 'w-full px-3 py-2 border border-red-700 rounded-lg text-sm bg-gray-700 text-white' }),
                             React.createElement('div', { className: 'flex gap-2' },
                               React.createElement('button', {
                                 onClick: function() {
@@ -640,26 +500,23 @@ function App() {
                                   fetch(API_BASE + '/watchlist', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ name: toTitleCase(editingName), location: w.location, dob: w.dob }) })
                                     .then(function() { loadWatchlist(); setEditingId(null); setEditingName(''); });
                                 },
-                                className: 'flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-bold'
+                                className: 'flex-1 py-1.5 bg-red-600 text-white rounded-lg text-xs font-bold'
                               }, 'Save'),
-                              React.createElement('button', { onClick: function() { setEditingId(null); setEditingName(''); }, className: 'flex-1 py-2 bg-gray-600 text-gray-200 rounded-lg text-sm' }, 'Cancel')
+                              React.createElement('button', { onClick: function() { setEditingId(null); setEditingName(''); }, className: 'flex-1 py-1.5 bg-gray-600 text-gray-200 rounded-lg text-xs' }, 'Cancel')
                             )
                           )
                         : React.createElement('div', { className: 'flex items-center justify-between' },
-                            React.createElement('div', { className: 'flex-1' },
+                            React.createElement('div', { className: 'flex-1 min-w-0' },
                               React.createElement('button', { onClick: function() { openDrawer(w); }, className: 'text-left w-full' },
-                                React.createElement('h3', { className: 'font-semibold text-base underline decoration-dotted ' + (w.is_deceased ? 'text-gray-400 line-through' : 'text-white hover:text-red-300') }, w.name)
+                                React.createElement('span', { className: 'font-semibold text-sm underline decoration-dotted block truncate ' + (w.is_deceased ? 'text-gray-400 line-through' : 'text-white hover:text-red-300') }, w.name)
                               ),
-                              w.location && React.createElement('div', { className: 'text-sm text-gray-300' }, w.location),
-                              React.createElement('div', { className: 'flex items-center gap-1 mt-1' },
-                                w.is_deceased
-                                  ? React.createElement('span', { className: 'text-xs text-red-400 font-bold' }, 'DECEASED')
-                                  : React.createElement('span', { className: 'text-xs text-green-400' }, 'Active')
+                              React.createElement('span', { className: 'text-xs ' + (w.is_deceased ? 'text-red-400 font-bold' : 'text-green-400') },
+                                w.is_deceased ? 'DECEASED' : 'Active'
                               )
                             ),
-                            React.createElement('div', { className: 'flex gap-2' },
-                              React.createElement('button', { onClick: function() { setEditingId(w.id); setEditingName(w.name); }, className: 'p-2 text-red-400 hover:bg-red-900/30 rounded-lg' }, React.createElement(EditIcon)),
-                              React.createElement('button', { onClick: function() { delWatch(w.id); }, className: 'p-2 text-red-500 hover:bg-red-900/30 rounded-lg' }, React.createElement(TrashIcon))
+                            React.createElement('div', { className: 'flex gap-1 ml-2 shrink-0' },
+                              React.createElement('button', { onClick: function() { setEditingId(w.id); setEditingName(w.name); }, className: 'p-1.5 text-red-400 hover:bg-red-900/30 rounded-lg' }, React.createElement(EditIcon)),
+                              React.createElement('button', { onClick: function() { delWatch(w.id); }, className: 'p-1.5 text-red-500 hover:bg-red-900/30 rounded-lg' }, React.createElement(TrashIcon))
                             )
                           )
                     );
@@ -668,42 +525,14 @@ function App() {
           )
         ),
 
-        // ALERTS PAGE
-        page === 'alerts' && React.createElement('div', { className: 'space-y-3', style: { paddingTop: PT } },
+        // -- ABOUT PAGE --------------------------------------------------
+        page === 'about' && React.createElement('div', { className: 'space-y-4 pb-8' },
           React.createElement('div', { className: cardClass },
-            React.createElement('div', { className: 'mb-3 pb-2 border-b border-red-900/30 text-center' },
-              React.createElement('h2', { className: 'text-xl font-black text-white tracking-wide' }, 'ALERTS'),
-              React.createElement('p', { className: 'text-gray-300 text-xs mt-1' }, 'Status changes for people on your watchlist')
-            ),
-            notifications.length === 0
-              ? React.createElement('div', { className: 'text-center py-4' },
-                  React.createElement('p', { className: 'text-white font-bold text-xl mb-1' }, 'No alerts yet'),
-                  React.createElement('p', { className: 'text-gray-200 text-base mt-1' }, "We'll alert you when someone on your watchlist passes away")
-                )
-              : React.createElement('div', { className: 'space-y-3' },
-                  notifications.map(function(n) {
-                    return React.createElement('div', { key: n.id, className: 'p-3 bg-red-950/50 border border-red-800 rounded-xl' },
-                      React.createElement('h3', { className: 'font-bold text-white text-base' }, n.name),
-                      React.createElement('p', { className: 'text-gray-300 text-sm mt-1' }, n.message),
-                      n.link && React.createElement('a', { href: n.link, target: '_blank', rel: 'noopener noreferrer', className: 'text-red-400 text-xs mt-1 block' }, 'Read obituary'),
-                      React.createElement('p', { className: 'text-gray-500 text-xs mt-1' }, new Date(n.created_at).toLocaleDateString())
-                    );
-                  })
-                )
-          )
-        ),
-
-        // ABOUT PAGE (merged with settings + sign out + privacy)
-        page === 'about' && React.createElement('div', { className: 'space-y-3 pb-8', style: { paddingTop: '1rem' } },
-          React.createElement('div', { className: cardClass },
-            React.createElement('div', { className: 'mb-3 pb-2 border-b border-red-900/30' },
-              React.createElement('h2', { className: 'text-xl font-black text-white tracking-wide text-center' }, 'ABOUT')
-            ),
+            React.createElement('h2', { className: 'text-lg font-black text-white tracking-wide text-center mb-3' }, 'ABOUT DEAD OR ALIVE'),
             React.createElement('p', { className: 'text-red-300 italic text-sm leading-relaxed mb-3' }, 'Find people you miss. Find out if they are dead or alive.'),
             React.createElement('div', { className: 'space-y-2 text-gray-200 text-sm leading-relaxed mb-4' },
-              React.createElement('p', null, 'Dead or Alive was built by three brains -- mine, ChatGPT, and Claude (Anthropic). I\'m a retired 74 year old former high-tech entrepreneur. As I get older, I look at the obituaries and wonder about old friends.'),
-              React.createElement('p', null, 'We partner with Legacy, covering more than 70% of all U.S. deaths, and Wikipedia for notable people.'),
-              React.createElement('p', null, 'If you have thoughts on how to improve Dead or Alive, please reach out!')
+              React.createElement('p', null, 'Dead or Alive was built by three brains -- mine, ChatGPT, and Claude (Anthropic). I\'m a retired 74-year-old former high-tech entrepreneur.'),
+              React.createElement('p', null, 'We partner with Legacy and Wikipedia. If you have thoughts on how to improve this app, please reach out!')
             ),
             React.createElement('div', { className: 'flex items-center gap-3 mb-4 pb-4 border-b border-red-900/30' },
               React.createElement('img', { src: BILL_PHOTO, alt: 'Bill Spencer', className: 'w-12 h-12 rounded-full object-cover border-2 border-red-600 shadow-lg' }),
@@ -713,29 +542,22 @@ function App() {
                 React.createElement('a', { href: 'mailto:bspencer413@me.com', className: 'text-red-400 text-xs' }, 'bspencer413@me.com')
               )
             ),
-            React.createElement('div', { className: 'p-2 bg-gray-800/50 rounded-lg mb-3' },
-              React.createElement('p', { className: 'text-gray-200 text-sm text-center' }, user && user.email)
+            user && React.createElement('p', { className: 'text-gray-400 text-xs text-center mb-3' }, user.email),
+            React.createElement('div', { className: 'space-y-1 text-gray-400 text-xs mb-4 pb-4 border-b border-red-900/30' },
+              React.createElement('p', { className: 'font-bold text-gray-300 text-xs' }, 'Privacy'),
+              React.createElement('p', null, 'We collect only your email, watchlist names, and searches. We never sell your data. Delete your account anytime from this page.')
             ),
-            React.createElement('div', { className: 'space-y-2 mb-4 text-gray-300 text-xs leading-relaxed' },
-              React.createElement('p', { className: 'font-bold text-white text-sm' }, 'Privacy Policy'),
-              React.createElement('p', null, 'We collect only what is necessary: your email address, watchlist names, and search queries. We do not sell your personal information. Ever.'),
-              React.createElement('p', null, 'Data is stored securely on Render.com servers. You may delete your account and all data at any time.'),
-              React.createElement('a', { href: 'mailto:bspencer413@me.com', className: 'text-red-400 text-xs' }, 'bspencer413@me.com')
-            ),
-            React.createElement('p', { className: 'text-gray-500 text-xs text-center mb-3' }, 'v' + APP_VERSION),
-            React.createElement('button', { onClick: doLogout, className: 'w-full py-3 bg-red-700 text-white rounded-lg text-base font-bold mb-3' }, 'Sign Out'),
-            React.createElement('div', { className: 'pt-2 border-t border-red-900/30' },
-              React.createElement('button', { onClick: function() { setShowDanger(!showDanger); }, className: 'w-full py-2 text-gray-500 text-xs text-center' }, showDanger ? 'Hide' : 'Account Removal'),
-              showDanger && React.createElement('div', { className: 'mt-2 space-y-2' },
-                !showDeleteConfirm
-                  ? React.createElement('button', { onClick: function() { setShowDeleteConfirm(true); }, className: 'w-full py-2 bg-gray-900/70 border border-red-800 text-red-500 rounded-lg text-sm' }, 'Delete Account')
-                  : React.createElement('div', { className: 'bg-red-950/90 border border-red-800 rounded-2xl p-4 space-y-2' },
-                      React.createElement('p', { className: 'font-bold text-red-400' }, 'Are you sure?'),
-                      React.createElement('p', { className: 'text-red-300 text-sm' }, 'This will permanently delete your account and all watchlist data.'),
-                      React.createElement('button', { onClick: doDeleteAccount, className: 'w-full py-2 bg-red-700 text-white rounded-lg font-bold text-sm' }, 'Yes, Delete My Account'),
-                      React.createElement('button', { onClick: function() { setShowDeleteConfirm(false); setShowDanger(false); }, className: 'w-full py-2 bg-gray-800 text-gray-300 rounded-lg text-sm' }, 'Cancel')
-                    )
-              )
+            React.createElement('p', { className: 'text-gray-600 text-xs text-center mb-3' }, 'v' + APP_VERSION),
+            React.createElement('button', { onClick: doLogout, className: 'w-full py-3 bg-red-700 text-white rounded-lg font-bold mb-3' }, 'Sign Out'),
+            React.createElement('button', { onClick: function() { setShowDanger(!showDanger); }, className: 'w-full py-1.5 text-gray-500 text-xs text-center' }, showDanger ? 'Hide' : 'Account Removal'),
+            showDanger && React.createElement('div', { className: 'mt-2 space-y-2' },
+              !showDelConfirm
+                ? React.createElement('button', { onClick: function() { setShowDelConfirm(true); }, className: 'w-full py-2 bg-gray-900/70 border border-red-800 text-red-500 rounded-lg text-sm' }, 'Delete Account')
+                : React.createElement('div', { className: 'bg-red-950/90 border border-red-800 rounded-2xl p-4 space-y-2' },
+                    React.createElement('p', { className: 'font-bold text-red-400 text-sm' }, 'Are you sure? This cannot be undone.'),
+                    React.createElement('button', { onClick: doDeleteAccount, className: 'w-full py-2 bg-red-700 text-white rounded-lg font-bold text-sm' }, 'Yes, Delete My Account'),
+                    React.createElement('button', { onClick: function() { setShowDelConfirm(false); setShowDanger(false); }, className: 'w-full py-2 bg-gray-800 text-gray-300 rounded-lg text-sm' }, 'Cancel')
+                  )
             )
           )
         )
@@ -743,35 +565,26 @@ function App() {
       )
     ),
 
-    // BOTTOM NAV - 3 items: WATCHLIST, ABOUT, BELL
+    // -- BOTTOM NAV: WATCHLIST (home) | ABOUT | BELL ---------------------
     React.createElement('div', {
       style: { position: 'fixed', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(10,0,0,0.95)', backdropFilter: 'blur(8px)', borderTop: '1px solid #7f1d1d', padding: '0.5rem 1rem', paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }
     },
-      React.createElement('div', { className: 'flex justify-around max-w-sm mx-auto' },
-        React.createElement('button', {
-          onClick: function() { setPage('watchlist'); },
-          className: 'flex flex-col items-center gap-0.5 px-3 py-1 ' + (page === 'watchlist' ? 'text-red-500' : 'text-gray-400')
-        },
-          React.createElement(HeartIcon),
+      React.createElement('div', { className: 'flex justify-around max-w-lg mx-auto' },
+        React.createElement('button', { onClick: function() { setPage('watchlist'); setResult(null); setSearchName(''); }, className: 'flex flex-col items-center gap-0.5 px-4 py-1 ' + (page === 'watchlist' ? 'text-red-500' : 'text-gray-400') },
+          React.createElement(HomeIcon),
           React.createElement('span', { className: 'text-xs font-medium' }, 'Watchlist')
         ),
-        React.createElement('button', {
-          onClick: function() { setPage('about'); },
-          className: 'flex flex-col items-center gap-0.5 px-3 py-1 ' + (page === 'about' ? 'text-red-500' : 'text-gray-400')
-        },
+        React.createElement('button', { onClick: function() { setPage('about'); }, className: 'flex flex-col items-center gap-0.5 px-4 py-1 ' + (page === 'about' ? 'text-red-500' : 'text-gray-400') },
           React.createElement(InfoIcon),
           React.createElement('span', { className: 'text-xs font-medium' }, 'About')
         ),
-        React.createElement('button', {
-          onClick: function() { setPage('alerts'); },
-          className: 'flex flex-col items-center gap-0.5 px-3 py-1 relative ' + (page === 'alerts' ? 'text-red-500' : 'text-gray-400')
-        },
+        React.createElement('button', { onClick: function() { setPage('alerts'); }, className: 'flex flex-col items-center gap-0.5 px-4 py-1 relative ' + (page === 'alerts' ? 'text-red-500' : 'text-gray-400') },
           React.createElement(BellIcon, { red: unreadCount > 0 }),
-          unreadCount > 0 && React.createElement('span', { className: 'absolute top-0 right-1 bg-red-600 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center' }, unreadCount > 9 ? '9+' : unreadCount),
+          unreadCount > 0 ? React.createElement('span', { className: 'absolute top-0 right-1 bg-red-600 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center' }, unreadCount > 9 ? '9+' : String(unreadCount)) : null,
           React.createElement('span', { className: 'text-xs font-medium', style: unreadCount > 0 ? { color: '#dc2626' } : {} }, 'Alerts')
         )
       ),
-      React.createElement('p', { className: 'text-center text-gray-600 text-xs mt-1' }, 'v' + APP_VERSION)
+      React.createElement('p', { className: 'text-center text-gray-600 text-xs mt-0.5' }, 'v' + APP_VERSION)
     )
   );
 }
