@@ -218,9 +218,11 @@ function App() {
   // NEW: drawer now holds live refresh data, not just a wiki fetch
   const [drawerData, setDrawerData] = useState(null);
   const [drawerRefreshing, setDrawerRefreshing] = useState(false);
-  const [selectedDisambig, setSelectedDisambig] = useState(null); // chosen match from disambiguation list
+  const [selectedDisambig, setSelectedDisambig] = useState(null);
+  const [apiVersion, setApiVersion] = useState('...'); // chosen match from disambiguation list
 
   useEffect(() => {
+    fetch(API_BASE + '/health').then(r => r.json()).then(d => setApiVersion(d.version || '?')).catch(() => setApiVersion('?'));
     const t = localStorage.getItem('doa_token');
     const u = localStorage.getItem('doa_user');
     if (t && u) { setUser(JSON.parse(u)); setAuth(true); setPage('watchlist'); loadWatchlist(); loadNotifications(); }
@@ -965,7 +967,7 @@ function App() {
             <span className="text-xs font-medium" style={unreadCount > 0 ? {color:'#dc2626'} : {}}>Alerts</span>
           </button>
         </div>
-        <p className="text-center text-gray-600 text-xs mt-1">v{APP_VERSION}</p>
+        <p className="text-center text-gray-600 text-xs mt-1">app v{APP_VERSION} | api v{apiVersion}</p>
       </div>
     </PageWrapper>
   );
