@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.2.3';
+const APP_VERSION = '1.2.4';
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
@@ -333,12 +333,14 @@ function App() {
       return w;
     };
     try {
-      // Always strip to first+last for broader Wikipedia match
-      const simplified = normalizeForWiki(name);
-      let w = await tryWiki(simplified);
-      // If not found with first+last, try full name as fallback
-      if (!w.extract && simplified !== toTitleCase(name)) {
-        w = await tryWiki(toTitleCase(name));
+      // Step 1: try exact name as entered
+      let w = await tryWiki(toTitleCase(name));
+      // Step 2: if not found, try first+last only
+      if (!w.extract) {
+        const simplified = normalizeForWiki(name);
+        if (simplified !== toTitleCase(name)) {
+          w = await tryWiki(simplified);
+        }
       }
       if (!w.extract) return { isDisambiguation: false, notFound: true };
       const extract = w.extract || '', description = w.description || '', type = w.type || '';
