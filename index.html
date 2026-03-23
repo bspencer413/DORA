@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.2.3';
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
@@ -328,8 +328,18 @@ function App() {
   };
 
   const fetchWikiProfile = async (name) => {
+    const tryWiki = async (n) => {
+      const w = await (await fetch('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(n))).json();
+      return w;
+    };
     try {
-      const w = await (await fetch('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(toTitleCase(name)))).json();
+      // Always strip to first+last for broader Wikipedia match
+      const simplified = normalizeForWiki(name);
+      let w = await tryWiki(simplified);
+      // If not found with first+last, try full name as fallback
+      if (!w.extract && simplified !== toTitleCase(name)) {
+        w = await tryWiki(toTitleCase(name));
+      }
       if (!w.extract) return { isDisambiguation: false, notFound: true };
       const extract = w.extract || '', description = w.description || '', type = w.type || '';
       if (type === 'disambiguation') {
@@ -365,8 +375,9 @@ function App() {
         isDisambiguation: false
       };
       setDrawerData({ name: data.name, watchlistId: watchItem.id, profile, loading: false, newlyDeceased: data.newly_deceased });
+      // Always reload watchlist so status badge updates on screen
+      await loadWatchlist();
       if (data.newly_deceased) {
-        await loadWatchlist();
         await loadNotifications();
       }
     } catch (e) {
@@ -382,7 +393,7 @@ function App() {
   const checkWatch = async () => {
     const name = toTitleCase(nw.name);
     if (!name.trim() || name.trim().length < 2) { alert('Please enter a name to search.'); return; }
-    if (isOnWatchlist(name)) { alert(name + ' is already on your watchlist!'); return; }
+    // No early return for already-on-watchlist -- let Wikipedia run so user sees current status
     setWatchlistChecking(true); setWatchlistCheck(null); setWatchlistChecked(false);
     try { const profile = await fetchWikiProfile(name); setWatchlistCheck({ profile, name }); setWatchlistChecked(true); }
     catch (error) { setWatchlistCheck({ profile: null, name }); setWatchlistChecked(true); }
@@ -641,9 +652,12 @@ function App() {
               <p className="text-white/80 text-sm text-center font-medium border-t border-white/10 pt-2">
                 {notFound ? 'Add "' + name + '" to watchlist?' : 'Add ' + (profile ? profile.title : name) + ' to watchlist?'}
               </p>
-              <button onClick={confirmAddWatch} disabled={loading} className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
-                <PlusIcon /> {loading ? 'Adding...' : 'Yes, Add to Watchlist'}
-              </button>
+              {isOnWatchlist(profile ? profile.title : name)
+                ? <p className="w-full py-2.5 text-center text-green-400 text-sm font-bold">Already on your watchlist</p>
+                : <button onClick={confirmAddWatch} disabled={loading} className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
+                    <PlusIcon /> {loading ? 'Adding...' : 'Yes, Add to Watchlist'}
+                  </button>
+              }
               <button onClick={() => { setWatchlistChecked(false); setWatchlistCheck(null); setSelectedDisambig(null); }} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center flex items-center justify-center gap-2">
                 <EditIcon /> Edit Name
               </button>
