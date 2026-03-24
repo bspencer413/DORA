@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.2.8';
+const APP_VERSION = '1.2.9';
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
@@ -274,18 +274,24 @@ function App() {
     } catch (e) { console.error(e); }
   };
 
-  const dismissAlert = async (notifId) => {
+  const dismissAlert = async (notifId, watchlistId) => {
+    const token = localStorage.getItem('doa_token');
+    // Remove notification locally immediately
+    setNotifications(prev => prev.filter(n => n.id !== notifId));
+    // Delete notification from backend
     try {
-      const token = localStorage.getItem('doa_token');
       await fetch(API_BASE + '/notifications/' + notifId, {
         method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token }
       });
-      setDismissedAlerts(prev => [...prev, notifId]);
-      await loadNotifications();
-    } catch (e) {
-      // If delete not supported, just hide locally
-      setDismissedAlerts(prev => [...prev, notifId]);
-      setNotifications(prev => prev.filter(n => n.id !== notifId));
+    } catch(e) { console.log('Notif delete error:', e); }
+    // Delete from watchlist too if watchlistId provided
+    if (watchlistId) {
+      try {
+        await fetch(API_BASE + '/watchlist/' + watchlistId, {
+          method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token }
+        });
+        await loadWatchlist();
+      } catch(e) { console.log('Watchlist delete error:', e); }
     }
   };
 
@@ -330,71 +336,98 @@ function App() {
   const clearSearch = () => { setSName(''); setSLoc(''); setSBirthYear(''); setWikiProfile(null); setResults([]); setSearched(false); setSelectedDisambig(null); };
   const clearWatchlistCheck = () => { setWatchlistCheck(null); setWatchlistChecked(false); setNw({ name: '', location: '', birthYear: '' }); setSelectedDisambig(null); };
 
-  const fetchWikiSingle = async (title) => {
+  // Use Wikipedia Action API -- not cached, includes death categories
+  const fetchWikiAction = async (name) => {
     try {
-      const w = await (await fetch('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(title))).json();
-      if (!w.extract) return null;
-      const extract = w.extract || '', description = w.description || '', type = w.type || '';
-      if (type === 'disambiguation') return null;
-      const deceased = isDeceasedCheck(extract, description, w.death_date, type);
-      return { title: w.title, extract, thumbnail: w.thumbnail ? w.thumbnail.source : null, birthDate: w.birth_date || null, deathDate: deceased ? (w.death_date || 'deceased') : null, description, isDisambiguation: false };
-    } catch (e) { return null; }
+      const params = new URLSearchParams({
+        action: 'query',
+        titles: name,
+        prop: 'extracts|pageprops|categories|info',
+        exintro: 'true',
+        explaintext: 'true',
+        redirects: '1',
+        cllimit: '50',
+        format: 'json',
+        origin: '*'
+      });
+      const data = await (await fetch('https://en.wikipedia.org/w/api.php?' + params)).json();
+      const pages = data.query && data.query.pages ? data.query.pages : {};
+      const page = Object.values(pages)[0];
+      if (!page || page.missing !== undefined) return null;
+      const title = page.title || name;
+      const extract = page.extract || '';
+      const categories = (page.categories || []).map(cat => cat.title || '');
+      const deathFromCategory = categories.some(cat =>
+        /deaths|murdered|executed/i.test(cat)
+      );
+      // Check for disambiguation
+      const isDisambig = !!(page.pageprops && page.pageprops.disambiguation !== undefined) ||
+                         title.toLowerCase().includes('(disambiguation)');
+      if (isDisambig) return { type: 'disambiguation', title: title.replace(/ \(disambiguation\)/i, ''), extract };
+      // Also fetch summary API for thumbnail and dates
+      let thumbnail = null, birthDate = null, deathDate = null, description = '';
+      try {
+        const sum = await (await fetch('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(title))).json();
+        thumbnail = sum.thumbnail ? sum.thumbnail.source : null;
+        birthDate = sum.birth_date || null;
+        deathDate = sum.death_date || null;
+        description = sum.description || '';
+      } catch(e) {}
+      // Extract full death date from extract text if not in summary
+      if (!deathDate || deathDate.length <= 4) {
+        const months = 'January|February|March|April|May|June|July|August|September|October|November|December';
+        const dateMatches = extract.match(new RegExp('(?:' + months + ') \\d{1,2}, \\d{4}', 'g'));
+        if (dateMatches && dateMatches.length >= 2) deathDate = dateMatches[dateMatches.length - 1];
+        else if (dateMatches && dateMatches.length === 1 && /died|death|passed|\u2013|\u2014/.test(extract.split('.')[0])) deathDate = dateMatches[0];
+      }
+      const deceased = deathFromCategory || !!deathDate || isDeceasedCheck(extract, description, deathDate, 'standard');
+      return {
+        title, extract, thumbnail, birthDate,
+        deathDate: deceased ? (deathDate || 'deceased') : null,
+        description, isDisambiguation: false, deathFromCategory
+      };
+    } catch(e) { return null; }
   };
 
+  // Fetch disambiguation matches -- ALL results, user picks
   const fetchDisambigMatches = async (title) => {
-    // Fetch the disambiguation page HTML, extract linked article titles
     try {
       const url = 'https://en.wikipedia.org/w/api.php?action=parse&page=' + encodeURIComponent(title) + '&prop=links&format=json&origin=*';
       const data = await (await fetch(url)).json();
       const links = (data.parse && data.parse.links) ? data.parse.links : [];
-      // Filter to likely person links (no File:, Category:, etc.)
       const personLinks = links
         .filter(l => l.ns === 0 && l['*'] && l['*'].length > 2)
         .map(l => l['*'])
-        .slice(0, 8);
-      // Fetch summary for each candidate
+        .slice(0, 10);
       const results = [];
       for (const link of personLinks) {
-        const profile = await fetchWikiSingle(link);
-        if (profile) results.push(profile);
-        if (results.length >= 5) break;
+        const profile = await fetchWikiAction(link);
+        if (profile && !profile.isDisambiguation && profile.extract) results.push(profile);
+        if (results.length >= 6) break;
       }
       return results;
-    } catch (e) { return []; }
+    } catch(e) { return []; }
   };
 
   const fetchWikiProfile = async (name) => {
-    const tryWiki = async (n) => {
-      const w = await (await fetch('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(n))).json();
-      return w;
-    };
     try {
-      // Step 1: try name with periods added to bare initials
-      // "Robert S Mueller" -> "Robert S. Mueller" -> finds correct article
+      // Try with periods added to bare initials first
       const nameWithPeriods = addInitialPeriods(toTitleCase(name));
-      let w = await tryWiki(nameWithPeriods);
-      // Step 1b: if that didn't work, try exact name as entered
-      if (!w.extract && nameWithPeriods !== toTitleCase(name)) {
-        w = await tryWiki(toTitleCase(name));
+      let result = await fetchWikiAction(nameWithPeriods);
+      // If not found, try exact name
+      if (!result && nameWithPeriods !== toTitleCase(name)) {
+        result = await fetchWikiAction(toTitleCase(name));
       }
-      // Step 2: if not found, try first+last only
-      if (!w.extract) {
-        const simplified = normalizeForWiki(name);
-        if (simplified !== toTitleCase(name)) {
-          w = await tryWiki(simplified);
-        }
+      if (!result) return { isDisambiguation: false, notFound: true };
+      if (result.type === 'disambiguation') {
+        const matches = await fetchDisambigMatches(result.title);
+        return { isDisambiguation: true, title: result.title, matches };
       }
-      if (!w.extract) return { isDisambiguation: false, notFound: true };
-      const extract = w.extract || '', description = w.description || '', type = w.type || '';
-      if (type === 'disambiguation') {
-        // Return disambiguation with matches to show list
-        const matches = await fetchDisambigMatches(w.title);
-        return { isDisambiguation: true, title: w.title.replace(' (disambiguation)', ''), matches };
-      }
-      const deceased = isDeceasedCheck(extract, description, w.death_date, type);
-      return { title: w.title, extract, thumbnail: w.thumbnail ? w.thumbnail.source : null, birthDate: w.birth_date || null, deathDate: deceased ? (w.death_date || 'deceased') : null, description, isDisambiguation: false };
-    } catch (e) { return null; }
+      return result;
+    } catch(e) { return null; }
   };
+
+
 
   // CHANGED: tap on watchlist name now calls the backend /refresh endpoint
   // which checks Wikipedia, updates DB, and returns fresh bio + status
@@ -921,7 +954,7 @@ function App() {
                           <p className="text-gray-300 text-sm mt-1">{n.message}</p>
                           <p className="text-gray-500 text-xs mt-1">{new Date(n.created_at).toLocaleDateString()}</p>
                         </div>
-                        <button onClick={() => dismissAlert(n.id)} className="text-gray-500 hover:text-red-400 text-xs px-2 py-1 border border-gray-700 rounded-lg shrink-0">Dismiss</button>
+                        <button onClick={() => dismissAlert(n.id, n.watchlist_id)} className="text-gray-500 hover:text-red-400 text-xs px-2 py-1 border border-gray-700 rounded-lg shrink-0">Dismiss</button>
                       </div>
                     </div>
                   ))}
