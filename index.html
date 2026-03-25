@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.3.1';
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
@@ -413,18 +413,23 @@ function App() {
     try {
       // Try with periods added to bare initials first
       const nameWithPeriods = addInitialPeriods(toTitleCase(name));
-      let result = await fetchWikiAction(nameWithPeriods);
+      let result = null;
+      try { result = await fetchWikiAction(nameWithPeriods); } catch(e) {}
       // If not found, try exact name
       if (!result && nameWithPeriods !== toTitleCase(name)) {
-        result = await fetchWikiAction(toTitleCase(name));
+        try { result = await fetchWikiAction(toTitleCase(name)); } catch(e) {}
       }
       if (!result) return { isDisambiguation: false, notFound: true };
       if (result.type === 'disambiguation') {
-        const matches = await fetchDisambigMatches(result.title);
-        return { isDisambiguation: true, title: result.title, matches };
+        let matches = [];
+        try { matches = await fetchDisambigMatches(result.title); } catch(e) {}
+        return { isDisambiguation: true, title: result.title || name, matches: matches || [] };
       }
       return result;
-    } catch(e) { return null; }
+    } catch(e) {
+      console.log('fetchWikiProfile error:', e);
+      return { isDisambiguation: false, notFound: true };
+    }
   };
 
 
@@ -487,8 +492,16 @@ function App() {
     if (!name.trim() || name.trim().length < 2) { alert('Please enter a name to search.'); return; }
     // No early return for already-on-watchlist -- let Wikipedia run so user sees current status
     setWatchlistChecking(true); setWatchlistCheck(null); setWatchlistChecked(false);
-    try { const profile = await fetchWikiProfile(name); setWatchlistCheck({ profile, name }); setWatchlistChecked(true); }
-    catch (error) { setWatchlistCheck({ profile: null, name }); setWatchlistChecked(true); }
+    try {
+      const profile = await fetchWikiProfile(name);
+      setWatchlistCheck({ profile: profile || { isDisambiguation: false, notFound: true }, name });
+      setWatchlistChecked(true);
+    }
+    catch (error) {
+      console.log('checkWatch error:', error);
+      setWatchlistCheck({ profile: { isDisambiguation: false, notFound: true }, name });
+      setWatchlistChecked(true);
+    }
     finally { setWatchlistChecking(false); }
   };
 
