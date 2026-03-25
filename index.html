@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.3.4b';
+const APP_VERSION = '1.3.4c';
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
@@ -757,8 +757,8 @@ function App() {
           )}
           {notFound && (
             <div className="mb-3">
-              <p className="text-white text-base font-bold mb-1">"{name}"</p>
-              <p className="text-gray-300 text-sm">Not found in Wikipedia.</p>
+              <p className="text-white text-base font-bold mb-1">{name} not found</p>
+              <p className="text-gray-300 text-sm">Add to watchlist anyway?</p>
             </div>
           )}
           {watchlistCheck && watchlistCheck.ssdiResults && watchlistCheck.ssdiResults.length > 0 && (
