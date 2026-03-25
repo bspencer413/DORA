@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.3.3a';
+const APP_VERSION = '1.3.4';
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
@@ -439,42 +439,23 @@ function App() {
   const openWatchlistDrawer = async (watchItem) => {
     setDrawerData({ name: watchItem.name, watchlistId: watchItem.id, profile: null, loading: true, newlyDeceased: false });
     setDrawerRefreshing(true);
-    try {
-      const token = localStorage.getItem('doa_token');
-      const r = await fetch(API_BASE + '/watchlist/' + watchItem.id + '/refresh', {
-        headers: { 'Authorization': 'Bearer ' + token }
+    // Call backend refresh for DB update and notifications (fire and forget)
+    const token = localStorage.getItem('doa_token');
+    fetch(API_BASE + '/watchlist/' + watchItem.id + '/refresh', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    }).then(function(r) {
+      if (r.ok) r.json().then(function(data) {
+        if (data.newly_deceased) { loadWatchlist(); loadNotifications(); }
+        else { loadWatchlist(); }
       });
-      if (!r.ok) throw new Error('Refresh failed');
-      const data = await r.json();
-      // Build a profile object from the refresh response
-      const profile = {
-        title: data.name,
-        extract: data.wikipedia_description || '',
-        thumbnail: data.thumbnail || null,
-        birthDate: data.birth_date || null,
-        deathDate: data.is_deceased ? (data.death_date || data.death_year || 'deceased') : null,
-        description: data.description || '',
-        isDisambiguation: false
-      };
-      // If no thumbnail in stored data, fetch from Wikipedia summary API
-      if (!profile.thumbnail && profile.title) {
-        try {
-          const sum = await (await fetch('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(profile.title))).json();
-          if (sum.thumbnail) profile.thumbnail = sum.thumbnail.source;
-          if (sum.birth_date && !profile.birthDate) profile.birthDate = sum.birth_date;
-          if (sum.death_date && (!profile.deathDate || profile.deathDate.length <= 4)) profile.deathDate = sum.death_date;
-        } catch(e) {}
-      }
-      setDrawerData({ name: data.name, watchlistId: watchItem.id, profile, loading: false, newlyDeceased: data.newly_deceased });
-      // Always reload watchlist so status badge updates on screen
-      await loadWatchlist();
-      if (data.newly_deceased) {
-        await loadNotifications();
-      }
-    } catch (e) {
-      // Fallback to direct Wikipedia fetch if backend refresh fails
-      const profile = await fetchWikiProfile(watchItem.name);
-      setDrawerData({ name: watchItem.name, watchlistId: watchItem.id, profile, loading: false, newlyDeceased: false });
+    }).catch(function() {});
+    // Use fetchWikiAction directly for display -- same as search, full dates + thumbnail
+    try {
+      const nameWithPeriods = addInitialPeriods(toTitleCase(watchItem.name));
+      const profile = await fetchWikiAction(nameWithPeriods);
+      setDrawerData({ name: watchItem.name, watchlistId: watchItem.id, profile: profile || { notFound: true }, loading: false, newlyDeceased: false });
+    } catch(e) {
+      setDrawerData({ name: watchItem.name, watchlistId: watchItem.id, profile: { notFound: true }, loading: false, newlyDeceased: false });
     }
     setDrawerRefreshing(false);
   };
@@ -593,6 +574,7 @@ function App() {
 
   // SingleProfileCard -- shows one person's full bio
   const SingleProfileCard = ({ profile, showAddButton, onBack }) => {
+    if (!profile || !profile.title) return null;
     const alreadyWatching = isOnWatchlist(profile.title);
     const isDisambig = profile.isDisambiguation;
     return (
@@ -632,6 +614,7 @@ function App() {
 
   // WikiCard -- handles single result OR disambiguation list
   const WikiCard = ({ profile, showAddButton }) => {
+    if (!profile) return null;
     // If we selected a specific person from disambiguation list
     if (selectedDisambig) {
       return <SingleProfileCard profile={selectedDisambig} showAddButton={showAddButton} onBack={() => setSelectedDisambig(null)} />;
@@ -756,7 +739,7 @@ function App() {
     return (
       <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
         <div className={'px-5 py-2 ' + (isDeceased ? 'bg-gray-800' : notFound ? 'bg-blue-700' : 'bg-green-700')}>
-          <span className="text-white font-black tracking-widest text-sm">{isDeceased ? 'DEAD' : notFound ? 'NOT IN WIKIPEDIA' : 'ALIVE'}</span>
+          <span className="text-white font-black tracking-widest text-sm">{isDeceased ? 'DEAD' : notFound ? 'NOT FOUND' : 'ALIVE'}</span>
         </div>
         <div className="bg-gray-900/70 p-4">
           {profile && !notFound && (
@@ -795,7 +778,7 @@ function App() {
           {!isDeceased && (
             <div className="space-y-2 mt-2">
               <p className="text-white/80 text-sm text-center font-medium border-t border-white/10 pt-2">
-                {notFound ? 'Add "' + name + '" to watchlist?' : 'Add ' + (profile ? profile.title : name) + ' to watchlist?'}
+                {notFound ? '"' + name + '" not found -- add to watchlist?' : 'Add ' + (profile ? profile.title : name) + ' to watchlist?'}
               </p>
               {(isOnWatchlist(profile ? profile.title : name) || isOnWatchlist(name))
                 ? <p className="w-full py-2.5 text-center text-green-400 text-sm font-bold">Already on your watchlist</p>
@@ -835,9 +818,8 @@ function App() {
             {!drawerLoading && !profile && (
               <div className="text-center py-8">
                 <p className="text-4xl mb-3">?</p>
-                <p className="text-white font-bold text-lg">Bio not available</p>
-                <p className="text-gray-300 text-sm mt-2">No Wikipedia entry found for "{name}"</p>
-                <p className="text-gray-400 text-xs mt-2">Try searching with full name including middle name</p>
+                <p className="text-white font-bold text-lg">Not found</p>
+                <p className="text-gray-300 text-sm mt-2">"{name}" was not found.</p>
               </div>
             )}
             {!drawerLoading && profile && (
