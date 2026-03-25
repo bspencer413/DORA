@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.3.4';
+const APP_VERSION = '1.3.4a';
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
@@ -363,7 +363,7 @@ function App() {
       // Check for disambiguation
       const isDisambig = !!(page.pageprops && page.pageprops.disambiguation !== undefined) ||
                          title.toLowerCase().includes('(disambiguation)');
-      if (isDisambig) return { type: 'disambiguation', title: title.replace(/ \(disambiguation\)/i, ''), extract };
+      if (isDisambig) return { type: 'disambiguation', isDisambiguation: true, title: title.replace(/ \(disambiguation\)/i, ''), extract, matches: [] };
       // Also fetch summary API for thumbnail and dates
       let thumbnail = null, birthDate = null, deathDate = null, description = '';
       try {
