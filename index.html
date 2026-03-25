@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.3.4g';
+const APP_VERSION = '1.3.4h';
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
@@ -628,7 +628,7 @@ function App() {
           </div>
           <div className="bg-gray-900/70 p-4">
             <p className="text-gray-300 text-sm mb-1">Several people share this name.</p>
-            <p className="text-yellow-300 text-xs mb-3">Tip: Add a middle name or initial (e.g. "Robert S. Mueller") to find the right person directly.</p>
+            <p className="text-yellow-300 text-xs mb-3">Tip: Add a middle name or initial (e.g. Robert S. Mueller) to find the right person directly.</p>
             <div className="space-y-2">
               {(profile.matches || []).map((m, i) => (
                 <button key={i} onClick={() => setSelectedDisambig(m)} className="w-full p-3 bg-gray-800/60 border border-red-900/30 rounded-xl text-left hover:bg-gray-700/60 transition-colors">
@@ -707,7 +707,7 @@ function App() {
           </div>
           <div className="bg-gray-900/70 p-4">
             <p className="text-gray-300 text-sm mb-1">Several people share this name.</p>
-            <p className="text-yellow-300 text-xs mb-3">Tip: Add a middle name or initial (e.g. "Robert S. Mueller") to find the right person directly.</p>
+            <p className="text-yellow-300 text-xs mb-3">Tip: Add a middle name or initial (e.g. Robert S. Mueller) to find the right person directly.</p>
             <div className="space-y-2">
               {(profile.matches || []).map((m, i) => (
                 <button key={i} onClick={() => setSelectedDisambig(m)} className="w-full p-3 bg-gray-800/60 border border-red-900/30 rounded-xl text-left hover:bg-gray-700/60 transition-colors">
