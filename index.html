@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.3.4c';
+const APP_VERSION = '1.3.4e';
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
@@ -630,7 +630,7 @@ function App() {
             <p className="text-gray-300 text-sm mb-1">Several people share this name.</p>
             <p className="text-yellow-300 text-xs mb-3">Tip: Add a middle name or initial (e.g. "Robert S. Mueller") to find the right person directly.</p>
             <div className="space-y-2">
-              {profile.matches && profile.matches.map((m, i) => (
+              {(profile.matches || []).map((m, i) => (
                 <button key={i} onClick={() => setSelectedDisambig(m)} className="w-full p-3 bg-gray-800/60 border border-red-900/30 rounded-xl text-left hover:bg-gray-700/60 transition-colors">
                   <div className="flex items-center gap-3">
                     {m.thumbnail ? <img src={m.thumbnail} alt={m.title} className="w-10 h-10 rounded-full object-cover border border-red-600/40 shrink-0" /> : <div className="w-10 h-10 rounded-full bg-red-900/40 flex items-center justify-center shrink-0 text-lg">?</div>}
@@ -642,8 +642,8 @@ function App() {
                   </div>
                 </button>
               ))}
-              {(!profile.matches || profile.matches.length === 0) && (
-                <p className="text-gray-400 text-sm text-center py-3">Could not load matches. Try entering the full name including middle name.</p>
+              {(profile.matches || []).length === 0 && (
+                <p className="text-gray-400 text-sm text-center py-3">No matches found. Try adding a middle name or initial.</p>
               )}
             </div>
             <button onClick={clearSearch} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center mt-3">Clear Search</button>
@@ -709,7 +709,7 @@ function App() {
             <p className="text-gray-300 text-sm mb-1">Several people share this name.</p>
             <p className="text-yellow-300 text-xs mb-3">Tip: Add a middle name or initial (e.g. "Robert S. Mueller") to find the right person directly.</p>
             <div className="space-y-2">
-              {profile.matches && profile.matches.map((m, i) => (
+              {(profile.matches || []).map((m, i) => (
                 <button key={i} onClick={() => setSelectedDisambig(m)} className="w-full p-3 bg-gray-800/60 border border-red-900/30 rounded-xl text-left hover:bg-gray-700/60 transition-colors">
                   <div className="flex items-center gap-3">
                     {m.thumbnail ? <img src={m.thumbnail} alt={m.title} className="w-10 h-10 rounded-full object-cover border border-red-600/40 shrink-0" /> : <div className="w-10 h-10 rounded-full bg-red-900/40 flex items-center justify-center shrink-0 text-lg">?</div>}
@@ -721,8 +721,8 @@ function App() {
                   </div>
                 </button>
               ))}
-              {(!profile.matches || profile.matches.length === 0) && (
-                <p className="text-gray-400 text-sm text-center py-3">Could not load matches. Try entering the full name including middle name.</p>
+              {(profile.matches || []).length === 0 && (
+                <p className="text-gray-400 text-sm text-center py-3">No matches found. Try adding a middle name or initial.</p>
               )}
             </div>
             <button onClick={() => { setWatchlistChecked(false); setWatchlistCheck(null); setSelectedDisambig(null); }} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center mt-3 flex items-center justify-center gap-2">
@@ -733,6 +733,24 @@ function App() {
       );
     }
 
+    // Safety check - if profile is in unexpected state, show not found
+    if (profile && !profile.isDisambiguation && !profile.notFound && !profile.title && !profile.extract) {
+      return (
+        <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
+          <div className="px-5 py-2 bg-blue-700">
+            <span className="text-white font-black tracking-widest text-sm">NOT FOUND</span>
+          </div>
+          <div className="bg-gray-900/70 p-4">
+            <p className="text-white text-base font-bold mb-1">{name} not found</p>
+            <p className="text-gray-300 text-sm mb-3">Add to watchlist anyway?</p>
+            <button onClick={confirmAddWatch} disabled={loading} className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
+              <PlusIcon /> {loading ? 'Adding...' : 'Add to Watchlist'}
+            </button>
+            <button onClick={clearWatchlistCheck} className="w-full py-1.5 text-white/40 text-xs text-center mt-1">Cancel</button>
+          </div>
+        </div>
+      );
+    }
     const isDeceased = profile && profile.deathDate;
     const isDisambig = false;
     const notFound = !profile || profile.notFound === true || (!profile.title && !profile.extract);
