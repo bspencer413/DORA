@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.3.3';
+const APP_VERSION = '1.3.3a';
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
@@ -500,8 +500,11 @@ function App() {
         var sr = await fetch(API_BASE + '/ssdi/search?name=' + encodeURIComponent(name), {
           headers: { 'Authorization': 'Bearer ' + token }
         });
-        if (sr.ok) { var sd = await sr.json(); ssdiResults = sd.results || []; }
-      } catch(e) { console.log('SSDI error:', e); }
+        if (sr && sr.ok) {
+          var sd = await sr.json();
+          ssdiResults = (sd && Array.isArray(sd.results)) ? sd.results : [];
+        }
+      } catch(e) { ssdiResults = []; console.log('SSDI error:', e); }
       setWatchlistCheck({ profile: profile || { isDisambiguation: false, notFound: true }, name, ssdiResults: ssdiResults });
       setWatchlistChecked(true);
     }
