@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.3.4k';
+const APP_VERSION = '1.3.5';
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
@@ -66,7 +66,6 @@ const toTitleCase = (str) => {
     .replace(/'\w/g, (txt) => txt.toUpperCase());
 };
 
-// Strip middle names/initials for Wikipedia lookup only
 const normalizeForWiki = (name) => {
   if (!name) return name;
   name = name.trim();
@@ -74,19 +73,14 @@ const normalizeForWiki = (name) => {
     const parts = name.split(',');
     name = parts[1].trim() + ' ' + parts[0].trim();
   }
-  // Strip middle initials: single letters with or without period (S, S., Sr., Jr. kept)
   const words = name.split(/\s+/).filter(w => {
     const stripped = w.replace(/\./g, '');
-    // Keep if more than 1 real letter (so "Jr" "Sr" "III" "IV" are kept)
-    // Strip if single letter or single letter + period (middle initials)
     return stripped.length > 1;
   });
   if (words.length >= 3) return toTitleCase(words[0] + ' ' + words[words.length - 1]);
   return toTitleCase(words.join(' '));
 };
 
-// Add period after bare single-letter middle initials
-// "Robert S Mueller" -> "Robert S. Mueller"
 const addInitialPeriods = (name) => {
   if (!name) return name;
   return name.trim().split(/\s+/).map((word, i, arr) => {
@@ -95,6 +89,42 @@ const addInitialPeriods = (name) => {
     }
     return word;
   }).join(' ');
+};
+
+// ── Confidence scoring for SSDI results ────────────────────────────────────────
+const scoreResult = (result, searchFirst, searchMiddle, searchLast, searchBirthYear, searchSuffix) => {
+  let score = 0;
+  const rFirst = (result.first_name || '').toUpperCase();
+  const rMiddle = (result.middle_name || '').toUpperCase();
+  const rLast = (result.last_name || '').toUpperCase();
+  const rSuffix = (result.suffix || '').toUpperCase();
+  const rDob = (result.birth_date || '');
+  const sFirst = (searchFirst || '').toUpperCase();
+  const sMiddle = (searchMiddle || '').toUpperCase().replace('.','');
+  const sLast = (searchLast || '').toUpperCase();
+  const sSuffix = (searchSuffix || '').toUpperCase();
+  // Last name exact match (required, already filtered by query)
+  score += 30;
+  // First name exact vs partial
+  if (rFirst === sFirst) score += 30;
+  else if (rFirst.startsWith(sFirst) || sFirst.startsWith(rFirst)) score += 15;
+  // Middle name/initial
+  if (sMiddle && rMiddle) {
+    if (rMiddle === sMiddle || rMiddle.startsWith(sMiddle) || sMiddle.startsWith(rMiddle)) score += 20;
+  }
+  // Birth year
+  if (searchBirthYear && rDob) {
+    if (rDob.includes(searchBirthYear)) score += 15;
+  }
+  // Suffix
+  if (sSuffix && rSuffix && rSuffix === sSuffix) score += 5;
+  return score;
+};
+
+const confidenceLabel = (score) => {
+  if (score >= 90) return 'HIGH';
+  if (score >= 60) return 'MEDIUM';
+  return 'LOW';
 };
 
 const HomeIcon = () => (
@@ -204,7 +234,6 @@ function isDeceasedCheck(extract, description, deathDate, type) {
   const isPastTense = /^[^.]*\bwas (an?|the)\b[^.]*\./.test(extract) && !/\([^)]*born/.test(firstSentence) && !/born\s+\d{4}/.test(description);
   const diedInExtract = /\b(died|death|passed away|deceased|d\.)\b/i.test(extract);
   const diedInDescription = /\b(died|death|deceased)\b/i.test(description);
-  // Also check description for year range like "American attorney (1944-2026)"
   const yearRangeInDesc = /\(\d{4}[-\u2013\u2014]+\d{4}\)/.test(description);
   return hasDeathInBrackets || hasYearsInDescription || yearRangeInDesc || isPastTense || diedInExtract || diedInDescription;
 }
@@ -230,17 +259,16 @@ function App() {
   const [sName, setSName] = useState('');
   const [sLoc, setSLoc] = useState('');
   const [sBirthYear, setSBirthYear] = useState('');
-  const [nw, setNw] = useState({ name: '', location: '', birthYear: '' });
+  // Watchlist form fields -- now includes middle, suffix
+  const [nw, setNw] = useState({ name: '', middle: '', suffix: '', location: '', birthYear: '' });
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState('');
   const [showDangerZone, setShowDangerZone] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  // NEW: drawer now holds live refresh data, not just a wiki fetch
   const [drawerData, setDrawerData] = useState(null);
   const [drawerRefreshing, setDrawerRefreshing] = useState(false);
   const [selectedDisambig, setSelectedDisambig] = useState(null);
-  const [dismissedAlerts, setDismissedAlerts] = useState([]);
-  const [apiVersion, setApiVersion] = useState('...'); // chosen match from disambiguation list
+  const [apiVersion, setApiVersion] = useState('...');
 
   useEffect(() => {
     fetch(API_BASE + '/health').then(r => r.json()).then(d => setApiVersion(d.version || '?')).catch(() => setApiVersion('?'));
@@ -276,22 +304,10 @@ function App() {
 
   const dismissAlert = async (notifId, watchlistId) => {
     const token = localStorage.getItem('doa_token');
-    // Remove notification locally immediately
     setNotifications(prev => prev.filter(n => n.id !== notifId));
-    // Delete notification from backend
-    try {
-      await fetch(API_BASE + '/notifications/' + notifId, {
-        method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token }
-      });
-    } catch(e) { console.log('Notif delete error:', e); }
-    // Delete from watchlist too if watchlistId provided
+    try { await fetch(API_BASE + '/notifications/' + notifId, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } }); } catch(e) {}
     if (watchlistId) {
-      try {
-        await fetch(API_BASE + '/watchlist/' + watchlistId, {
-          method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token }
-        });
-        await loadWatchlist();
-      } catch(e) { console.log('Watchlist delete error:', e); }
+      try { await fetch(API_BASE + '/watchlist/' + watchlistId, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } }); await loadWatchlist(); } catch(e) {}
     }
   };
 
@@ -334,21 +350,13 @@ function App() {
   };
 
   const clearSearch = () => { setSName(''); setSLoc(''); setSBirthYear(''); setWikiProfile(null); setResults([]); setSearched(false); setSelectedDisambig(null); };
-  const clearWatchlistCheck = () => { setWatchlistCheck(null); setWatchlistChecked(false); setNw({ name: '', location: '', birthYear: '' }); setSelectedDisambig(null); };
+  const clearWatchlistCheck = () => { setWatchlistCheck(null); setWatchlistChecked(false); setNw({ name: '', middle: '', suffix: '', location: '', birthYear: '' }); setSelectedDisambig(null); };
 
-  // Use Wikipedia Action API -- not cached, includes death categories
   const fetchWikiAction = async (name) => {
     try {
       const params = new URLSearchParams({
-        action: 'query',
-        titles: name,
-        prop: 'extracts|pageprops|categories|info',
-        exintro: 'true',
-        explaintext: 'true',
-        redirects: '1',
-        cllimit: '50',
-        format: 'json',
-        origin: '*'
+        action: 'query', titles: name, prop: 'extracts|pageprops|categories|info',
+        exintro: 'true', explaintext: 'true', redirects: '1', cllimit: '50', format: 'json', origin: '*'
       });
       const data = await (await fetch('https://en.wikipedia.org/w/api.php?' + params)).json();
       const pages = data.query && data.query.pages ? data.query.pages : {};
@@ -357,14 +365,9 @@ function App() {
       const title = page.title || name;
       const extract = page.extract || '';
       const categories = (page.categories || []).map(cat => cat.title || '');
-      const deathFromCategory = categories.some(cat =>
-        /deaths|murdered|executed/i.test(cat)
-      );
-      // Check for disambiguation
-      const isDisambig = !!(page.pageprops && page.pageprops.disambiguation !== undefined) ||
-                         title.toLowerCase().includes('(disambiguation)');
+      const deathFromCategory = categories.some(cat => /deaths|murdered|executed/i.test(cat));
+      const isDisambig = !!(page.pageprops && page.pageprops.disambiguation !== undefined) || title.toLowerCase().includes('(disambiguation)');
       if (isDisambig) return { type: 'disambiguation', isDisambiguation: true, title: title.replace(/ \(disambiguation\)/i, ''), extract, matches: [] };
-      // Also fetch summary API for thumbnail and dates
       let thumbnail = null, birthDate = null, deathDate = null, description = '';
       try {
         const sum = await (await fetch('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(title))).json();
@@ -373,7 +376,6 @@ function App() {
         deathDate = sum.death_date || null;
         description = sum.description || '';
       } catch(e) {}
-      // Extract full death date from extract text if not in summary
       if (!deathDate || deathDate.length <= 4) {
         const months = 'January|February|March|April|May|June|July|August|September|October|November|December';
         const dateMatches = extract.match(new RegExp('(?:' + months + ') [0-9]{1,2}, [0-9]{4}', 'g'));
@@ -381,24 +383,16 @@ function App() {
         else if (dateMatches && dateMatches.length === 1 && /died|death|passed|\u2013|\u2014/.test(extract.split('.')[0])) deathDate = dateMatches[0];
       }
       const deceased = deathFromCategory || !!deathDate || isDeceasedCheck(extract, description, deathDate, 'standard');
-      return {
-        title, extract, thumbnail, birthDate,
-        deathDate: deceased ? (deathDate || 'deceased') : null,
-        description, isDisambiguation: false, deathFromCategory
-      };
+      return { title, extract, thumbnail, birthDate, deathDate: deceased ? (deathDate || 'deceased') : null, description, isDisambiguation: false, deathFromCategory };
     } catch(e) { return null; }
   };
 
-  // Fetch disambiguation matches -- ALL results, user picks
   const fetchDisambigMatches = async (title) => {
     try {
       const url = 'https://en.wikipedia.org/w/api.php?action=parse&page=' + encodeURIComponent(title) + '&prop=links&format=json&origin=*';
       const data = await (await fetch(url)).json();
       const links = (data.parse && data.parse.links) ? data.parse.links : [];
-      const personLinks = links
-        .filter(l => l.ns === 0 && l['*'] && l['*'].length > 2)
-        .map(l => l['*'])
-        .slice(0, 10);
+      const personLinks = links.filter(l => l.ns === 0 && l['*'] && l['*'].length > 2).map(l => l['*']).slice(0, 10);
       const results = [];
       for (const link of personLinks) {
         const profile = await fetchWikiAction(link);
@@ -411,11 +405,9 @@ function App() {
 
   const fetchWikiProfile = async (name) => {
     try {
-      // Try with periods added to bare initials first
       const nameWithPeriods = addInitialPeriods(toTitleCase(name));
       let result = null;
       try { result = await fetchWikiAction(nameWithPeriods); } catch(e) {}
-      // If not found, try exact name
       if (!result && nameWithPeriods !== toTitleCase(name)) {
         try { result = await fetchWikiAction(toTitleCase(name)); } catch(e) {}
       }
@@ -426,33 +418,20 @@ function App() {
         return { isDisambiguation: true, title: result.title || name, matches: matches || [] };
       }
       return result;
-    } catch(e) {
-      console.log('fetchWikiProfile error:', e);
-      return { isDisambiguation: false, notFound: true };
-    }
+    } catch(e) { return { isDisambiguation: false, notFound: true }; }
   };
 
-
-
-  // CHANGED: tap on watchlist name now calls the backend /refresh endpoint
-  // which checks Wikipedia, updates DB, and returns fresh bio + status
   const openWatchlistDrawer = async (watchItem) => {
     setDrawerData({ name: watchItem.name, watchlistId: watchItem.id, profile: null, loading: true, newlyDeceased: false });
     setDrawerRefreshing(true);
-    // Call backend refresh for DB update and notifications (fire and forget)
     const token = localStorage.getItem('doa_token');
-    fetch(API_BASE + '/watchlist/' + watchItem.id + '/refresh', {
-      headers: { 'Authorization': 'Bearer ' + token }
-    }).then(function(r) {
-      if (r.ok) r.json().then(function(data) {
-        if (data.newly_deceased) { loadWatchlist(); loadNotifications(); }
-        else { loadWatchlist(); }
-      });
-    }).catch(function() {});
-    // Use fetchWikiAction directly for display -- same as search, full dates + thumbnail
+    fetch(API_BASE + '/watchlist/' + watchItem.id + '/refresh', { headers: { 'Authorization': 'Bearer ' + token } })
+      .then(r => { if (r.ok) r.json().then(data => { if (data.newly_deceased) { loadWatchlist(); loadNotifications(); } else { loadWatchlist(); } }); })
+      .catch(() => {});
     try {
       const nameWithPeriods = addInitialPeriods(toTitleCase(watchItem.name));
       const profile = await fetchWikiAction(nameWithPeriods);
+      // If no Wikipedia data, show "No info found" instead of ALIVE
       setDrawerData({ name: watchItem.name, watchlistId: watchItem.id, profile: profile || { notFound: true }, loading: false, newlyDeceased: false });
     } catch(e) {
       setDrawerData({ name: watchItem.name, watchlistId: watchItem.id, profile: { notFound: true }, loading: false, newlyDeceased: false });
@@ -468,33 +447,47 @@ function App() {
     });
   };
 
+  // Build full search name from parts for SSDI
+  const buildFullName = () => {
+    const parts = [nw.name.trim()];
+    if (nw.middle.trim()) parts.splice(1, 0, nw.middle.trim());
+    if (nw.suffix.trim()) parts.push(nw.suffix.trim());
+    return parts.join(' ');
+  };
+
   const checkWatch = async () => {
-    const name = toTitleCase(nw.name);
-    if (!name.trim() || name.trim().length < 2) { alert('Please enter a name to search.'); return; }
+    const name = toTitleCase(nw.name.trim());
+    if (!name || name.length < 2) { alert('Please enter a name to search.'); return; }
     setWatchlistChecking(true); setWatchlistCheck(null); setWatchlistChecked(false);
     try {
       const profile = await fetchWikiProfile(name);
-      // SSDI search via FamilySearch (Legacy mothballed pending partnership)
+      // Build SSDI query URL with all available fields
       var ssdiResults = [];
       try {
         var token = localStorage.getItem('doa_token');
-        var sr = await fetch(API_BASE + '/ssdi/search?name=' + encodeURIComponent(name), {
-          headers: { 'Authorization': 'Bearer ' + token }
-        });
+        var params = new URLSearchParams({ name: buildFullName() });
+        if (nw.birthYear) params.append('birth_year', nw.birthYear);
+        if (nw.middle) params.append('middle_name', nw.middle.trim());
+        if (nw.suffix) params.append('suffix', nw.suffix.trim());
+        var sr = await fetch(API_BASE + '/ssdi/search?' + params.toString(), { headers: { 'Authorization': 'Bearer ' + token } });
         if (sr && sr.ok) {
           var sd = await sr.json();
           ssdiResults = (sd && Array.isArray(sd.results)) ? sd.results : [];
+          // Score and sort results
+          const firstName = nw.name.trim().split(/\s+/)[0];
+          const lastName = nw.name.trim().split(/\s+/).slice(-1)[0];
+          ssdiResults = ssdiResults.map(r => ({
+            ...r,
+            _score: scoreResult(r, firstName, nw.middle, lastName, nw.birthYear, nw.suffix),
+          })).sort((a, b) => b._score - a._score);
         }
       } catch(e) { ssdiResults = []; console.log('SSDI error:', e); }
-      setWatchlistCheck({ profile: profile || { isDisambiguation: false, notFound: true }, name, ssdiResults: ssdiResults });
+      setWatchlistCheck({ profile: profile || { isDisambiguation: false, notFound: true }, name, ssdiResults });
       setWatchlistChecked(true);
-    }
-    catch (error) {
-      console.log('checkWatch error:', error);
+    } catch (error) {
       setWatchlistCheck({ profile: { isDisambiguation: false, notFound: true }, name, ssdiResults: [] });
       setWatchlistChecked(true);
-    }
-    finally { setWatchlistChecking(false); }
+    } finally { setWatchlistChecking(false); }
   };
 
   const confirmAddWatch = async () => {
@@ -502,6 +495,7 @@ function App() {
     setLoading(true);
     try {
       const token = localStorage.getItem('doa_token');
+      const fullName = watchlistCheck.name + (nw.suffix ? ' ' + nw.suffix.trim() : '');
       const r = await fetch(API_BASE + '/watchlist', {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
         body: JSON.stringify({ name: watchlistCheck.name, location: nw.location, dob: nw.birthYear })
@@ -509,7 +503,7 @@ function App() {
       if (!r.ok) throw new Error('Failed');
       await loadWatchlist();
       clearWatchlistCheck();
-      setPage('notifications'); // CHANGED: go to alerts page after adding
+      setPage('notifications');
     } catch (error) { alert('Error: ' + error.message); }
     finally { setLoading(false); }
   };
@@ -524,9 +518,7 @@ function App() {
         body: JSON.stringify({ name: profileTitle, location: '', dob: '' })
       });
       if (!r.ok) throw new Error('Failed');
-      await loadWatchlist();
-      clearSearch();
-      setPage('notifications'); // CHANGED: go to alerts page after adding
+      await loadWatchlist(); clearSearch(); setPage('notifications');
     } catch (error) { alert('Error: ' + error.message); }
     finally { setLoading(false); }
   };
@@ -545,34 +537,27 @@ function App() {
     setLoading(true); setWikiProfile(null); setResults([]); setSearched(false);
     try {
       const token = localStorage.getItem('doa_token');
-      // Legacy DB search - never crash on failure
       try {
         const r = await fetch(API_BASE + '/search', {
           method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
           body: JSON.stringify({ name: toTitleCase(sName), location: sLoc || undefined, birth_year: sBirthYear || undefined })
         });
-        if (r.ok) {
-          const data = await r.json();
-          if (Array.isArray(data)) setResults(data);
-        }
+        if (r.ok) { const data = await r.json(); if (Array.isArray(data)) setResults(data); }
       } catch (legacyErr) { console.log('Legacy search error:', legacyErr); }
-      // Wikipedia search - never crash on failure
       try {
         const profile = await fetchWikiProfile(sName);
         if (profile) setWikiProfile(profile);
       } catch (wikiErr) { console.log('Wiki search error:', wikiErr); }
       setSearched(true);
-    } catch (error) { console.log('Search error:', error); setSearched(true); }
+    } catch (error) { setSearched(true); }
     finally { setLoading(false); }
   };
 
   const unreadCount = notifications.length;
   const iClass = "w-full px-4 py-2.5 border border-red-900/50 rounded-lg focus:ring-2 focus:ring-red-500 text-base bg-gray-900/60 text-white placeholder-gray-400";
   const cardClass = "bg-black/35 rounded-2xl p-3 shadow-lg border border-red-900/30 backdrop-blur-sm";
-  const isWide = page === 'about' || page === 'privacy';
-  const containerClass = isWide ? 'w-full max-w-3xl mx-auto px-4' : 'w-full max-w-sm mx-auto px-3';
+  const containerClass = (page === 'about' || page === 'privacy') ? 'w-full max-w-3xl mx-auto px-4' : 'w-full max-w-sm mx-auto px-3';
 
-  // SingleProfileCard -- shows one person's full bio
   const SingleProfileCard = ({ profile, showAddButton, onBack }) => {
     if (!profile || !profile.title) return null;
     const alreadyWatching = isOnWatchlist(profile.title);
@@ -612,23 +597,16 @@ function App() {
     );
   };
 
-  // WikiCard -- handles single result OR disambiguation list
   const WikiCard = ({ profile, showAddButton }) => {
     if (!profile) return null;
-    // If we selected a specific person from disambiguation list
-    if (selectedDisambig) {
-      return <SingleProfileCard profile={selectedDisambig} showAddButton={showAddButton} onBack={() => setSelectedDisambig(null)} />;
-    }
-    // Disambiguation list
+    if (selectedDisambig) return <SingleProfileCard profile={selectedDisambig} showAddButton={showAddButton} onBack={() => setSelectedDisambig(null)} />;
     if (profile.isDisambiguation) {
       return (
         <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
-          <div className="px-5 py-2 bg-yellow-600">
-            <span className="text-white font-black tracking-widest text-sm">MULTIPLE MATCHES</span>
-          </div>
+          <div className="px-5 py-2 bg-yellow-600"><span className="text-white font-black tracking-widest text-sm">MULTIPLE MATCHES</span></div>
           <div className="bg-gray-900/70 p-4">
             <p className="text-gray-300 text-sm mb-1">Several people share this name.</p>
-            <p className="text-yellow-300 text-xs mb-3">Tip: Add a middle name or initial (e.g. Robert S. Mueller) to find the right person directly.</p>
+            <p className="text-yellow-300 text-xs mb-3">Tip: Add a middle name or initial to find the right person directly.</p>
             <div className="space-y-2">
               {(profile.matches || []).map((m, i) => (
                 <button key={i} onClick={() => setSelectedDisambig(m)} className="w-full p-3 bg-gray-800/60 border border-red-900/30 rounded-xl text-left hover:bg-gray-700/60 transition-colors">
@@ -642,31 +620,25 @@ function App() {
                   </div>
                 </button>
               ))}
-              {(profile.matches || []).length === 0 && (
-                <p className="text-gray-400 text-sm text-center py-3">No matches found. Try adding a middle name or initial.</p>
-              )}
+              {(profile.matches || []).length === 0 && <p className="text-gray-400 text-sm text-center py-3">No matches found. Try adding a middle name or initial.</p>}
             </div>
             <button onClick={clearSearch} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center mt-3">Clear Search</button>
           </div>
         </div>
       );
     }
-    // Not found
     if (profile.notFound) return null;
-    // Single unambiguous result
     return <SingleProfileCard profile={profile} showAddButton={showAddButton} />;
   };
 
-    class WatchlistErrorBoundary extends React.Component {
-    constructor(props) { super(props); this.state = { hasError: false, error: null }; }
-    static getDerivedStateFromError(error) { return { hasError: true, error }; }
+  class WatchlistErrorBoundary extends React.Component {
+    constructor(props) { super(props); this.state = { hasError: false }; }
+    static getDerivedStateFromError() { return { hasError: true }; }
     render() {
       if (this.state.hasError) {
         return (
           <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
-            <div className="px-5 py-2 bg-blue-700">
-              <span className="text-white font-black tracking-widest text-sm">NOT FOUND</span>
-            </div>
+            <div className="px-5 py-2 bg-blue-700"><span className="text-white font-black tracking-widest text-sm">NOT FOUND</span></div>
             <div className="bg-gray-900/70 p-4">
               <p className="text-white text-base font-bold mb-2">Not found</p>
               <p className="text-gray-300 text-sm mb-3">Add to watchlist anyway?</p>
@@ -680,15 +652,40 @@ function App() {
     }
   }
 
+  // ── SSDI Results display ────────────────────────────────────────────────────
+  const SSIDResultsBlock = ({ ssdiResults, searchFirst, searchMiddle, searchLast, searchBirthYear, searchSuffix }) => {
+    if (!ssdiResults || ssdiResults.length === 0) return null;
+    return (
+      <div className="mb-3 p-3 bg-gray-800/60 rounded-xl border border-red-900/30">
+        <p className="text-red-300 text-xs font-bold mb-2">SSDI DEATH RECORDS (through 2014)</p>
+        {ssdiResults.slice(0, 5).map((r, i) => {
+          const score = r._score !== undefined ? r._score : scoreResult(r, searchFirst, searchMiddle, searchLast, searchBirthYear, searchSuffix);
+          const conf = confidenceLabel(score);
+          const confColor = conf === 'HIGH' ? 'text-green-400' : conf === 'MEDIUM' ? 'text-yellow-400' : 'text-gray-400';
+          return (
+            <div key={i} className="mb-2 pb-2 border-b border-white/10 last:border-0">
+              <div className="flex items-start justify-between">
+                <p className="text-white text-sm font-semibold">{r.name}</p>
+                <span className={'text-xs font-bold ml-2 shrink-0 ' + confColor}>{conf}</span>
+              </div>
+              {r.birth_date && <p className="text-gray-400 text-xs">Born: {r.birth_date}</p>}
+              {r.death_date && <p className="text-gray-400 text-xs">Died: {r.death_date}</p>}
+              <p className="text-gray-500 text-xs">{r.source}</p>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   const WatchlistCheckCard = () => {
     if (!watchlistCheck) return null;
-    const { profile, name } = watchlistCheck;
+    const { profile, name, ssdiResults } = watchlistCheck;
+    const searchFirst = nw.name.trim().split(/\s+/)[0];
+    const searchLast = nw.name.trim().split(/\s+/).slice(-1)[0];
 
-    // Disambiguation list for watchlist check
-    // Only show if explicitly flagged as disambiguation (not null, not notFound)
     if (profile && profile.isDisambiguation === true) {
       if (selectedDisambig) {
-        // User picked one -- show full card with add option
         const isDeceased = selectedDisambig.deathDate;
         return (
           <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
@@ -707,6 +704,7 @@ function App() {
                 </div>
               </div>
               {selectedDisambig.extract && <p className="text-gray-100 text-sm leading-relaxed mb-3">{selectedDisambig.extract}</p>}
+              <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} />
               {isDeceased && <div className="p-2 bg-gray-700/50 border border-gray-600/30 rounded-xl mb-3"><p className="text-gray-200 text-sm text-center">This person has passed away.{selectedDisambig.deathDate !== 'deceased' ? ' Died: ' + selectedDisambig.deathDate : ''}</p></div>}
               {!isDeceased && (
                 <div className="space-y-2 mt-2">
@@ -722,18 +720,16 @@ function App() {
           </div>
         );
       }
-      // Show disambiguation list
       return (
         <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
-          <div className="px-5 py-2 bg-yellow-600">
-            <span className="text-white font-black tracking-widest text-sm">MULTIPLE MATCHES</span>
-          </div>
+          <div className="px-5 py-2 bg-yellow-600"><span className="text-white font-black tracking-widest text-sm">MULTIPLE MATCHES</span></div>
           <div className="bg-gray-900/70 p-4">
             <p className="text-gray-300 text-sm mb-1">Several people share this name.</p>
-            <p className="text-yellow-300 text-xs mb-3">Tip: Add a middle name or initial (e.g. Robert S. Mueller) to find the right person directly.</p>
+            <p className="text-yellow-300 text-xs mb-3">Tip: Add a middle name or initial to find the right person directly.</p>
+            <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} />
             <div className="space-y-2">
               {(profile.matches || []).map((m, i) => (
-                <button key={i} onClick={() => setSelectedDisambig(m)} className="w-full p-3 bg-gray-800/60 border border-red-900/30 rounded-xl text-left hover:bg-gray-700/60 transition-colors">
+                <button key={i} onClick={() => setSelectedDisambig(m)} className="w-full p-3 bg-gray-800/60 border border-red-900/30 rounded-xl text-left">
                   <div className="flex items-center gap-3">
                     {m.thumbnail ? <img src={m.thumbnail} alt={m.title} className="w-10 h-10 rounded-full object-cover border border-red-600/40 shrink-0" /> : <div className="w-10 h-10 rounded-full bg-red-900/40 flex items-center justify-center shrink-0 text-lg">?</div>}
                     <div className="flex-1 min-w-0">
@@ -744,9 +740,7 @@ function App() {
                   </div>
                 </button>
               ))}
-              {(profile.matches || []).length === 0 && (
-                <p className="text-gray-400 text-sm text-center py-3">No matches found. Try adding a middle name or initial.</p>
-              )}
+              {(profile.matches || []).length === 0 && <p className="text-gray-400 text-sm text-center py-3">No matches found. Try adding a middle name or initial.</p>}
             </div>
             <button onClick={() => { setWatchlistChecked(false); setWatchlistCheck(null); setSelectedDisambig(null); }} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center mt-3 flex items-center justify-center gap-2">
               <EditIcon /> Try a different name
@@ -756,15 +750,13 @@ function App() {
       );
     }
 
-    // Safety check - if profile is in unexpected state, show not found
     if (profile && !profile.isDisambiguation && !profile.notFound && !profile.title && !profile.extract) {
       return (
         <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
-          <div className="px-5 py-2 bg-blue-700">
-            <span className="text-white font-black tracking-widest text-sm">NOT FOUND</span>
-          </div>
+          <div className="px-5 py-2 bg-blue-700"><span className="text-white font-black tracking-widest text-sm">NOT FOUND</span></div>
           <div className="bg-gray-900/70 p-4">
-            <p className="text-white text-base font-bold mb-1">{name} not found</p>
+            <p className="text-white text-base font-bold mb-1">{name} not found in Wikipedia</p>
+            <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} />
             <p className="text-gray-300 text-sm mb-3">Add to watchlist anyway?</p>
             <button onClick={confirmAddWatch} disabled={loading} className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
               <PlusIcon /> {loading ? 'Adding...' : 'Add to Watchlist'}
@@ -774,8 +766,8 @@ function App() {
         </div>
       );
     }
+
     const isDeceased = profile && profile.deathDate;
-    const isDisambig = false;
     const notFound = !profile || profile.notFound === true || (!profile.title && !profile.extract);
     return (
       <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
@@ -798,28 +790,16 @@ function App() {
           )}
           {notFound && (
             <div className="mb-3">
-              <p className="text-white text-base font-bold mb-1">{name} not found</p>
-              <p className="text-gray-300 text-sm">Add to watchlist anyway?</p>
+              <p className="text-white text-base font-bold mb-1">{name} not found in Wikipedia</p>
+              <p className="text-gray-300 text-sm">No public Wikipedia page found.</p>
             </div>
           )}
-          {watchlistCheck && watchlistCheck.ssdiResults && watchlistCheck.ssdiResults.length > 0 && (
-            <div className="mb-3 p-3 bg-gray-800/60 rounded-xl border border-red-900/30">
-              <p className="text-red-300 text-xs font-bold mb-2">SSDI DEATH RECORDS (through 2014)</p>
-              {watchlistCheck.ssdiResults.slice(0,5).map((r, i) => (
-                <div key={i} className="mb-2 pb-2 border-b border-white/10 last:border-0">
-                  <p className="text-white text-sm font-semibold">{r.name}</p>
-                  {r.birth_date && <p className="text-gray-400 text-xs">Born: {r.birth_date}</p>}
-                  {r.death_date && <p className="text-gray-400 text-xs">Died: {r.death_date}</p>}
-                  <p className="text-gray-500 text-xs">{r.source}</p>
-                </div>
-              ))}
-            </div>
-          )}
+          <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} />
           {isDeceased && <div className="p-2 bg-gray-700/50 border border-gray-600/30 rounded-xl mb-3"><p className="text-gray-200 text-sm text-center">This person has passed away.{profile.deathDate && profile.deathDate !== 'deceased' ? ' Died: ' + profile.deathDate : ''}</p></div>}
           {!isDeceased && (
             <div className="space-y-2 mt-2">
               <p className="text-white/80 text-sm text-center font-medium border-t border-white/10 pt-2">
-                {notFound ? name + ' not found -- add to watchlist?' : 'Add ' + (profile ? profile.title : name) + ' to watchlist?'}
+                {notFound ? name + ' -- add to watchlist?' : 'Add ' + (profile ? profile.title : name) + ' to watchlist?'}
               </p>
               {(isOnWatchlist(profile ? profile.title : name) || isOnWatchlist(name))
                 ? <p className="w-full py-2.5 text-center text-green-400 text-sm font-bold">Already on your watchlist</p>
@@ -839,9 +819,10 @@ function App() {
     );
   };
 
-    const WikiDrawer = () => {
+  const WikiDrawer = () => {
     if (!drawerData) return null;
     const { name, profile, loading: drawerLoading, newlyDeceased } = drawerData;
+    const noWikiInfo = !drawerLoading && (!profile || profile.notFound || (!profile.title && !profile.extract));
     return (
       <>
         <div className="modal-overlay" onClick={() => setDrawerData(null)} />
@@ -851,19 +832,16 @@ function App() {
             <button onClick={() => setDrawerData(null)} className="text-gray-400 hover:text-white text-2xl font-bold">X</button>
           </div>
           <div className="p-4">
-            {drawerLoading && (
-              <div className="text-center py-8">
-                <p className="text-white animate-pulse">Checking Wikipedia...</p>
-              </div>
-            )}
-            {!drawerLoading && !profile && (
+            {drawerLoading && <div className="text-center py-8"><p className="text-white animate-pulse">Checking Wikipedia...</p></div>}
+            {/* No Wikipedia info found -- show neutral message, not ALIVE */}
+            {noWikiInfo && (
               <div className="text-center py-8">
                 <p className="text-4xl mb-3">?</p>
-                <p className="text-white font-bold text-lg">Not found</p>
-                <p className="text-gray-300 text-sm mt-2">"{name}" was not found.</p>
+                <p className="text-white font-bold text-lg">No information found</p>
+                <p className="text-gray-300 text-sm mt-2">"{name}" has no Wikipedia page. We'll alert you if we find an obituary.</p>
               </div>
             )}
-            {!drawerLoading && profile && (
+            {!drawerLoading && profile && !noWikiInfo && (
               <>
                 <div className={'px-4 py-2 rounded-xl mb-4 flex items-center gap-3 ' + (profile.deathDate ? 'bg-gray-700' : profile.isDisambiguation ? 'bg-yellow-600' : 'bg-green-700')}>
                   <span className="text-white font-black">{profile.deathDate ? 'DECEASED' : profile.isDisambiguation ? 'UNSURE' : 'ALIVE'}</span>
@@ -940,13 +918,12 @@ function App() {
           <div className="space-y-3" style={{ paddingTop: PT }}>
             <div className={cardClass}>
               <CardPageHeader title="Watchlist" subtitle="Add a person to monitor -- we'll alert you when their status changes" onHome={() => setPage('watchlist')} />
-              {watchlistChecking && (
-                <p className="text-white text-center py-4 animate-pulse">Searching...</p>
-              )}
+              {watchlistChecking && <p className="text-white text-center py-4 animate-pulse">Searching...</p>}
               {!watchlistChecked ? (
                 <div className="space-y-3">
-                  <ClearableInput value={nw.name} onChange={(e) => setNw({...nw, name: e.target.value})} onBlur={(e) => setNw({...nw, name: toTitleCase(e.target.value)})} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Full Name" inputClass={iClass} />
-                  <ClearableInput value={nw.location} onChange={(e) => setNw({...nw, location: e.target.value})} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="City and/or State (optional)" inputClass={iClass} />
+                  <ClearableInput value={nw.name} onChange={(e) => setNw({...nw, name: e.target.value})} onBlur={(e) => setNw({...nw, name: toTitleCase(e.target.value)})} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="First and Last Name *" inputClass={iClass} />
+                  <ClearableInput value={nw.middle} onChange={(e) => setNw({...nw, middle: e.target.value})} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Middle Name or Initial (optional)" inputClass={iClass} />
+                  <ClearableInput value={nw.suffix} onChange={(e) => setNw({...nw, suffix: e.target.value})} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Suffix: Jr., Sr., MD, III (optional)" inputClass={iClass} />
                   <ClearableInput value={nw.birthYear} onChange={(e) => setNw({...nw, birthYear: e.target.value.replace(/\D/g, '').slice(0, 4)})} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Birth Year (optional)" maxLength={4} inputClass={iClass} />
                   <button onClick={checkWatch} disabled={watchlistChecking} className="w-full py-3 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 text-base font-bold">
                     <SearchIcon /> {watchlistChecking ? 'Checking...' : 'Check Name'}
@@ -981,7 +958,6 @@ function App() {
             {results.length > 0 && (
               <div className={cardClass}>
                 <h2 className="text-xl font-bold mb-1 text-white text-center">Obituary Records ({results.length})</h2>
-                <p className="text-sm text-gray-200 mb-3 text-center">Records found in our Legacy database</p>
                 <div className="space-y-3">
                   {results.map(r => (
                     <div key={r.id} className="p-3 border border-red-900/30 rounded-lg bg-gray-800/50">
@@ -1004,7 +980,6 @@ function App() {
           </div>
         )}
 
-        {/* CHANGED: notifications page now shows watchlist list below alerts */}
         {page === 'notifications' && (
           <div className="space-y-3" style={{ paddingTop: PT }}>
             <div className={cardClass}>
@@ -1031,7 +1006,6 @@ function App() {
                 </div>
               )}
             </div>
-            {/* Watchlist list below alerts */}
             <div className={cardClass}>
               <h2 className="text-xl font-bold mb-0.5 text-white text-center">Your Watchlist ({watchlist.length})</h2>
               <p className="text-sm text-gray-200 mb-3 text-center">Tap a name to check their current status</p>
@@ -1139,7 +1113,6 @@ function App() {
 
       </div>
 
-      {/* NAV: 3 items - Watchlist (home), About, Bell */}
       <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(10,0,0,0.95)', backdropFilter: 'blur(8px)', borderTop: '1px solid #7f1d1d', padding: '0.5rem 1rem', paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
         <div className="flex justify-around max-w-sm mx-auto">
           <button onClick={() => setPage('watchlist')} className={'flex flex-col items-center gap-0.5 px-3 py-1 ' + (page === 'watchlist' ? 'text-red-500' : 'text-gray-400')}>
