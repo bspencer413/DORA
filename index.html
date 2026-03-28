@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.3.13';
+const APP_VERSION = '1.3.14';
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
@@ -814,7 +814,8 @@ function App() {
 
   const WatchlistCheckCard = () => {
     if (!watchlistCheck) return null;
-    const { profile, name, ssdiResults } = watchlistCheck;
+    const { profile, name, ssdiResults: rawSsdi } = watchlistCheck;
+    const ssdiResults = rawSsdi || [];
     const searchFirst = nw.name.trim().split(/\s+/)[0];
     const searchLast = nw.name.trim().split(/\s+/).slice(-1)[0];
 
