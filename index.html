@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.3.7';
+const APP_VERSION = '1.3.8';
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
@@ -311,11 +311,30 @@ function App() {
   };
 
   const dismissAlert = async (notifId, watchlistId) => {
+    // Dismiss alert AND remove from watchlist
     const token = localStorage.getItem('doa_token');
     setNotifications(prev => prev.filter(n => n.id !== notifId));
     try { await fetch(API_BASE + '/notifications/' + notifId, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } }); } catch(e) {}
     if (watchlistId) {
       try { await fetch(API_BASE + '/watchlist/' + watchlistId, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } }); await loadWatchlist(); } catch(e) {}
+    }
+  };
+
+  const keepAlert = async (notifId) => {
+    // Dismiss alert only -- keep person on watchlist
+    const token = localStorage.getItem('doa_token');
+    setNotifications(prev => prev.filter(n => n.id !== notifId));
+    try { await fetch(API_BASE + '/notifications/' + notifId, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } }); } catch(e) {}
+  };
+
+  const viewAlert = (n) => {
+    // Open drawer for this alert person -- find matching watchlist item
+    const wItem = watchlist.find(w => w.id === n.watchlist_id);
+    if (wItem) {
+      openWatchlistDrawer(wItem);
+    } else {
+      // Watchlist item may have been removed -- open drawer with just the name
+      openWatchlistDrawer({ name: n.name, id: n.watchlist_id });
     }
   };
 
@@ -389,6 +408,11 @@ function App() {
         const dateMatches = extract.match(new RegExp('(?:' + months + ') [0-9]{1,2}, [0-9]{4}', 'g'));
         if (dateMatches && dateMatches.length >= 2) deathDate = dateMatches[dateMatches.length - 1];
         else if (dateMatches && dateMatches.length === 1 && /died|death|passed|\u2013|\u2014/.test(extract.split('.')[0])) deathDate = dateMatches[0];
+      }
+      // Sanity check: reject death years before 1900 or after 2030 (e.g. "Died: 1532")
+      if (deathDate && !deathFromCategory) {
+        const yrM = String(deathDate).match(/\d{4}/);
+        if (yrM) { const yr = parseInt(yrM[0]); if (yr < 1900 || yr > 2030) deathDate = null; }
       }
       const deceased = deathFromCategory || !!deathDate || isDeceasedCheck(extract, description, deathDate, 'standard');
       return { title, extract, thumbnail, birthDate, deathDate: deceased ? (deathDate || 'deceased') : null, description, isDisambiguation: false, deathFromCategory };
@@ -934,8 +958,8 @@ function App() {
                         );
                       })}
                       {ssdiHasMore && (
-                        <button onClick={() => loadMoreSsdi(name)} disabled={ssdiLoadingMore} className="w-full py-2 bg-gray-800/60 border border-red-900/30 text-gray-300 rounded-lg text-xs mt-1 disabled:opacity-50">
-                          {ssdiLoadingMore ? 'Loading...' : 'Show 10 more'}
+                        <button onClick={() => loadMoreSsdi(name)} disabled={ssdiLoadingMore} className="w-full py-2 bg-gray-800/60 border border-red-900/30 text-gray-300 rounded-lg text-xs mb-2 disabled:opacity-50">
+                          {ssdiLoadingMore ? 'Loading...' : 'Show 10 more ↓'}
                         </button>
                       )}
                     </>
@@ -1074,13 +1098,13 @@ function App() {
                 <div className="space-y-3">
                   {notifications.map(n => (
                     <div key={n.id} className="p-3 bg-red-950/50 border border-red-800 rounded-xl">
-                      <div className="flex items-start gap-3">
-                        <div className="flex-1">
-                          <h3 className="font-bold text-white text-base">{n.name}</h3>
-                          <p className="text-gray-300 text-sm mt-1">{n.message}</p>
-                          <p className="text-gray-500 text-xs mt-1">{new Date(n.created_at).toLocaleDateString()}</p>
-                        </div>
-                        <button onClick={() => dismissAlert(n.id, n.watchlist_id)} className="text-gray-500 hover:text-red-400 text-xs px-2 py-1 border border-gray-700 rounded-lg shrink-0">Dismiss</button>
+                      <h3 className="font-bold text-white text-base mb-1">{n.name}</h3>
+                      <p className="text-gray-300 text-sm">{n.message}</p>
+                      <p className="text-gray-500 text-xs mt-1 mb-2">{new Date(n.created_at).toLocaleDateString()}</p>
+                      <div className="flex gap-2">
+                        <button onClick={() => viewAlert(n)} className="flex-1 py-1.5 bg-red-700/50 border border-red-600/50 text-white rounded-lg text-xs font-bold">View</button>
+                        <button onClick={() => keepAlert(n.id)} className="flex-1 py-1.5 bg-gray-700/50 border border-gray-600/50 text-gray-300 rounded-lg text-xs">Keep</button>
+                        <button onClick={() => dismissAlert(n.id, n.watchlist_id)} className="flex-1 py-1.5 bg-transparent border border-red-900/50 text-red-500 rounded-lg text-xs">Dismiss</button>
                       </div>
                     </div>
                   ))}
