@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.3.6';
+const APP_VERSION = '1.3.7';
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
@@ -103,11 +103,15 @@ const scoreResult = (result, searchFirst, searchMiddle, searchLast, searchBirthY
   const sMiddle = (searchMiddle || '').toUpperCase().replace('.','');
   const sLast = (searchLast || '').toUpperCase();
   const sSuffix = (searchSuffix || '').toUpperCase();
-  // Last name exact match (required, already filtered by query)
-  score += 30;
+  const lastNameOnly = !sFirst;
+  // Last name exact match
+  // If last name only search, start at MEDIUM (50); otherwise 30
+  score += lastNameOnly ? 50 : 30;
   // First name exact vs partial
-  if (rFirst === sFirst) score += 30;
-  else if (rFirst.startsWith(sFirst) || sFirst.startsWith(rFirst)) score += 15;
+  if (sFirst) {
+    if (rFirst === sFirst) score += 30;
+    else if (rFirst.startsWith(sFirst) || sFirst.startsWith(rFirst)) score += 15;
+  }
   // Middle name/initial
   if (sMiddle && rMiddle) {
     if (rMiddle === sMiddle || rMiddle.startsWith(sMiddle) || sMiddle.startsWith(rMiddle)) score += 20;
@@ -266,6 +270,10 @@ function App() {
   const [showDangerZone, setShowDangerZone] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [drawerData, setDrawerData] = useState(null);
+  const [ssdiOffset, setSsdiOffset] = useState(0);
+  const [ssdiHasMore, setSsdiHasMore] = useState(false);
+  const [ssdiLoadingMore, setSsdiLoadingMore] = useState(false);
+  const [ssdiAllResults, setSsdiAllResults] = useState([]);
   const [drawerRefreshing, setDrawerRefreshing] = useState(false);
   const [selectedDisambig, setSelectedDisambig] = useState(null);
   const [apiVersion, setApiVersion] = useState('...');
@@ -430,21 +438,50 @@ function App() {
   };
 
   const openWatchlistDrawer = async (watchItem) => {
-    setDrawerData({ name: watchItem.name, watchlistId: watchItem.id, profile: null, loading: true, newlyDeceased: false });
+    setDrawerData({ name: watchItem.name, watchlistId: watchItem.id, profile: null, ssdiResults: [], loading: true, newlyDeceased: false });
+    setSsdiOffset(0); setSsdiHasMore(false); setSsdiAllResults([]);
     setDrawerRefreshing(true);
     const token = localStorage.getItem('doa_token');
+    // Fire backend refresh (background)
     fetch(API_BASE + '/watchlist/' + watchItem.id + '/refresh', { headers: { 'Authorization': 'Bearer ' + token } })
       .then(r => { if (r.ok) r.json().then(data => { if (data.newly_deceased) { loadWatchlist(); loadNotifications(); } else { loadWatchlist(); } }); })
       .catch(() => {});
-    try {
-      const nameWithPeriods = addInitialPeriods(toTitleCase(watchItem.name));
-      const profile = await fetchWikiAction(nameWithPeriods);
-      // If no Wikipedia data, show "No info found" instead of ALIVE
-      setDrawerData({ name: watchItem.name, watchlistId: watchItem.id, profile: profile || { notFound: true }, loading: false, newlyDeceased: false });
-    } catch(e) {
-      setDrawerData({ name: watchItem.name, watchlistId: watchItem.id, profile: { notFound: true }, loading: false, newlyDeceased: false });
-    }
+    // Fetch Wikipedia and SSDI in parallel
+    const nameWithPeriods = addInitialPeriods(toTitleCase(watchItem.name));
+    const [profile, ssdiData] = await Promise.allSettled([
+      fetchWikiAction(nameWithPeriods).catch(() => ({ notFound: true })),
+      fetch(API_BASE + '/ssdi/search?name=' + encodeURIComponent(watchItem.name) + '&offset=0', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      }).then(r => r.ok ? r.json() : { results: [], has_more: false }).catch(() => ({ results: [], has_more: false }))
+    ]);
+    const wikiProfile = profile.status === 'fulfilled' ? (profile.value || { notFound: true }) : { notFound: true };
+    const ssdi = ssdiData.status === 'fulfilled' ? ssdiData.value : { results: [], has_more: false };
+    const ssdiResults = ssdi.results || [];
+    setSsdiAllResults(ssdiResults);
+    setSsdiHasMore(ssdi.has_more || false);
+    setSsdiOffset(ssdiResults.length);
+    setDrawerData({ name: watchItem.name, watchlistId: watchItem.id, profile: wikiProfile, ssdiResults, loading: false, newlyDeceased: false });
     setDrawerRefreshing(false);
+  };
+
+  const loadMoreSsdi = async (watchItemName) => {
+    setSsdiLoadingMore(true);
+    try {
+      const token = localStorage.getItem('doa_token');
+      const r = await fetch(API_BASE + '/ssdi/search?name=' + encodeURIComponent(watchItemName) + '&offset=' + ssdiOffset, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if (r.ok) {
+        const data = await r.json();
+        const newResults = data.results || [];
+        const combined = [...ssdiAllResults, ...newResults];
+        setSsdiAllResults(combined);
+        setSsdiHasMore(data.has_more || false);
+        setSsdiOffset(combined.length);
+        setDrawerData(prev => ({ ...prev, ssdiResults: combined }));
+      }
+    } catch(e) { console.log('loadMoreSsdi error:', e); }
+    setSsdiLoadingMore(false);
   };
 
   const isOnWatchlist = (name) => {
@@ -666,7 +703,7 @@ function App() {
     return (
       <div className="mb-3 p-3 bg-gray-800/60 rounded-xl border border-red-900/30">
         <p className="text-red-300 text-xs font-bold mb-2">SSDI DEATH RECORDS (through 2014)</p>
-        {ssdiResults.slice(0, 5).map((r, i) => {
+        {ssdiResults.map((r, i) => {
           const score = r._score !== undefined ? r._score : scoreResult(r, searchFirst, searchMiddle, searchLast, searchBirthYear, searchSuffix);
           const conf = confidenceLabel(score);
           const confColor = conf === 'HIGH' ? 'text-green-400' : conf === 'MEDIUM' ? 'text-yellow-400' : 'text-gray-400';
@@ -829,8 +866,11 @@ function App() {
 
   const WikiDrawer = () => {
     if (!drawerData) return null;
-    const { name, profile, loading: drawerLoading, newlyDeceased } = drawerData;
+    const { name, profile, ssdiResults, loading: drawerLoading, newlyDeceased } = drawerData;
     const noWikiInfo = !drawerLoading && (!profile || profile.notFound || (!profile.title && !profile.extract));
+    const nameParts = name.trim().split(/\s+/);
+    const drawerFirst = nameParts[0] || '';
+    const drawerLast = nameParts[nameParts.length - 1] || '';
     return (
       <>
         <div className="modal-overlay" onClick={() => setDrawerData(null)} />
@@ -840,39 +880,72 @@ function App() {
             <button onClick={() => setDrawerData(null)} className="text-gray-400 hover:text-white text-2xl font-bold">X</button>
           </div>
           <div className="p-4">
-            {drawerLoading && <div className="text-center py-8"><p className="text-white animate-pulse">Checking Wikipedia...</p></div>}
-            {/* No Wikipedia info found -- show neutral message, not ALIVE */}
-            {noWikiInfo && (
-              <div className="text-center py-8">
-                <p className="text-4xl mb-3">?</p>
-                <p className="text-white font-bold text-lg">No information found</p>
-                <p className="text-gray-300 text-sm mt-2">"{name}" has no Wikipedia page. We'll alert you if we find an obituary.</p>
-              </div>
-            )}
-            {!drawerLoading && profile && !noWikiInfo && (
+            {drawerLoading && <div className="text-center py-8"><p className="text-white animate-pulse">Checking records...</p></div>}
+            {/* Wikipedia section */}
+            {!drawerLoading && (
               <>
-                <div className={'px-4 py-2 rounded-xl mb-4 flex items-center gap-3 ' + (profile.deathDate ? 'bg-gray-700' : profile.isDisambiguation ? 'bg-yellow-600' : 'bg-green-700')}>
-                  <span className="text-white font-black">{profile.deathDate ? 'DECEASED' : profile.isDisambiguation ? 'UNSURE' : 'ALIVE'}</span>
-                  {profile.deathDate && <span className="text-white/80 text-sm ml-auto">{profile.deathDate !== 'deceased' ? 'Died: ' + profile.deathDate : 'Deceased'}</span>}
-                </div>
-                {newlyDeceased && (
-                  <div className="p-3 bg-red-900/60 border border-red-600 rounded-xl mb-4">
-                    <p className="text-red-200 text-sm text-center font-bold">Status just updated -- this person has passed away. Notification sent.</p>
+                {noWikiInfo ? (
+                  <div className="text-center py-4 mb-3">
+                    <p className="text-white font-bold text-base">No Wikipedia page found</p>
+                    <p className="text-gray-400 text-xs mt-1">We'll alert you if an obituary is published.</p>
                   </div>
+                ) : profile && (
+                  <>
+                    <div className={'px-4 py-2 rounded-xl mb-3 flex items-center gap-3 ' + (profile.deathDate ? 'bg-gray-700' : profile.isDisambiguation ? 'bg-yellow-600' : 'bg-green-700')}>
+                      <span className="text-white font-black">{profile.deathDate ? 'DECEASED' : profile.isDisambiguation ? 'UNSURE' : 'ALIVE'}</span>
+                      {profile.deathDate && <span className="text-white/80 text-sm ml-auto">{profile.deathDate !== 'deceased' ? 'Died: ' + profile.deathDate : 'Deceased'}</span>}
+                    </div>
+                    {newlyDeceased && (
+                      <div className="p-3 bg-red-900/60 border border-red-600 rounded-xl mb-3">
+                        <p className="text-red-200 text-sm text-center font-bold">Status just updated -- this person has passed away. Notification sent.</p>
+                      </div>
+                    )}
+                    <div className="flex gap-3 items-start mb-3">
+                      {profile.thumbnail ? <img src={profile.thumbnail} alt={profile.title} className="w-16 h-16 rounded-full object-cover border-2 border-red-600/50 shrink-0" /> : <div className="w-16 h-16 rounded-full bg-red-900/40 flex items-center justify-center shrink-0 text-2xl">?</div>}
+                      <div className="flex-1">
+                        <h2 className="text-white text-lg font-bold mb-1">{profile.title}</h2>
+                        {profile.birthDate && <p className="text-red-300 text-sm font-bold">Born: {profile.birthDate}</p>}
+                        {!profile.isDisambiguation && <p className="text-red-400 text-xs italic mt-1">{profile.description}</p>}
+                      </div>
+                    </div>
+                    {!profile.isDisambiguation && profile.extract && <p className="text-gray-100 text-sm leading-relaxed mb-3">{profile.extract}</p>}
+                    {profile.isDisambiguation && <div className="p-3 bg-yellow-500/20 border border-yellow-400/30 rounded-xl mb-3"><p className="text-yellow-200 text-sm text-center">Multiple people share this name</p></div>}
+                  </>
                 )}
-                <div className="flex gap-3 items-start mb-4">
-                  {profile.thumbnail ? <img src={profile.thumbnail} alt={profile.title} className="w-20 h-20 rounded-full object-cover border-2 border-red-600/50 shrink-0" /> : <div className="w-20 h-20 rounded-full bg-red-900/40 flex items-center justify-center shrink-0 text-3xl">?</div>}
-                  <div className="flex-1">
-                    <h2 className="text-white text-xl font-bold mb-1">{profile.title}</h2>
-                    {profile.birthDate && <p className="text-red-300 text-sm font-bold">Born: {profile.birthDate}</p>}
-                    {!profile.isDisambiguation && <p className="text-red-400 text-xs italic mt-1">{profile.description}</p>}
-                  </div>
+                {/* SSDI section -- always shown */}
+                <div className="mt-2 pt-3 border-t border-red-900/30">
+                  <p className="text-red-300 text-xs font-bold mb-2">SSDI DEATH RECORDS (through 2014)</p>
+                  {ssdiResults && ssdiResults.length > 0 ? (
+                    <>
+                      {ssdiResults.map((r, i) => {
+                        const score = scoreResult(r, drawerFirst, '', drawerLast, '', '');
+                        const conf = confidenceLabel(score);
+                        const confColor = conf === 'HIGH' ? 'text-green-400' : conf === 'MEDIUM' ? 'text-yellow-400' : 'text-gray-400';
+                        return (
+                          <div key={i} className="mb-2 pb-2 border-b border-white/10 last:border-0">
+                            <div className="flex items-start justify-between">
+                              <p className="text-white text-sm font-semibold">{r.name}</p>
+                              <span className={'text-xs font-bold ml-2 shrink-0 ' + confColor}>{conf}</span>
+                            </div>
+                            {r.birth_date && <p className="text-gray-400 text-xs">Born: {r.birth_date}</p>}
+                            {r.death_date && <p className="text-gray-400 text-xs">Died: {r.death_date}</p>}
+                            <p className="text-gray-500 text-xs">{r.source}</p>
+                          </div>
+                        );
+                      })}
+                      {ssdiHasMore && (
+                        <button onClick={() => loadMoreSsdi(name)} disabled={ssdiLoadingMore} className="w-full py-2 bg-gray-800/60 border border-red-900/30 text-gray-300 rounded-lg text-xs mt-1 disabled:opacity-50">
+                          {ssdiLoadingMore ? 'Loading...' : 'Show 10 more'}
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-gray-500 text-xs">No records found in SSDI (pre-2014 deaths only)</p>
+                  )}
                 </div>
-                {!profile.isDisambiguation && profile.extract && <p className="text-gray-100 text-sm leading-relaxed mb-4">{profile.extract}</p>}
-                {profile.isDisambiguation && <div className="p-3 bg-yellow-500/20 border border-yellow-400/30 rounded-xl mb-4"><p className="text-yellow-200 text-sm text-center">Multiple people share this name</p></div>}
               </>
             )}
-            <button onClick={() => setDrawerData(null)} className="w-full py-3 bg-red-900/40 border border-red-800/50 text-white rounded-xl text-sm mt-2">Close</button>
+            <button onClick={() => setDrawerData(null)} className="w-full py-3 bg-red-900/40 border border-red-800/50 text-white rounded-xl text-sm mt-4">Close</button>
           </div>
         </div>
       </>
