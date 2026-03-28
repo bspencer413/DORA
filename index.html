@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.3.5';
+const APP_VERSION = '1.3.6';
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
@@ -392,11 +392,19 @@ function App() {
       const url = 'https://en.wikipedia.org/w/api.php?action=parse&page=' + encodeURIComponent(title) + '&prop=links&format=json&origin=*';
       const data = await (await fetch(url)).json();
       const links = (data.parse && data.parse.links) ? data.parse.links : [];
-      const personLinks = links.filter(l => l.ns === 0 && l['*'] && l['*'].length > 2).map(l => l['*']).slice(0, 10);
+      const personLinks = links.filter(l => l.ns === 0 && l['*'] && l['*'].length > 2).map(l => l['*']).slice(0, 20);
       const results = [];
       for (const link of personLinks) {
         const profile = await fetchWikiAction(link);
-        if (profile && !profile.isDisambiguation && profile.extract) results.push(profile);
+        if (!profile || profile.isDisambiguation || !profile.extract) continue;
+        // Filter out non-people: must have a birth date, death date, or description
+        // that suggests a person (born, died, American, politician, actor, etc.)
+        const desc = (profile.description || '').toLowerCase();
+        const extract = (profile.extract || '').toLowerCase();
+        const looksLikePerson = profile.birthDate || profile.deathDate ||
+          /\b(born|died|american|british|politician|actor|actress|singer|musician|athlete|author|writer|director|businessman|scientist|lawyer|doctor|physician|soldier|general|president|senator|governor|mayor)\b/.test(desc + ' ' + extract);
+        if (!looksLikePerson) continue;
+        results.push(profile);
         if (results.length >= 6) break;
       }
       return results;
