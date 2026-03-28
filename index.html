@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.3.8';
+const APP_VERSION = '1.3.9';
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
@@ -277,6 +277,7 @@ function App() {
   const [drawerRefreshing, setDrawerRefreshing] = useState(false);
   const [selectedDisambig, setSelectedDisambig] = useState(null);
   const [apiVersion, setApiVersion] = useState('...');
+  const [ssdiDrawer, setSsdiDrawer] = useState(null); // selected SSDI record for mini drawer
 
   useEffect(() => {
     fetch(API_BASE + '/health').then(r => r.json()).then(d => setApiVersion(d.version || '?')).catch(() => setApiVersion('?'));
@@ -508,6 +509,26 @@ function App() {
     setSsdiLoadingMore(false);
   };
 
+  const addFromSsdi = async (r) => {
+    // Add a person from an SSDI record to the watchlist
+    const fullName = r.name;
+    if (isOnWatchlist(fullName)) { alert(fullName + ' is already on your watchlist!'); return; }
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('doa_token');
+      const birthYear = r.birth_date ? r.birth_date.split('/').pop() : '';
+      const resp = await fetch(API_BASE + '/watchlist', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ name: fullName, location: '', dob: birthYear })
+      });
+      if (!resp.ok) throw new Error('Failed');
+      await loadWatchlist();
+      setSsdiDrawer(null);
+      setPage('notifications');
+    } catch(e) { alert('Error: ' + e.message); }
+    finally { setLoading(false); }
+  };
+
   const isOnWatchlist = (name) => {
     const normalized = normalizeForWiki(name).toLowerCase();
     return watchlist.some(w => {
@@ -721,26 +742,64 @@ function App() {
     }
   }
 
+  // ── SSDI mini drawer for a single record ───────────────────────────────────
+  const SsdiRecordDrawer = () => {
+    if (!ssdiDrawer) return null;
+    const r = ssdiDrawer;
+    const alreadyWatching = isOnWatchlist(r.name);
+    return (
+      <>
+        <div className="modal-overlay" onClick={() => setSsdiDrawer(null)} />
+        <div className="modal-drawer">
+          <div className="flex justify-between items-center px-4 pt-4 pb-2 border-b border-red-900/30">
+            <h3 className="text-white font-bold text-lg">{r.name}</h3>
+            <button onClick={() => setSsdiDrawer(null)} className="text-gray-400 hover:text-white text-2xl font-bold">X</button>
+          </div>
+          <div className="p-4">
+            <div className={'px-4 py-2 rounded-xl mb-4 flex items-center gap-3 ' + (r.death_date ? 'bg-gray-700' : 'bg-green-700')}>
+              <span className="text-white font-black">{r.death_date ? 'DECEASED' : 'NO DEATH RECORD'}</span>
+              {r.death_date && <span className="text-white/80 text-sm ml-auto">Died: {r.death_date}</span>}
+            </div>
+            <div className="bg-gray-800/60 rounded-xl p-3 mb-4 border border-red-900/30">
+              <p className="text-white font-bold text-base mb-1">{r.name}</p>
+              {r.birth_date && <p className="text-gray-300 text-sm">Born: {r.birth_date}</p>}
+              {r.death_date && <p className="text-gray-300 text-sm">Died: {r.death_date}</p>}
+              <p className="text-gray-500 text-xs mt-2">{r.source}</p>
+            </div>
+            {!r.death_date && (
+              alreadyWatching
+                ? <p className="text-green-400 text-sm text-center font-bold mb-3">Already on your watchlist</p>
+                : <button onClick={() => addFromSsdi(r)} disabled={loading} className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 mb-3 disabled:opacity-50">
+                    <PlusIcon /> {loading ? 'Adding...' : 'Add to Watchlist'}
+                  </button>
+            )}
+            <button onClick={() => setSsdiDrawer(null)} className="w-full py-3 bg-red-900/40 border border-red-800/50 text-white rounded-xl text-sm">Close</button>
+          </div>
+        </div>
+      </>
+    );
+  };
+
   // ── SSDI Results display ────────────────────────────────────────────────────
   const SSIDResultsBlock = ({ ssdiResults, searchFirst, searchMiddle, searchLast, searchBirthYear, searchSuffix }) => {
     if (!ssdiResults || ssdiResults.length === 0) return null;
     return (
       <div className="mb-3 p-3 bg-gray-800/60 rounded-xl border border-red-900/30">
-        <p className="text-red-300 text-xs font-bold mb-2">SSDI DEATH RECORDS (through 2014)</p>
+        <p className="text-red-300 text-xs font-bold mb-2">SSDI DEATH RECORDS (through 2014) — tap a name to view</p>
         {ssdiResults.map((r, i) => {
           const score = r._score !== undefined ? r._score : scoreResult(r, searchFirst, searchMiddle, searchLast, searchBirthYear, searchSuffix);
           const conf = confidenceLabel(score);
           const confColor = conf === 'HIGH' ? 'text-green-400' : conf === 'MEDIUM' ? 'text-yellow-400' : 'text-gray-400';
           return (
-            <div key={i} className="mb-2 pb-2 border-b border-white/10 last:border-0">
+            <button key={i} onClick={() => setSsdiDrawer(r)} className="w-full mb-2 pb-2 border-b border-white/10 last:border-0 text-left hover:bg-white/5 rounded px-1 transition-colors">
               <div className="flex items-start justify-between">
-                <p className="text-white text-sm font-semibold">{r.name}</p>
+                <p className="text-white text-sm font-semibold underline decoration-dotted">{r.name}</p>
                 <span className={'text-xs font-bold ml-2 shrink-0 ' + confColor}>{conf}</span>
               </div>
               {r.birth_date && <p className="text-gray-400 text-xs">Born: {r.birth_date}</p>}
-              {r.death_date && <p className="text-gray-400 text-xs">Died: {r.death_date}</p>}
+              {r.death_date ? <p className="text-gray-400 text-xs">Died: {r.death_date}</p> : <p className="text-gray-600 text-xs italic">No death record (pre-2014)</p>}
               <p className="text-gray-500 text-xs">{r.source}</p>
-            </div>
+            </button>
           );
         })}
       </div>
@@ -1017,6 +1076,7 @@ function App() {
   return (
     <PageWrapper>
       <WikiDrawer />
+      <SsdiRecordDrawer />
       <div className={containerClass}>
 
         {page === 'watchlist' && (
