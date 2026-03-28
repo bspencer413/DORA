@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.3.15';
+const APP_VERSION = '1.3.17';
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
@@ -530,11 +530,15 @@ function App() {
   };
 
   const isOnWatchlist = (name) => {
-    const normalized = normalizeForWiki(name).toLowerCase();
-    return watchlist.some(w => {
-      const stored = normalizeForWiki(w.name).toLowerCase();
-      return stored === normalized || w.name.toLowerCase() === name.toLowerCase();
-    });
+    if (!name) return false;
+    try {
+      const normalized = normalizeForWiki(name).toLowerCase();
+      return watchlist.some(w => {
+        if (!w || !w.name) return false;
+        const stored = normalizeForWiki(w.name).toLowerCase();
+        return stored === normalized || w.name.toLowerCase() === name.toLowerCase();
+      });
+    } catch(e) { return false; }
   };
 
   // Build full search name from parts for SSDI
@@ -548,6 +552,7 @@ function App() {
   const checkWatch = async () => {
     const name = toTitleCase(nw.name.trim());
     if (!name || name.length < 2) { alert('Please enter a name to search.'); return; }
+    setSsdiDrawer(null); // clear stale drawer state before new search
     setWatchlistChecking(true); setWatchlistCheck(null); setWatchlistChecked(false);
     try {
       const token = localStorage.getItem('doa_token');
@@ -753,6 +758,7 @@ function App() {
   const SsdiRecordDrawer = () => {
     if (!ssdiDrawer) return null;
     const r = ssdiDrawer;
+    if (!r || !r.name) return null;
     const alreadyWatching = isOnWatchlist(r.name);
     return (
       <>
@@ -816,10 +822,22 @@ function App() {
 
   const WatchlistCheckCard = () => {
     if (!watchlistCheck) return null;
-    const { profile, name, ssdiResults: rawSsdi } = watchlistCheck;
+    const { profile: rawProfile, name, ssdiResults: rawSsdi } = watchlistCheck;
     const ssdiResults = rawSsdi || [];
-    const searchFirst = nw.name.trim().split(/\s+/)[0];
-    const searchLast = nw.name.trim().split(/\s+/).slice(-1)[0];
+    const searchFirst = (nw.name || '').trim().split(/\s+/)[0] || '';
+    const searchLast = (nw.name || '').trim().split(/\s+/).slice(-1)[0] || '';
+    // Normalize profile -- guard against any unexpected shape from Wikipedia
+    const profile = rawProfile ? {
+      isDisambiguation: rawProfile.isDisambiguation || false,
+      notFound: rawProfile.notFound || false,
+      title: rawProfile.title || '',
+      extract: rawProfile.extract || '',
+      birthDate: rawProfile.birthDate || null,
+      deathDate: rawProfile.deathDate || null,
+      description: rawProfile.description || '',
+      thumbnail: rawProfile.thumbnail || null,
+      matches: Array.isArray(rawProfile.matches) ? rawProfile.matches : [],
+    } : { isDisambiguation: false, notFound: true, title: '', extract: '', matches: [] };
 
     if (profile && profile.isDisambiguation === true) {
       if (selectedDisambig) {
@@ -1085,7 +1103,28 @@ function App() {
                     <SearchIcon /> {watchlistChecking ? 'Checking...' : 'Check Name'}
                   </button>
                 </div>
-              ) : <WatchlistCheckCard />}
+              ) : (() => {
+                try { return React.createElement(WatchlistCheckCard); }
+                catch(e) {
+                  console.error('WatchlistCheckCard crash:', e);
+                  const sr = watchlistCheck && watchlistCheck.ssdiResults;
+                  return React.createElement('div', {className: 'rounded-2xl overflow-hidden border border-red-800'},
+                    React.createElement('div', {className: 'px-5 py-2 bg-gray-700'},
+                      React.createElement('span', {className: 'text-white font-black tracking-widest text-sm'}, 'SSDI RESULTS')),
+                    React.createElement('div', {className: 'bg-gray-900/70 p-4'},
+                      sr && sr.length > 0
+                        ? sr.map((r,i) => React.createElement('div', {key:i, className:'mb-2 pb-2 border-b border-white/10'},
+                            React.createElement('p', {className:'text-white text-sm font-bold'}, r.name),
+                            r.birth_date && React.createElement('p', {className:'text-gray-400 text-xs'}, 'Born: ' + r.birth_date),
+                            r.death_date && React.createElement('p', {className:'text-gray-400 text-xs'}, 'Died: ' + r.death_date)
+                          ))
+                        : React.createElement('p', {className:'text-gray-400 text-sm'}, 'No results found. Check console for error.'),
+                      React.createElement('button', {onClick: clearWatchlistCheck, className:'w-full py-2 bg-white/10 text-white rounded-xl text-sm mt-3'}, 'Try Again')
+                    )
+                  );
+                }
+              })()
+            }
             </div>
           </div>
         )}
