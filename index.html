@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.4.0';
+const APP_VERSION = '1.4.1';
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
@@ -126,9 +126,9 @@ const scoreResult = (result, searchFirst, searchMiddle, searchLast, searchBirthY
 };
 
 const confidenceLabel = (score) => {
-  if (score >= 90) return 'HIGH';
-  if (score >= 60) return 'MEDIUM';
-  return 'LOW';
+  if (score >= 90) return 'Strong Match';
+  if (score >= 60) return 'Possible Match';
+  return 'Partial Match';
 };
 
 const HomeIcon = () => (
@@ -245,7 +245,7 @@ function isDeceasedCheck(extract, description, deathDate, type) {
 }
 
 function App() {
-  const [page, setPage] = useState('landing');
+  const [page, setPage] = useState('login');
   const [auth, setAuth] = useState(false);
   const [user, setUser] = useState(null);
   const [watchlist, setWatchlist] = useState([]);
@@ -530,7 +530,7 @@ function App() {
       await loadWatchlist();
       setSsdiDrawer(null);
       // Route to Dead tab if deceased, Watch tab otherwise
-      setPage(isDeceased ? 'dead' : 'notifications');
+      setPage(isDeceased ? 'notices' : 'watchlist');
     } catch(e) { alert('Error: ' + e.message); }
     finally { setLoading(false); }
   };
@@ -677,7 +677,7 @@ function App() {
     return (
       <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
         <div className={'px-5 py-2 flex items-center gap-3 ' + (profile.deathDate ? 'bg-gray-800' : isDisambig ? 'bg-yellow-600' : 'bg-green-700')}>
-          <span className="text-white font-black tracking-widest text-sm">{profile.deathDate ? 'DEAD' : isDisambig ? 'UNSURE' : 'ALIVE'}</span>
+          <span className="text-white font-black tracking-widest text-sm">{profile.deathDate ? 'Passed Away' : isDisambig ? 'Multiple Matches' : 'Likely Alive'}</span>
           {profile.deathDate && profile.deathDate !== 'deceased' && <span className="text-white/80 text-xs ml-auto">Died: {profile.deathDate}</span>}
           {onBack && <button onClick={onBack} className="ml-auto text-white/60 text-xs underline">Back to list</button>}
         </div>
@@ -728,7 +728,7 @@ function App() {
                       <p className="text-white text-sm font-bold truncate">{m.title}</p>
                       <p className="text-red-400 text-xs italic truncate">{m.description}</p>
                     </div>
-                    <span className={'px-2 py-0.5 rounded-full text-xs font-bold ' + (m.deathDate ? 'bg-gray-700 text-gray-300' : 'bg-green-800 text-green-300')}>{m.deathDate ? 'DEAD' : 'ALIVE'}</span>
+                    <span className={'px-2 py-0.5 rounded-full text-xs font-bold ' + (m.deathDate ? 'bg-gray-700 text-gray-300' : 'bg-green-800 text-green-300')}>{m.deathDate ? 'Passed Away' : 'Likely Alive'}</span>
                   </div>
                 </button>
               ))}
@@ -750,7 +750,7 @@ function App() {
       if (this.state.hasError) {
         return (
           <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
-            <div className="px-5 py-2 bg-blue-700"><span className="text-white font-black tracking-widest text-sm">NOT FOUND</span></div>
+            <div className="px-5 py-2 bg-blue-700"><span className="text-white font-black tracking-widest text-sm">Not Found</span></div>
             <div className="bg-gray-900/70 p-4">
               <p className="text-white text-base font-bold mb-2">Not found</p>
               <p className="text-gray-300 text-sm mb-3">Add to watchlist anyway?</p>
@@ -781,7 +781,7 @@ function App() {
           <div className="p-4">
             {r.death_date && (
               <div className="px-4 py-2 rounded-xl mb-4 flex items-center gap-3 bg-gray-700">
-                <span className="text-white font-black">DECEASED</span>
+                <span className="text-white font-black">Passed Away</span>
                 <span className="text-white/80 text-sm ml-auto">Died: {r.death_date}</span>
               </div>
             )}
@@ -813,7 +813,7 @@ function App() {
     const hasMore = ssdiResults.length > visibleResults.length;
     return (
       <div className="mb-3 p-3 bg-gray-800/60 rounded-xl border border-red-900/30">
-        <p className="text-red-300 text-xs font-bold mb-2">SSDI DEATH RECORDS (through 2014) — tap a name to add</p>
+        <p className="text-red-300 text-xs font-bold mb-2">Possible matches in SSA records (through 2014) — tap to add</p>
         {visibleResults.map((r, i) => {
           const rFirst = (r.first_name || '').toUpperCase();
           const rMiddle = (r.middle_name || '').toUpperCase();
@@ -830,7 +830,7 @@ function App() {
           const isMedium = firstExact && lastExact && !midExact;
           const score = isHigh ? 95 : isMedium ? 60 : 30;
           const conf = confidenceLabel(score);
-          const confColor = conf === 'HIGH' ? 'text-green-400' : conf === 'MEDIUM' ? 'text-yellow-400' : 'text-gray-400';
+          const confColor = conf === 'Strong Match' ? 'text-green-400' : conf === 'Possible Match' ? 'text-yellow-400' : 'text-gray-400';
           return (
             <div key={i} onClick={() => setSsdiDrawer(r)} className="mb-2 pb-2 border-b border-white/10 last:border-0 cursor-pointer hover:bg-white/5 rounded px-1 transition-colors">
               <div className="flex items-start justify-between">
@@ -877,7 +877,7 @@ function App() {
         return (
           <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
             <div className={'px-5 py-2 flex items-center gap-3 ' + (isDeceased ? 'bg-gray-800' : 'bg-green-700')}>
-              <span className="text-white font-black tracking-widest text-sm">{isDeceased ? 'DEAD' : 'ALIVE'}</span>
+              <span className="text-white font-black tracking-widest text-sm">{isDeceased ? 'Passed Away' : 'Likely Alive'}</span>
               {isDeceased && selectedDisambig.deathDate !== 'deceased' && <span className="text-white/80 text-xs ml-auto">Died: {selectedDisambig.deathDate}</span>}
               <button onClick={() => setSelectedDisambig(null)} className="ml-auto text-white/60 text-xs underline">Back</button>
             </div>
@@ -923,7 +923,7 @@ function App() {
                       <p className="text-white text-sm font-bold truncate">{m.title}</p>
                       <p className="text-red-400 text-xs italic truncate">{m.description}</p>
                     </div>
-                    <span className={'px-2 py-0.5 rounded-full text-xs font-bold ' + (m.deathDate ? 'bg-gray-700 text-gray-300' : 'bg-green-800 text-green-300')}>{m.deathDate ? 'DEAD' : 'ALIVE'}</span>
+                    <span className={'px-2 py-0.5 rounded-full text-xs font-bold ' + (m.deathDate ? 'bg-gray-700 text-gray-300' : 'bg-green-800 text-green-300')}>{m.deathDate ? 'Passed Away' : 'Likely Alive'}</span>
                   </div>
                 </button>
               ))}
@@ -943,7 +943,7 @@ function App() {
     // Only show banner when Wikipedia found something OR both sources found nothing
     const showBanner = !notFound || (!hasSSdi && notFound);
     const bannerBg = isDeceased ? 'bg-gray-800' : (!notFound ? 'bg-green-700' : 'bg-blue-700');
-    const bannerText = isDeceased ? 'DEAD' : (!notFound ? 'ALIVE' : 'NOT FOUND');
+    const bannerText = isDeceased ? 'Passed Away' : (!notFound ? 'Likely Alive' : 'Not Found');
     return (
       <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
         {showBanner && <div className={'px-5 py-2 ' + bannerBg}>
@@ -988,7 +988,7 @@ function App() {
               <button onClick={() => { setWatchlistChecked(false); setWatchlistCheck(null); setSelectedDisambig(null); setSsdiPage(1); }} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center flex items-center justify-center gap-2">
                 <EditIcon /> Edit Name
               </button>
-              <button onClick={clearWatchlistCheck} className="w-full py-1.5 text-white/40 text-xs text-center">Cancel</button>
+              <button onClick={clearWatchlistCheck} className="w-full py-1.5 text-white/40 text-xs text-center">Search for another name</button>
             </div>
           )}
           {isDeceased && <button onClick={clearWatchlistCheck} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center mt-2">Try Another Name</button>}
@@ -1024,7 +1024,7 @@ function App() {
                 ) : noWikiInfo ? null : profile && (
                   <>
                     <div className={'px-4 py-2 rounded-xl mb-3 flex items-center gap-3 ' + (profile.deathDate ? 'bg-gray-700' : profile.isDisambiguation ? 'bg-yellow-600' : 'bg-green-700')}>
-                      <span className="text-white font-black">{profile.deathDate ? 'DECEASED' : profile.isDisambiguation ? 'UNSURE' : 'ALIVE'}</span>
+                      <span className="text-white font-black">{profile.deathDate ? 'Passed Away' : profile.isDisambiguation ? 'Multiple Matches' : 'Likely Alive'}</span>
                       {profile.deathDate && <span className="text-white/80 text-sm ml-auto">{profile.deathDate !== 'deceased' ? 'Died: ' + profile.deathDate : 'Deceased'}</span>}
                     </div>
                     {newlyDeceased && (
@@ -1046,7 +1046,7 @@ function App() {
                 )}
                 {/* SSDI section -- only when Wikipedia did NOT confirm deceased */}
                 {!profile || !profile.deathDate ? <div className="mt-2 pt-3 border-t border-red-900/30">
-                  <p className="text-red-300 text-xs font-bold mb-2">SSDI DEATH RECORDS (through 2014)</p>
+                  <p className="text-red-300 text-xs font-bold mb-2">Possible matches in SSA records (through 2014)</p>
                   {ssdiResults && ssdiResults.length > 0 ? (
                     <>
                       {ssdiHasMore && (
@@ -1062,7 +1062,7 @@ function App() {
                           r.last_name.toUpperCase() === drawerLast.toUpperCase();
                         const score = (ssdiResults.length === 1 || exactMatch) ? 95 : rawScore;
                         const conf = confidenceLabel(score);
-                        const confColor = conf === 'HIGH' ? 'text-green-400' : conf === 'MEDIUM' ? 'text-yellow-400' : 'text-gray-400';
+                        const confColor = conf === 'Strong Match' ? 'text-green-400' : conf === 'Possible Match' ? 'text-yellow-400' : 'text-gray-400';
                         return (
                           <div key={i} onClick={() => { setDrawerData(null); setSsdiDrawer(r); }} className="mb-2 pb-2 border-b border-white/10 last:border-0 cursor-pointer hover:bg-white/5 rounded px-1 transition-colors">
                             <div className="flex items-start justify-between">
@@ -1089,25 +1089,12 @@ function App() {
     );
   };
 
-  if (page === 'landing') {
-    return (
-      <div onClick={() => setPage('login')} style={{ minHeight: '100dvh', width: '100%', cursor: 'pointer', position: 'relative', ...POSTER_STYLE }}>
-        <div style={{ position: 'absolute', top: TAP_TOP, left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
-          <div className="tap-pulse" style={{ color: 'white', fontSize: isPhone ? '1.2rem' : '1.1rem', fontWeight: '900', letterSpacing: '0.12em', textShadow: '0 2px 8px rgba(0,0,0,0.9)', textAlign: 'center' }}>TAP TO ENTER</div>
-          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem' }}>Free during beta</div>
-        </div>
-      </div>
-    );
-  }
-
   if (page === 'login') {
     return (
-      <div style={{ minHeight: '100dvh', width: '100%', ...POSTER_STYLE, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: PT, paddingLeft: '1.5rem', paddingRight: '1.5rem', paddingBottom: '2rem' }}>
+      <div style={{ minHeight: '100dvh', width: '100%', ...POSTER_STYLE, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: isPhone ? '52vh' : isTablet ? '56vh' : '54vh', paddingLeft: '1.5rem', paddingRight: '1.5rem', paddingBottom: '2rem' }}>
         <div style={{ width: '100%', maxWidth: '22rem' }}>
-          <div className="bg-black/50 backdrop-blur-sm rounded-2xl p-4 shadow-2xl border border-red-900/40 space-y-3">
+          <div className="bg-black/60 backdrop-blur-sm rounded-2xl p-4 shadow-2xl border border-red-900/40 space-y-3">
             <div className="text-center">
-              <h1 className="text-white text-lg font-black tracking-widest">DEAD OR ALIVE</h1>
-              <p className="text-red-300 text-base mt-1 font-bold">Find out if the people you remember are dead or alive</p>
               <p className="text-white/50 text-xs mt-1">Free during beta</p>
             </div>
             <input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && doAuth()} className="w-full px-4 py-2 rounded-xl bg-white/15 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-red-500 text-base" />
@@ -1136,8 +1123,14 @@ function App() {
         {page === 'watchlist' && (
           <div className="space-y-3" style={{ paddingTop: PT }}>
             <div className={cardClass}>
-              <CardPageHeader title="Watchlist" subtitle="Add a person to monitor -- we'll alert you when their status changes" onHome={() => setPage('watchlist')} hideHome={true} />
+              <CardPageHeader title="Watchlist" subtitle="People you are following — we'll notify you when they pass" onHome={() => setPage('watchlist')} hideHome={true} />
               {watchlistChecking && <p className="text-white text-center py-4 animate-pulse">Searching...</p>}
+              {watchlist.filter(w => !w.is_deceased).length === 0 && !watchlistChecked && (
+                <div className="mb-3 p-3 bg-gray-800/30 rounded-xl border border-red-900/20">
+                  <p className="text-gray-300 text-sm leading-relaxed">Add the people you are looking for to your Watchlist. DORA searches Wikipedia for notable people and the Social Security Administration's records of people who have passed (through 2014). When we find a match, we'll notify you here.</p>
+                  <p className="text-red-300 text-sm mt-2 font-medium">Find a person you are missing on the Search page.</p>
+                </div>
+              )}
               {!watchlistChecked ? (
                 <div className="space-y-3">
                   <ClearableInput value={nw.name} onChange={(e) => setNw({...nw, name: e.target.value})} onBlur={(e) => setNw({...nw, name: toTitleCase(e.target.value)})} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="First and Last Name *" inputClass={iClass} />
@@ -1155,7 +1148,7 @@ function App() {
                   const sr = watchlistCheck && watchlistCheck.ssdiResults;
                   return React.createElement('div', {className: 'rounded-2xl overflow-hidden border border-red-800'},
                     React.createElement('div', {className: 'px-5 py-2 bg-gray-700'},
-                      React.createElement('span', {className: 'text-white font-black tracking-widest text-sm'}, 'SSDI RESULTS')),
+                      React.createElement('span', {className: 'text-white font-black tracking-widest text-sm'}, 'Possible Matches')),
                     React.createElement('div', {className: 'bg-gray-900/70 p-4'},
                       sr && sr.length > 0
                         ? sr.map((r,i) => React.createElement('div', {key:i, className:'mb-2 pb-2 border-b border-white/10'},
@@ -1177,9 +1170,10 @@ function App() {
         {page === 'search' && (
           <div className="space-y-3" style={{ paddingTop: PT }}>
             <div className={cardClass}>
-              <CardPageHeader title="Search" subtitle="Look up anyone by name -- dead or alive" onHome={() => setPage('watchlist')} />
+              <CardPageHeader title="Search" subtitle="" onHome={() => setPage('watchlist')} />
               <div className="space-y-3">
-                <ClearableInput value={sName} onChange={(e) => { setSName(e.target.value); setWikiProfile(null); setResults([]); setSearched(false); }} onKeyPress={(e) => e.key === 'Enter' && doSearch()} placeholder="Name (first, last, or full)" inputClass={iClass} />
+                <p className="text-red-300 text-base font-bold italic text-center mb-1">Whatever happened to...</p>
+                <ClearableInput value={sName} onChange={(e) => { setSName(e.target.value); setWikiProfile(null); setResults([]); setSearched(false); }} onKeyPress={(e) => e.key === 'Enter' && doSearch()} placeholder="First and Last Name" inputClass={iClass} />
                 <ClearableInput value={sLoc} onChange={(e) => setSLoc(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && doSearch()} placeholder="City and/or State (optional)" inputClass={iClass} />
                 <ClearableInput value={sBirthYear} onChange={(e) => setSBirthYear(e.target.value.replace(/\D/g, '').slice(0, 4))} onKeyPress={(e) => e.key === 'Enter' && doSearch()} placeholder="Birth Year (optional)" maxLength={4} inputClass={iClass} />
                 <button onClick={doSearch} disabled={loading} className="w-full py-2.5 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 text-base font-bold">
@@ -1220,14 +1214,13 @@ function App() {
           </div>
         )}
 
-        {page === 'dead' && (
+        {page === 'notices' && (
           <div className="space-y-3" style={{ paddingTop: PT }}>
             <div className={cardClass}>
-              <CardPageHeader title="Dead" subtitle="People confirmed deceased" onHome={() => setPage('watchlist')} />
+              <CardPageHeader title="Notices" subtitle="People you have found who have passed" onHome={() => setPage('watchlist')} />
               {watchlist.filter(w => w.is_deceased).length === 0 ? (
                 <div className="text-center py-6">
-                  <p className="text-white font-bold text-xl">No confirmed deaths yet</p>
-                  <p className="text-gray-300 text-sm mt-2">People confirmed deceased will appear here</p>
+                  <p className="text-gray-300 text-sm leading-relaxed">If the person you are looking for has passed, you can save them here for future review by touching their name.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -1238,7 +1231,7 @@ function App() {
                           <button onClick={() => openWatchlistDrawer(w)} className="text-left w-full">
                             <h3 className="font-semibold text-base text-gray-300 line-through underline decoration-dotted truncate">{w.name}</h3>
                           </button>
-                          <span className="text-xs text-red-400 font-bold">DECEASED{w.death_year ? ' — Died: ' + w.death_year : ''}</span>
+                          <span className="text-xs text-gray-400 font-bold">Passed Away{w.death_year ? ' — ' + w.death_year : ''}</span>
                         </div>
                         <div className="flex gap-2 ml-2 shrink-0">
                           <button onClick={() => openWatchlistDrawer(w)} className="px-3 py-1.5 bg-red-700/50 border border-red-600/50 text-white rounded-lg text-xs font-bold">View</button>
@@ -1280,11 +1273,11 @@ function App() {
               )}
             </div>
             <div className={cardClass}>
-              <h2 className="text-xl font-bold mb-0.5 text-white text-center">Your Watchlist ({watchlist.length})</h2>
+              <h2 className="text-xl font-bold mb-0.5 text-white text-center">Your Watchlist ({watchlist.filter(w => !w.is_deceased).length})</h2>
               <p className="text-sm text-gray-200 mb-3 text-center">Tap a name to check their current status</p>
-              {watchlist.length === 0 ? <p className="text-gray-400 text-center py-6">No one on your watchlist yet</p> : (
+              {watchlist.filter(w => !w.is_deceased).length === 0 ? <p className="text-gray-400 text-center py-6">No one on your watchlist yet</p> : (
                 <div className="space-y-3">
-                  {watchlist.map(w => (
+                  {watchlist.filter(w => !w.is_deceased).map(w => (
                     <div key={w.id} className={'p-3 rounded-lg border ' + (w.is_deceased ? 'bg-gray-900/70 border-gray-600/50' : 'bg-gray-800/50 border-red-900/20')}>
                       {editingId === w.id ? (
                         <div className="space-y-2">
@@ -1308,7 +1301,7 @@ function App() {
                             <div className="text-sm text-gray-300">{w.location && <span>{w.location}</span>}{w.dob && <span> - Born: {w.dob}</span>}</div>
                             <div className="flex items-center gap-1 mt-1">
                               {w.is_deceased
-                                ? <span className="text-xs text-red-400 font-bold">DECEASED{w.death_year ? ' - Died: ' + w.death_year : ''}</span>
+                                ? <span className="text-xs text-gray-400 font-bold">Passed Away{w.death_year ? ' — ' + w.death_year : ''}</span>
                                 : <><CheckIcon /><span className="text-xs text-green-400">Active</span></>
                               }
                             </div>
@@ -1391,7 +1384,7 @@ function App() {
           <button onClick={() => setPage('watchlist')} className={'flex flex-col items-center gap-0.5 px-2 py-1 ' + (page === 'watchlist' ? 'text-red-500' : 'text-gray-400')}>
             <HeartIcon /><span className="text-xs font-medium">Watch</span>
           </button>
-          <button onClick={() => setPage('dead')} className={'flex flex-col items-center gap-0.5 px-2 py-1 relative ' + (page === 'dead' ? 'text-red-500' : 'text-gray-400')}>
+          <button onClick={() => setPage('notices')} className={'flex flex-col items-center gap-0.5 px-2 py-1 relative ' + (page === 'notices' ? 'text-red-500' : 'text-gray-400')}>
             <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17a1 1 0 001 1h6a1 1 0 001-1v-2.26C17.81 13.47 19 11.38 19 9c0-3.87-3.13-7-7-7zM9 21h6M10 17v4M14 17v4" /></svg>
             <span className="text-xs font-medium">Dead</span>
             {watchlist.filter(w => w.is_deceased).length > 0 && <span className="absolute top-0 right-0 bg-gray-600 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">{watchlist.filter(w => w.is_deceased).length}</span>}
