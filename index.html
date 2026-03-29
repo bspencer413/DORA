@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.4.6';
+const APP_VERSION = '1.4.8';
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
@@ -191,11 +191,10 @@ const EyeOffIcon = () => (
 const ClearableInput = ({ value, onChange, onBlur, onKeyPress, placeholder, type='text', maxLength, inputClass, noAutoCorrect, numeric }) => (
   <div className="relative">
     <input type={numeric ? 'tel' : type} placeholder={placeholder} value={value} onChange={onChange} onBlur={onBlur} onKeyPress={onKeyPress} maxLength={maxLength} className={inputClass + ' pr-10'}
-      autoCorrect={noAutoCorrect ? 'off' : 'on'}
-      autoCapitalize={noAutoCorrect ? 'words' : 'sentences'}
-      autoComplete={noAutoCorrect ? 'off' : 'on'}
-      spellCheck={noAutoCorrect ? 'false' : 'true'}
-      inputMode={numeric ? 'numeric' : undefined}
+      autoCorrect="off"
+      autoCapitalize="words"
+      autoComplete="off"
+      spellCheck="false"
     />
     {value && value.length > 0 && (
       <button onClick={() => onChange({ target: { value: '' } })} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white text-lg font-bold leading-none" type="button">X</button>
@@ -538,8 +537,8 @@ function App() {
     try {
       const token = localStorage.getItem('doa_token');
       const birthYear = r.birth_date ? r.birth_date.split('/').pop() : '';
-      const birthYear = r.birth_date ? parseInt(r.birth_date.split('/').pop()) : null;
-      const isDeceased = !!(r.death_date) || (birthYear && birthYear < 1920);
+      const birthYearInt = r.birth_date ? parseInt(r.birth_date.split('/').pop()) : null;
+      const isDeceased = !!(r.death_date) || (birthYearInt && birthYearInt < 1920);
       const deathYear = r.death_date ? r.death_date.split('/').pop() : null;
       const resp = await fetch(API_BASE + '/watchlist', {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
@@ -991,13 +990,8 @@ function App() {
     const isDeceased = profile && profile.deathDate;
     const notFound = !profile || profile.notFound === true || (!profile.title && !profile.extract);
     const hasSSdi = ssdiResults && ssdiResults.length > 0;
-    // Only show banner when Wikipedia found something OR both sources found nothing
-    // Suppress "Likely Alive" banner when Wikipedia found someone but they look wrong
-    // (e.g. Arthur Spencer born 1947 when we searched for someone born ~1895)
-    const wikiPersonBirthYear = profile && profile.birthDate ? parseInt(String(profile.birthDate).match(/\d{4}/) ? String(profile.birthDate).match(/\d{4}/)[0] : '0') : null;
-    const searchBirthYearInt = nw.birthYear ? parseInt(nw.birthYear) : null;
-    const wikiLooksWrong = !notFound && wikiPersonBirthYear && searchBirthYearInt && Math.abs(wikiPersonBirthYear - searchBirthYearInt) > 10;
-    const showBanner = !notFound && !wikiLooksWrong || (!hasSSdi && notFound);
+    // Show banner only when Wikipedia found something OR both sources empty
+    const showBanner = (!notFound) || (!hasSSdi && notFound);
     const bannerBg = isDeceased ? 'bg-gray-800' : (!notFound ? 'bg-green-700' : 'bg-blue-700');
     const bannerText = isDeceased ? 'Passed Away' : (!notFound ? 'Likely Alive' : 'Not Found');
     return (
