@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.4.4';
+const APP_VERSION = '1.4.5';
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
@@ -537,7 +537,8 @@ function App() {
     try {
       const token = localStorage.getItem('doa_token');
       const birthYear = r.birth_date ? r.birth_date.split('/').pop() : '';
-      const isDeceased = !!(r.death_date);
+      const birthYear = r.birth_date ? parseInt(r.birth_date.split('/').pop()) : null;
+      const isDeceased = !!(r.death_date) || (birthYear && birthYear < 1920);
       const deathYear = r.death_date ? r.death_date.split('/').pop() : null;
       const resp = await fetch(API_BASE + '/watchlist', {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
@@ -605,7 +606,13 @@ function App() {
       const ssdiResults = ssdiRaw.map(r => ({
         ...r,
         _score: scoreResult(r, firstName, nw.middle, lastName, nw.birthYear, nw.suffix),
-      })).sort((a, b) => b._score - a._score);
+      })).sort((a, b) => {
+        // Sort by score descending, then by birth year ascending
+        if (b._score !== a._score) return b._score - a._score;
+        const aYear = a.birth_date ? parseInt(a.birth_date.split('/').pop()) : 9999;
+        const bYear = b.birth_date ? parseInt(b.birth_date.split('/').pop()) : 9999;
+        return aYear - bYear;
+      });
       // If only 1 SSDI result, boost to HIGH automatically
       if (ssdiResults.length === 1) ssdiResults[0]._score = 95;
       // Wiki profile -- never let it block SSDI display
@@ -818,14 +825,21 @@ function App() {
               {r.death_date && <p className="text-gray-300 text-sm">Died: {r.death_date}</p>}
               <p className="text-gray-500 text-xs mt-2">{r.source}</p>
             </div>
-            {alreadyWatching
-              ? <p className="text-green-400 text-sm text-center font-bold mb-3">Already on your watchlist</p>
-              : !r.death_date
-                ? <button onClick={() => addFromSsdi(r)} disabled={loading} className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 mb-3 disabled:opacity-50">
-                    <PlusIcon /> {loading ? 'Adding...' : 'Add to Watchlist'}
-                  </button>
-                : null
-            }
+            {(() => {
+              if (alreadyWatching) return <p className="text-green-400 text-sm text-center font-bold mb-3">Already in your list</p>;
+              const birthYear = r.birth_date ? parseInt(r.birth_date.split('/').pop()) : null;
+              const likelyDeceased = r.death_date || (birthYear && birthYear < 1920);
+              if (likelyDeceased) return (
+                <button onClick={() => addFromSsdi(r)} disabled={loading} className="w-full py-2.5 bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 mb-3 disabled:opacity-50">
+                  <PlusIcon /> {loading ? 'Saving...' : 'Save to Memories'}
+                </button>
+              );
+              return (
+                <button onClick={() => addFromSsdi(r)} disabled={loading} className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 mb-3 disabled:opacity-50">
+                  <PlusIcon /> {loading ? 'Adding...' : 'Add to Watchlist'}
+                </button>
+              );
+            })()}
             <button onClick={() => setSsdiDrawer(null)} className="w-full py-3 bg-red-900/40 border border-red-800/50 text-white rounded-xl text-sm">Close</button>
           </div>
         </div>
@@ -846,7 +860,7 @@ function App() {
     ) : null;
     return (
       <div className="mb-3 p-3 bg-gray-800/60 rounded-xl border border-red-900/30">
-        <p className="text-red-300 text-xs font-bold mb-2">Possible matches in SSA records (through 2014) — tap a name to view</p>
+        <p className="text-red-300 text-xs font-bold mb-2">Possible matches in SSDI Master List through 2014 — tap a name to view</p>
         {tooMany && (
           <div className="mb-2 p-2 bg-yellow-900/30 border border-yellow-700/40 rounded-lg">
             <p className="text-yellow-300 text-xs">Many matches found. Add a middle name, initial or birth year to narrow results.</p>
@@ -966,7 +980,7 @@ function App() {
               {(profile.matches || []).length === 0 && <p className="text-gray-400 text-sm text-center py-3">No matches found. Try adding a middle name or initial.</p>}
             </div>
             <button onClick={() => { setWatchlistChecked(false); setWatchlistCheck(null); setSelectedDisambig(null); }} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center mt-3 flex items-center justify-center gap-2">
-              <EditIcon /> Try a different name
+              <EditIcon /> Search for another name
             </button>
           </div>
         </div>
@@ -977,7 +991,12 @@ function App() {
     const notFound = !profile || profile.notFound === true || (!profile.title && !profile.extract);
     const hasSSdi = ssdiResults && ssdiResults.length > 0;
     // Only show banner when Wikipedia found something OR both sources found nothing
-    const showBanner = !notFound || (!hasSSdi && notFound);
+    // Suppress "Likely Alive" banner when Wikipedia found someone but they look wrong
+    // (e.g. Arthur Spencer born 1947 when we searched for someone born ~1895)
+    const wikiPersonBirthYear = profile && profile.birthDate ? parseInt(String(profile.birthDate).match(/\d{4}/) ? String(profile.birthDate).match(/\d{4}/)[0] : '0') : null;
+    const searchBirthYearInt = nw.birthYear ? parseInt(nw.birthYear) : null;
+    const wikiLooksWrong = !notFound && wikiPersonBirthYear && searchBirthYearInt && Math.abs(wikiPersonBirthYear - searchBirthYearInt) > 10;
+    const showBanner = !notFound && !wikiLooksWrong || (!hasSSdi && notFound);
     const bannerBg = isDeceased ? 'bg-gray-800' : (!notFound ? 'bg-green-700' : 'bg-blue-700');
     const bannerText = isDeceased ? 'Passed Away' : (!notFound ? 'Likely Alive' : 'Not Found');
     return (
@@ -1108,7 +1127,7 @@ function App() {
                 )}
                 {/* SSDI section -- only when Wikipedia did NOT confirm deceased */}
                 {!profile || !profile.deathDate ? <div className="mt-2 pt-3 border-t border-red-900/30">
-                  <p className="text-red-300 text-xs font-bold mb-2">Possible matches in SSA records (through 2014)</p>
+                  <p className="text-red-300 text-xs font-bold mb-2">Possible matches in SSDI Master List through 2014</p>
                   {ssdiResults && ssdiResults.length > 0 ? (
                     <>
                       {ssdiHasMore && (
@@ -1204,7 +1223,7 @@ function App() {
                   <ClearableInput value={nw.name} onChange={(e) => setNw({...nw, name: e.target.value})} onBlur={(e) => setNw({...nw, name: toTitleCase(e.target.value.trim())})} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="First and Last Name *" inputClass={iClass} noAutoCorrect={true} />
                   <ClearableInput value={nw.middle} onChange={(e) => setNw({...nw, middle: e.target.value})} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Middle Name or Initial — Helpful" inputClass={iClass} noAutoCorrect={true} />
                   <ClearableInput value={nw.suffix} onChange={(e) => setNw({...nw, suffix: e.target.value})} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Suffix: Jr., Sr., MD, III" inputClass={iClass} noAutoCorrect={true} />
-                  <ClearableInput value={nw.birthYear} onChange={(e) => setNw({...nw, birthYear: e.target.value.replace(/\D/g, '').slice(0, 4)})} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Birth Year — Helpful" maxLength={4} inputClass={iClass} />
+                  <ClearableInput value={nw.birthYear} onChange={(e) => setNw({...nw, birthYear: e.target.value.replace(/\D/g, '').slice(0, 4)})} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Birth Year — Helpful" maxLength={4} inputClass={iClass + ' [appearance:textfield]'} />
                   <button onClick={checkWatch} disabled={watchlistChecking} className="w-full py-3 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 text-base font-bold">
                     <SearchIcon /> {watchlistChecking ? 'Checking...' : 'Check Name'}
                   </button>
@@ -1283,7 +1302,7 @@ function App() {
             <div className={cardClass}>
               <div className="mb-3 pb-2 border-b border-red-900/30 text-center">
                 <p className="text-red-300 text-base font-bold italic">Whatever happened to...</p>
-                <p className="text-gray-400 text-xs mt-1">Search Wikipedia and SSA records</p>
+                <p className="text-gray-400 text-xs mt-1">Search Wikipedia and SSDI records</p>
               </div>
               {watchlistChecking && <p className="text-white text-center py-4 animate-pulse">Searching...</p>}
               {!watchlistChecked ? (
@@ -1291,7 +1310,7 @@ function App() {
                   <ClearableInput value={nw.name} onChange={(e) => setNw({...nw, name: e.target.value})} onBlur={(e) => setNw({...nw, name: toTitleCase(e.target.value.trim())})} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="First and Last Name *" inputClass={iClass} noAutoCorrect={true} />
                   <ClearableInput value={nw.middle} onChange={(e) => setNw({...nw, middle: e.target.value})} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Middle Name or Initial — Helpful" inputClass={iClass} noAutoCorrect={true} />
                   <ClearableInput value={nw.suffix} onChange={(e) => setNw({...nw, suffix: e.target.value})} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Suffix: Jr., Sr., MD, III" inputClass={iClass} noAutoCorrect={true} />
-                  <ClearableInput value={nw.birthYear} onChange={(e) => setNw({...nw, birthYear: e.target.value.replace(/\D/g, '').slice(0, 4)})} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Birth Year — Helpful" maxLength={4} inputClass={iClass} />
+                  <ClearableInput value={nw.birthYear} onChange={(e) => setNw({...nw, birthYear: e.target.value.replace(/\D/g, '').slice(0, 4)})} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Birth Year — Helpful" maxLength={4} inputClass={iClass + ' [appearance:textfield]'} />
                   <button onClick={checkWatch} disabled={watchlistChecking} className="w-full py-3 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 text-base font-bold">
                     <SearchIcon /> {watchlistChecking ? 'Searching...' : 'Search'}
                   </button>
