@@ -52,12 +52,12 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.4.30';
+const APP_VERSION = '1.4.31';
 const DECEASED_BIRTH_YEAR_THRESHOLD = new Date().getFullYear() - 100;
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
-const PT = isPhone ? '38vh' : isTablet ? '44vh' : '42vh';
+const PT = isPhone ? '36vh' : isTablet ? '42vh' : '40vh';
 
 const toTitleCase = (str) => {
   if (!str) return str;
@@ -196,7 +196,7 @@ const CardPageHeader = ({ title, subtitle, onHome, hideHome }) => (
   <div className="mb-3 pb-2 border-b border-red-900/30">
     <div className="flex items-center justify-between">
       <div className="w-10" />
-      <h2 className="text-2xl font-black text-white tracking-wide text-center flex-1">{title}</h2>
+      <h2 className="text-3xl font-black text-white tracking-wide text-center flex-1">{title}</h2>
       {!hideHome ? (
         <button onClick={onHome} className="flex flex-col items-center text-white hover:text-red-400 transition-colors w-10">
           <SearchIcon /><span className="text-xs">Search</span>
@@ -1479,7 +1479,7 @@ function App() {
           <div className="space-y-3" style={{ paddingTop: watchlist.filter(w => !w.is_deceased).length > 0 ? '1rem' : PT }}>
             <div className={cardClass}>
               <div className="flex items-center justify-between mb-2">
-                <h2 className="text-2xl font-black text-white tracking-wide">Watchlist</h2>
+                <h2 className="text-3xl font-black text-white tracking-wide">Watchlist</h2>
                 <button onClick={() => { clearWatchlistCheck(); setPage('search'); }} className="flex flex-col items-center text-white hover:text-red-400 transition-colors w-10">
                   <SearchIcon /><span className="text-xs">Search</span>
                 </button>
@@ -1509,7 +1509,7 @@ function App() {
             </div>
             {watchlist.filter(w => !w.is_deceased).length > 0 && (
               <div className={cardClass + ' mt-3'}>
-                <h2 className="text-2xl font-bold mb-1 text-white text-center">Your Watchlist ({watchlist.filter(w => !w.is_deceased).length})</h2>
+                <h2 className="text-3xl font-bold mb-1 text-white text-center">Your Watchlist ({watchlist.filter(w => !w.is_deceased).length})</h2>
                 <p className="text-base text-gray-400 mb-3 text-center">Tap a name to check their current status</p>
                 <div className="space-y-2">
                   {watchlist.filter(w => !w.is_deceased).map(w => (
@@ -1556,7 +1556,7 @@ function App() {
           <div className="space-y-3" style={{ paddingTop: PT }}>
             <div className={cardClass}>
               <div className="mb-3 pb-2 border-b border-red-900/30 text-center">
-                <p className="text-red-300 text-3xl font-bold italic">Whatever happened to...</p>
+                <p className="text-red-300 text-2xl font-bold italic whitespace-nowrap">Whatever happened to...</p>
                 <p className="text-gray-300 text-lg mt-1">Search Wikipedia and SSDI records</p>
               </div>
               {watchlistChecking && <p className="text-white text-center py-4 animate-pulse">Searching...</p>}
