@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.4.26';
+const APP_VERSION = '1.4.28';
 const DECEASED_BIRTH_YEAR_THRESHOLD = new Date().getFullYear() - 100;
 
 const isPhone = window.innerWidth < 500;
@@ -192,15 +192,14 @@ const ClearableInput = ({ value, onChange, onBlur, onKeyPress, placeholder, type
   </div>
 );
 
-const CardPageHeader = ({ title, subtitle, onHome, hideHome, homeLabel }) => (
+const CardPageHeader = ({ title, subtitle, onHome, hideHome }) => (
   <div className="mb-3 pb-2 border-b border-red-900/30">
     <div className="flex items-center justify-between">
       <div className="w-10" />
       <h2 className="text-2xl font-black text-white tracking-wide text-center flex-1">{title}</h2>
       {!hideHome ? (
         <button onClick={onHome} className="flex flex-col items-center text-white hover:text-red-400 transition-colors w-10">
-          {homeLabel === 'search' ? <SearchIcon /> : <HomeIcon />}
-          <span className="text-xs">{homeLabel === 'search' ? 'Search' : 'Home'}</span>
+          <SearchIcon /><span className="text-xs">Search</span>
         </button>
       ) : <div className="w-10" />}
     </div>
@@ -834,7 +833,7 @@ function App() {
   const unreadCount = notifications.length;
   const iClass = "w-full px-4 py-3 border border-red-900/50 rounded-lg focus:ring-2 focus:ring-red-500 text-lg bg-gray-900/60 text-white placeholder-gray-400";
   const cardClass = "bg-black/35 rounded-2xl p-4 shadow-lg border border-red-900/30 backdrop-blur-sm";
-  const containerClass = (page === 'about' || page === 'privacy') ? 'w-full max-w-3xl mx-auto px-4' : 'w-full max-w-sm mx-auto px-3';
+  const containerClass = (page === 'about' || page === 'privacy') ? 'w-full max-w-3xl mx-auto px-3' : 'w-full px-3';
 
   const SingleProfileCard = ({ profile, showAddButton, onBack }) => {
     if (!profile || !profile.title) return null;
@@ -1448,7 +1447,7 @@ function App() {
   if (page === 'login') {
     return (
       <div style={{ minHeight: '100dvh', width: '100%', backgroundColor: POSTER_STYLE.backgroundColor, backgroundImage: POSTER_STYLE.backgroundImage, backgroundSize: POSTER_STYLE.backgroundSize, backgroundPosition: POSTER_STYLE.backgroundPosition, backgroundRepeat: POSTER_STYLE.backgroundRepeat, backgroundAttachment: POSTER_STYLE.backgroundAttachment, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: isPhone ? '44vh' : isTablet ? '48vh' : '46vh', paddingLeft: '1.5rem', paddingRight: '1.5rem', paddingBottom: '2rem' }}>
-        <div style={{ width: '100%', maxWidth: '22rem' }}>
+        <div style={{ width: '100%', maxWidth: '100%', paddingLeft: '0.75rem', paddingRight: '0.75rem' }}>
           <div className="bg-black/60 backdrop-blur-sm rounded-2xl p-4 shadow-2xl border border-red-900/40 space-y-3">
             <div className="text-center">
               <p className="text-white/50 text-lg mt-1">Free during beta</p>
@@ -1581,7 +1580,7 @@ function App() {
         {page === 'memories' && (
           <div className="space-y-3" style={{ paddingTop: "1rem" }}>
             <div className={cardClass}>
-              <CardPageHeader title="Memories" subtitle="People you have found who have passed" onHome={() => { clearWatchlistCheck(); setPage('search'); }} homeLabel="search" />
+              <CardPageHeader title="Memories" subtitle="People you have found who have passed" onHome={() => { clearWatchlistCheck(); setPage('search'); }} />
               {watchlist.filter(w => w.is_deceased).length === 0 ? (
                 <div className="text-center py-6">
                   <p className="text-gray-300 text-lg leading-relaxed">If the person you are looking for has passed, you can save them here for future review by touching their name.</p>
@@ -1613,7 +1612,7 @@ function App() {
         {page === 'notifications' && (
           <div className="space-y-3" style={{ paddingTop: "1rem" }}>
             <div className={cardClass}>
-              <CardPageHeader title="Alerts" subtitle="Status changes for people on your watchlist" onHome={() => setPage('watchlist')} />
+              <CardPageHeader title="Alerts" subtitle="Status changes for people on your watchlist" onHome={() => { clearWatchlistCheck(); setPage('search'); }} />
               {notifications.length === 0 ? (
                 <div className="text-center py-4">
                   <p className="text-white font-bold text-xl">No alerts yet</p>
@@ -1642,7 +1641,7 @@ function App() {
         {page === 'about' && (
           <div className="space-y-4 pb-8" style={{ paddingTop: '1rem' }}>
             <div className={cardClass}>
-              <CardPageHeader title="About Dead or Alive" onHome={() => setPage('watchlist')} />
+              <CardPageHeader title="About Dead or Alive" onHome={() => { clearWatchlistCheck(); setPage('search'); }} />
               <p className="text-red-300 italic text-lg leading-relaxed mb-4">Find people you miss. Find out if they are dead or alive.</p>
               <div className="space-y-3 text-gray-200 text-lg leading-relaxed">
                 <p>Dead or Alive was built by three brains -- mine, ChatGPT, and Claude (Anthropic). I'm a retired 74 year old former high-tech entrepreneur. As I get older, I look at the obituaries and wonder about old friends. Did they make it? Are they still out there?</p>
