@@ -57,7 +57,7 @@ const DECEASED_BIRTH_YEAR_THRESHOLD = new Date().getFullYear() - 100;
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
-const PT = isPhone ? '42vh' : isTablet ? '50vh' : '46vh';
+const PT = isPhone ? '36vh' : isTablet ? '44vh' : '40vh';
 
 const toTitleCase = (str) => {
   if (!str) return str;
@@ -192,18 +192,19 @@ const ClearableInput = ({ value, onChange, onBlur, onKeyPress, placeholder, type
   </div>
 );
 
-const CardPageHeader = ({ title, subtitle, onHome, hideHome }) => (
+const CardPageHeader = ({ title, subtitle, onHome, hideHome, homeLabel }) => (
   <div className="mb-3 pb-2 border-b border-red-900/30">
     <div className="flex items-center justify-between">
       <div className="w-10" />
       <h2 className="text-2xl font-black text-white tracking-wide text-center flex-1">{title}</h2>
       {!hideHome ? (
         <button onClick={onHome} className="flex flex-col items-center text-white hover:text-red-400 transition-colors w-10">
-          <HomeIcon /><span className="text-xs">Home</span>
+          {homeLabel === 'search' ? <SearchIcon /> : <HomeIcon />}
+          <span className="text-xs">{homeLabel === 'search' ? 'Search' : 'Home'}</span>
         </button>
       ) : <div className="w-10" />}
     </div>
-    {subtitle && <p className="text-gray-300 text-lg mt-1 text-center">{subtitle}</p>}
+    {subtitle && <p className="text-gray-300 text-base mt-1 text-center">{subtitle}</p>}
   </div>
 );
 
@@ -216,12 +217,20 @@ const POSTER_STYLE = {
   backgroundAttachment: 'fixed',
 };
 
-const PageWrapper = ({ children }) => (
-  <div style={{ minHeight: '100dvh', width: '100%', position: 'relative', paddingBottom: '5rem', backgroundColor: POSTER_STYLE.backgroundColor, backgroundImage: POSTER_STYLE.backgroundImage, backgroundSize: POSTER_STYLE.backgroundSize, backgroundPosition: POSTER_STYLE.backgroundPosition, backgroundRepeat: POSTER_STYLE.backgroundRepeat, backgroundAttachment: POSTER_STYLE.backgroundAttachment }}>
+const WOOD_STYLE = {
+  backgroundColor: '#2c1a0e',
+  backgroundImage: 'none',
+};
+
+const PageWrapper = ({ children, bgStyle }) => {
+  var bg = bgStyle || POSTER_STYLE;
+  return (
+  <div style={{ minHeight: '100dvh', width: '100%', position: 'relative', paddingBottom: '5rem', backgroundColor: bg.backgroundColor, backgroundImage: bg.backgroundImage || 'none', backgroundSize: bg.backgroundSize || 'auto', backgroundPosition: bg.backgroundPosition || 'top', backgroundRepeat: bg.backgroundRepeat || 'no-repeat', backgroundAttachment: bg.backgroundAttachment || 'scroll' }}>
     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.22)' }} />
     <div style={{ position: 'relative', zIndex: 10 }}>{children}</div>
   </div>
-);
+  );
+};
 
 function isDeceasedCheck(extract, description, deathDate, type) {
   if (type === 'disambiguation') return false;
@@ -279,7 +288,7 @@ function App() {
     fetch(API_BASE + '/health').then(r => r.json()).then(d => setApiVersion(d.version || '?')).catch(() => setApiVersion('?'));
     const t = localStorage.getItem('doa_token');
     const u = localStorage.getItem('doa_user');
-    if (t && u) { setUser(JSON.parse(u)); setAuth(true); setPage('watchlist'); loadWatchlist(); loadNotifications(); }
+    if (t && u) { setUser(JSON.parse(u)); setAuth(true); setPage('search'); loadWatchlist(); loadNotifications(); }
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         setTimeout(() => { document.querySelectorAll('input').forEach(i => i.blur()); }, 100);
@@ -359,7 +368,7 @@ function App() {
       localStorage.setItem('doa_token', data.access_token);
       const u = { email, id: '123', name: email.split('@')[0] };
       localStorage.setItem('doa_user', JSON.stringify(u));
-      setUser(u); setAuth(true); setPage('watchlist');
+      setUser(u); setAuth(true); setPage('search');
       loadWatchlist(); loadNotifications();
     } catch (error) { clearTimeout(wakeTimer); setBackendWaking(false); alert('Error: ' + error.message); }
     finally { setLoading(false); }
@@ -1455,7 +1464,7 @@ function App() {
   }
 
   return (
-    <PageWrapper>
+    <PageWrapper bgStyle={page === 'watchlist' || page === 'memories' || page === 'notifications' ? WOOD_STYLE : POSTER_STYLE}>
       <WikiDrawer />
       <SsdiRecordDrawer />
       <div className={containerClass}>
@@ -1565,7 +1574,7 @@ function App() {
         {page === 'memories' && (
           <div className="space-y-3" style={{ paddingTop: PT }}>
             <div className={cardClass}>
-              <CardPageHeader title="Memories" subtitle="People you have found who have passed" onHome={() => setPage('watchlist')} />
+              <CardPageHeader title="Memories" subtitle="People you have found who have passed" onHome={() => { clearWatchlistCheck(); setPage('search'); }} homeLabel="search" />
               {watchlist.filter(w => w.is_deceased).length === 0 ? (
                 <div className="text-center py-6">
                   <p className="text-gray-300 text-lg leading-relaxed">If the person you are looking for has passed, you can save them here for future review by touching their name.</p>
@@ -1685,11 +1694,11 @@ function App() {
       {/* Bottom Nav */}
       <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(10,0,0,0.95)', backdropFilter: 'blur(8px)', borderTop: '1px solid #7f1d1d', padding: '0.5rem 1rem', paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
         <div className="flex justify-around max-w-sm mx-auto">
-          <button onClick={() => setPage('watchlist')} className={'flex flex-col items-center gap-0.5 px-1 py-1 ' + (page === 'watchlist' ? 'text-red-500' : 'text-gray-400')}>
-            <HeartIcon /><span className="text-lg font-medium">Watchlist</span>
-          </button>
           <button onClick={() => { clearWatchlistCheck(); setPage('search'); }} className={'flex flex-col items-center gap-0.5 px-1 py-1 ' + (page === 'search' ? 'text-red-500' : 'text-gray-400')}>
             <SearchIcon /><span className="text-lg font-medium">Search</span>
+          </button>
+          <button onClick={() => setPage('watchlist')} className={'flex flex-col items-center gap-0.5 px-1 py-1 ' + (page === 'watchlist' ? 'text-red-500' : 'text-gray-400')}>
+            <HeartIcon /><span className="text-lg font-medium">Watchlist</span>
           </button>
           <button onClick={() => setPage('memories')} className={'flex flex-col items-center gap-0.5 px-1 py-1 ' + (page === 'memories' ? 'text-red-500' : 'text-gray-400')}>
             <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
