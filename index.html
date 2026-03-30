@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.4.31';
+const APP_VERSION = '1.4.32';
 const DECEASED_BIRTH_YEAR_THRESHOLD = new Date().getFullYear() - 100;
 
 const isPhone = window.innerWidth < 500;
@@ -358,12 +358,12 @@ function App() {
     else { openWatchlistDrawer({ name: n.name, id: n.watchlist_id }); }
   };
 
-  const doAuth = async () => {
+  const doAuth = async (authMode) => {
     if (!email || !password) return;
     setLoading(true); setBackendWaking(false);
     const wakeTimer = setTimeout(() => setBackendWaking(true), 3000);
     try {
-      const endpoint = mode === 'login' ? 'login' : 'register';
+      const endpoint = authMode === 'register' ? 'register' : 'login';
       const r = await fetch(API_BASE + '/auth/' + endpoint, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -1459,8 +1459,8 @@ function App() {
             </div>
             {backendWaking && <p className="text-white/60 text-lg text-center animate-pulse">Waking up the server...</p>}
             <div className="grid grid-cols-2 gap-3">
-              <button onClick={() => { setMode('login'); doAuth(); }} disabled={loading} className="py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl disabled:opacity-50 text-xl">{loading && mode === 'login' ? '...' : 'Sign In'}</button>
-              <button onClick={() => { setMode('register'); doAuth(); }} disabled={loading} className="py-3 bg-white/20 hover:bg-white/30 text-white font-bold rounded-xl disabled:opacity-50 text-xl border border-white/30">{loading && mode === 'register' ? '...' : 'Register'}</button>
+              <button onClick={() => doAuth('login')} disabled={loading} className="py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl disabled:opacity-50 text-xl">{loading ? '...' : 'Sign In'}</button>
+              <button onClick={() => doAuth('register')} disabled={loading} className="py-3 bg-white/20 hover:bg-white/30 text-white font-bold rounded-xl disabled:opacity-50 text-xl border border-white/30">{loading ? '...' : 'Register'}</button>
             </div>
             <p className="text-white/40 text-lg text-center">You'll stay signed in automatically</p>
           </div>
