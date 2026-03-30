@@ -52,7 +52,8 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.4.21';
+const APP_VERSION = '1.4.22';
+const DECEASED_BIRTH_YEAR_THRESHOLD = new Date().getFullYear() - 100;
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
@@ -565,7 +566,7 @@ function App() {
       const birthYear = r.birth_date ? r.birth_date.split('/').pop() : '';
       const birthYearInt = r.birth_date ? parseInt(r.birth_date.split('/').pop()) : null;
       // forceMemories: button explicitly said "Save to Memories" — always deceased
-      const isDeceased = forceMemories || !!(r.death_date) || (birthYearInt && birthYearInt < 1920);
+      const isDeceased = forceMemories || !!(r.death_date) || (birthYearInt && birthYearInt < DECEASED_BIRTH_YEAR_THRESHOLD);
       const deathYear = r.death_date ? r.death_date.split('/').pop() : null;
       const resp = await fetch(API_BASE + '/watchlist', {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
@@ -909,7 +910,7 @@ function App() {
     if (!r || !r.name) return null;
     const alreadyWatching = isOnWatchlist(r.name);
     const ssdiByear = r.birth_date ? parseInt(r.birth_date.split('/').pop()) : null;
-    const ssdiPassed = !!(r.death_date || (ssdiByear && ssdiByear < 1920));
+    const ssdiPassed = !!(r.death_date || (ssdiByear && ssdiByear < DECEASED_BIRTH_YEAR_THRESHOLD));
     return (
       <>
         <div className="modal-overlay" onClick={() => setSsdiDrawer(null)} />
@@ -998,7 +999,7 @@ function App() {
     return (
       <div className="mb-3 p-3 bg-gray-800/60 rounded-xl border border-red-900/30">
         <p className="text-red-300 text-xs font-bold mb-2">Possible matches in SSDI (thru 2014) — tap a name to view</p>
-        {birthYearFallback && (
+        {birthYearFallback && searchBirthYear && (
           <div className="mb-2 p-2 bg-yellow-900/30 border border-yellow-700/40 rounded-lg">
             <p className="text-yellow-300 text-xs">No exact birth year match found — showing all results. Tap the closest match.</p>
           </div>
@@ -1209,18 +1210,28 @@ function App() {
           {!isDeceased && (
             <div className="space-y-2 mt-2 border-t border-white/10 pt-2">
               {hasSSdi && <p className="text-gray-400 text-xs text-center">Tap a name above to add to your list, or:</p>}
-              {fullNameStatus
-                ? <p className="w-full py-2.5 text-center text-green-400 text-sm font-bold">Already in your {fullNameStatus}</p>
-                : <>
+              {(() => {
+                // If top SSDI result is deceased (has death date or born 100+ years ago), offer Memories
+                var topResult = ssdiResults && ssdiResults[0];
+                var topByear = topResult && topResult.birth_date ? parseInt(topResult.birth_date.split('/').pop()) : null;
+                var topPassed = topResult && (!!(topResult.death_date) || (topByear && topByear < DECEASED_BIRTH_YEAR_THRESHOLD));
+                if (fullNameStatus) return <p className="w-full py-2.5 text-center text-green-400 text-sm font-bold">Already in your {fullNameStatus}</p>;
+                if (topPassed && hasSSdi) return (
+                  <button onClick={saveSearchedNameToMemories} disabled={loading} className="w-full py-2.5 bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
+                    <PlusIcon /> {loading ? 'Saving...' : 'Save "' + buildFullName() + '" to Memories'}
+                  </button>
+                );
+                return (
+                  <>
                     <button onClick={addSearchedNameToWatchlist} disabled={loading} className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
                       <PlusIcon /> {loading ? 'Adding...' : 'Add "' + buildFullName() + '" to Watchlist'}
                     </button>
-                    {/* FIX 1: Save to Memories always available for living/not-found results */}
                     <button onClick={saveSearchedNameToMemories} disabled={loading} className="w-full py-2 bg-gray-700/60 border border-gray-500/40 text-gray-200 rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-50">
                       <PlusIcon /> {loading ? 'Saving...' : 'Save to Memories instead'}
                     </button>
                   </>
-              }
+                );
+              })()}
               <button onClick={() => { setWatchlistChecked(false); setWatchlistCheck(null); setSelectedDisambig(null); setSsdiPage(1); window.scrollTo(0,0); document.documentElement.scrollTop = 0; document.body.scrollTop = 0; }} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center flex items-center justify-center gap-2">
                 <EditIcon /> Edit Name
               </button>
