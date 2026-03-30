@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.4.13';
+const APP_VERSION = '1.4.14';
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
@@ -872,7 +872,7 @@ function App() {
               {r.middle_name && <p className="text-gray-400 text-xs">Middle: {r.middle_name}</p>}
               {r.birth_date && <p className="text-gray-300 text-sm">Born: {r.birth_date}</p>}
               {r.death_date && <p className="text-gray-300 text-sm">Died: {r.death_date}</p>}
-              <p className="text-gray-500 text-xs mt-2">SSDI (pre-2014)</p>
+              <p className="text-gray-500 text-xs mt-2">SSDI (thru 2014)</p>
             </div>
             {(() => {
               if (alreadyWatching) return <p className="text-green-400 text-sm text-center font-bold mb-3">Already in your {alreadyWatching}</p>;
@@ -910,7 +910,7 @@ function App() {
     ) : null;
     return (
       <div className="mb-3 p-3 bg-gray-800/60 rounded-xl border border-red-900/30">
-        <p className="text-red-300 text-xs font-bold mb-2">Possible matches in SSDI (pre-2014) — tap a name to view</p>
+        <p className="text-red-300 text-xs font-bold mb-2">Possible matches in SSDI (thru 2014) — tap a name to view</p>
         {tooMany && (
           <div className="mb-2 p-2 bg-yellow-900/30 border border-yellow-700/40 rounded-lg">
             <p className="text-yellow-300 text-xs">Many matches found. Add a middle name, initial or birth year to narrow results.</p>
@@ -931,8 +931,8 @@ function App() {
                 <span className={'text-xs font-bold ml-2 shrink-0 ' + confColor}>{conf}</span>
               </div>
               {r.birth_date && <p className="text-gray-400 text-xs">Born: {r.birth_date}</p>}
-              {r.death_date ? <p className="text-white text-xs font-semibold">Died: {r.death_date}</p> : <p className="text-gray-600 text-xs italic">Not found in SSDI (pre-2014)</p>}
-              <p className="text-gray-500 text-xs">Social Security Death Index (pre-2014)</p>
+              {r.death_date ? <p className="text-white text-xs font-semibold">Died: {r.death_date}</p> : <p className="text-gray-600 text-xs italic">Not found in SSDI (thru 2014)</p>}
+              <p className="text-gray-500 text-xs">SSDI (thru 2014)</p>
             </div>
           );
         })}
@@ -1244,43 +1244,37 @@ function App() {
                         {profile.isDisambiguation && <div className="p-3 bg-yellow-500/20 border border-yellow-400/30 rounded-xl mb-3"><p className="text-yellow-200 text-sm text-center">Multiple people share this name</p></div>}
                       </>
                     )}
-                    {/* FIX 2: heading uses SSDI abbreviation */}
-                    {!profile || !profile.deathDate ? <div className="mt-2 pt-3 border-t border-red-900/30">
-                      <p className="text-red-300 text-xs font-bold mb-2">Possible matches in SSDI (pre-2014)</p>
-                      {ssdiResults && ssdiResults.length > 0 ? (
-                        <>
-                          {ssdiHasMore && (
-                            <button onClick={() => loadMoreSsdi(name)} disabled={ssdiLoadingMore} className="w-full py-2 bg-gray-800/60 border border-red-900/30 text-gray-300 rounded-lg text-xs mb-2 disabled:opacity-50">
-                              {ssdiLoadingMore ? 'Loading...' : 'Show 10 more \u2193'}
-                            </button>
-                          )}
-                          {ssdiResults.map((r, i) => {
-                            const rawScore = scoreResult(r, drawerFirst, '', drawerLast, '', '');
-                            const exactMatch = r.first_name && r.last_name &&
-                              r.first_name.toUpperCase() === drawerFirst.toUpperCase() &&
-                              r.last_name.toUpperCase() === drawerLast.toUpperCase();
-                            const score = (ssdiResults.length === 1 || exactMatch) ? 95 : rawScore;
-                            const conf = confidenceLabel(score);
-                            const confColor = conf === 'Probable Match' ? 'text-green-400' : conf === 'Possible Match' ? 'text-yellow-400' : 'text-gray-400';
-                            return (
-                              <div key={i} onClick={() => { setDrawerData(null); setSsdiDrawer(r); }} className="mb-2 pb-2 border-b border-white/10 last:border-0 cursor-pointer hover:bg-white/5 rounded px-1 transition-colors">
-                                <div className="flex items-start justify-between">
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-white text-sm font-semibold underline decoration-dotted">{r.name}</p>
-                                    {r.middle_name && <p className="text-gray-400 text-xs">Middle: {r.middle_name}</p>}
-                                  </div>
-                                  <span className={'text-xs font-bold ml-2 shrink-0 ' + confColor}>{conf}</span>
-                                </div>
-                                {r.birth_date && <p className="text-gray-400 text-xs">Born: {r.birth_date}</p>}
-                                {r.death_date ? <p className="text-gray-400 text-xs">Died: {r.death_date}</p> : <p className="text-gray-600 text-xs italic">Not found in SSDI (pre-2014)</p>}
-                                <p className="text-gray-500 text-xs">Social Security Death Index (pre-2014)</p>
-                              </div>
-                            );
-                          })}
-                        </>
-                      ) : (
-                        <p className="text-gray-500 text-xs">No records found in SSDI (pre-2014)</p>
+                    {/* Only show SSDI section when there are results */}
+                    {(!profile || !profile.deathDate) && ssdiResults && ssdiResults.length > 0 ? <div className="mt-2 pt-3 border-t border-red-900/30">
+                      <p className="text-red-300 text-xs font-bold mb-2">Possible matches in SSDI (thru 2014)</p>
+                      {ssdiHasMore && (
+                        <button onClick={() => loadMoreSsdi(name)} disabled={ssdiLoadingMore} className="w-full py-2 bg-gray-800/60 border border-red-900/30 text-gray-300 rounded-lg text-xs mb-2 disabled:opacity-50">
+                          {ssdiLoadingMore ? 'Loading...' : 'Show 10 more \u2193'}
+                        </button>
                       )}
+                      {ssdiResults.map((r, i) => {
+                        const rawScore = scoreResult(r, drawerFirst, '', drawerLast, '', '');
+                        const exactMatch = r.first_name && r.last_name &&
+                          r.first_name.toUpperCase() === drawerFirst.toUpperCase() &&
+                          r.last_name.toUpperCase() === drawerLast.toUpperCase();
+                        const score = (ssdiResults.length === 1 || exactMatch) ? 95 : rawScore;
+                        const conf = confidenceLabel(score);
+                        const confColor = conf === 'Probable Match' ? 'text-green-400' : conf === 'Possible Match' ? 'text-yellow-400' : 'text-gray-400';
+                        return (
+                          <div key={i} onClick={() => { setDrawerData(null); setSsdiDrawer(r); }} className="mb-2 pb-2 border-b border-white/10 last:border-0 cursor-pointer hover:bg-white/5 rounded px-1 transition-colors">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-white text-sm font-semibold underline decoration-dotted">{r.name}</p>
+                                {r.middle_name && <p className="text-gray-400 text-xs">Middle: {r.middle_name}</p>}
+                              </div>
+                              <span className={'text-xs font-bold ml-2 shrink-0 ' + confColor}>{conf}</span>
+                            </div>
+                            {r.birth_date && <p className="text-gray-400 text-xs">Born: {r.birth_date}</p>}
+                            {r.death_date && <p className="text-gray-400 text-xs">Died: {r.death_date}</p>}
+                            <p className="text-gray-500 text-xs">SSDI (thru 2014)</p>
+                          </div>
+                        );
+                      })}
                     </div> : null}
                   </>
                 )}
