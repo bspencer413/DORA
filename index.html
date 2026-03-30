@@ -24,16 +24,7 @@
   <meta name="twitter:image" content="https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png">
   <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiRGVhZCBvciBBbGl2ZSIsInNob3J0X25hbWUiOiJET1JBIiwic3RhcnRfdXJsIjoiLyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiM3ZjFkMWQiLCJ0aGVtZV9jb2xvciI6IiNkYzI2MjYiLCJpY29ucyI6W3sic3JjIjoiaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL2JzcGVuY2VyNDEzL0RPUkEvbWFpbi9kb3JhX2ljb24ucG5nIiwic2l6ZXMiOiI1MTJ4NTEyIiwidHlwZSI6ImltYWdlL3BuZyJ9XX0=">
   <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/bspencer413/DORA/main/dora_icon.png">
-  <script>
-  window.addEventListener('error', function(e) {
-    var r = document.getElementById('root');
-    if (r && !r.innerHTML) {
-      r.style.cssText = 'background:#1a1a2e;padding:30px;color:#fff;font-family:monospace';
-      r.innerHTML = '<h2 style="color:#dc2626">Load Error</h2><pre style="white-space:pre-wrap;font-size:12px">' + (e.message||'') + '\nLine ' + e.lineno + '</pre>';
-    }
-  });
-</script>
-<script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -579,19 +570,12 @@ return stored === normalized || w.name.toLowerCase() === name.toLowerCase();
 };
 
 const buildFullName = () => {
-var _nameParts = (nw.name || ‘’).trim().split(’ ‘);
-var _filtered = [];
-for (var _i = 0; _i < _nameParts.length; _i++) { if (_nameParts[_i]) _filtered.push(_nameParts[_i]); }
-var _first = _filtered.length > 0 ? _filtered[0] : ‘’;
-var _last = _filtered.length > 1 ? _filtered[_filtered.length - 1] : ‘’;
-var _mid = (nw.middle || ‘’).trim();
-var _suf = (nw.suffix || ‘’).trim();
-var _out = [];
-if (_first) _out.push(_first);
-if (_mid) _out.push(_mid);
-if (_last) _out.push(_last);
-if (_suf) _out.push(_suf);
-return _out.join(’ ’);
+const nameWords = (nw.name || ‘’).trim().split(’ ‘).filter(Boolean);
+const first = nameWords[0] || ‘’;
+const last = nameWords.length > 1 ? nameWords[nameWords.length - 1] : ‘’;
+const mid = (nw.middle || ‘’).trim();
+const suf = (nw.suffix || ‘’).trim();
+return [first, mid, last, suf].filter(Boolean).join(’ ’);
 };
 
 const checkWatch = async () => {
@@ -830,8 +814,8 @@ if (!ssdiDrawer) return null;
 const r = ssdiDrawer;
 if (!r || !r.name) return null;
 const alreadyWatching = isOnWatchlist(r.name);
-var _ssdiByear = r.birth_date ? parseInt(r.birth_date.split(’/’).pop()) : null;
-var _ssdiPassed = !!(r.death_date || (_ssdiByear && _ssdiByear < 1920));
+const ssdiByear = r.birth_date ? parseInt(r.birth_date.split(’/’).pop()) : null;
+const ssdiPassed = !!(r.death_date || (ssdiByear && ssdiByear < 1920));
 return (
 <>
 <div className=“modal-overlay” onClick={() => setSsdiDrawer(null)} />
@@ -841,7 +825,7 @@ return (
 <button onClick={() => setSsdiDrawer(null)} className=“text-gray-400 hover:text-white text-2xl font-bold”>X</button>
 </div>
 <div className="p-4">
-{_ssdiPassed && (
+{ssdiPassed && (
 <div className="px-4 py-2 rounded-xl mb-4 flex items-center gap-3 bg-gray-700">
 <span className="text-white font-black">Passed Away</span>
 {r.death_date && <span className="text-white/80 text-sm ml-auto">Died: {r.death_date}</span>}
@@ -856,7 +840,7 @@ return (
 </div>
 {(() => {
 if (alreadyWatching) return <p className="text-green-400 text-sm text-center font-bold mb-3">Already in your list</p>;
-if (_ssdiPassed) return (
+if (ssdiPassed) return (
 <button onClick={() => addFromSsdi(r)} disabled={loading} className=“w-full py-2.5 bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 mb-3 disabled:opacity-50”>
 <PlusIcon /> {loading ? ‘Saving…’ : ‘Save to Memories’}
 </button>
