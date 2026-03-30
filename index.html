@@ -92,28 +92,6 @@ return word;
 }).join(’ ’);
 };
 
-// BUG F: normalize source label
-const formatSource = (s) => {
-if (!s) return s;
-return s.replace(/SSA Death Master File/gi, ‘SSDI Master File’);
-};
-
-// BUG H: first name match — blocks “Bert” -> “Bertha”
-const firstNameMatches = (rFirst, sFirst) => {
-if (!sFirst) return true;
-if (rFirst === sFirst) return true;
-if (sFirst.length >= rFirst.length && sFirst.startsWith(rFirst)) return true;
-return false;
-};
-
-// BUG B: true if SSDI record indicates person has passed
-const likelyPassed = (r) => {
-if (!r) return false;
-if (r.death_date) return true;
-const birthYear = r.birth_date ? parseInt(r.birth_date.split(’/’).pop()) : null;
-return !!(birthYear && birthYear < 1920);
-};
-
 // ── Confidence scoring for SSDI results ────────────────────────────────────────
 // FIX 6/9: Middle name weight raised from 20 → 30 so a full first+middle+last hit
 //           scores 90 (Probable) rather than 80 (Possible).
@@ -134,7 +112,7 @@ score += lastNameOnly ? 50 : 30;
 // First name exact vs partial
 if (sFirst) {
 if (rFirst === sFirst) score += 30;
-else if (firstNameMatches(rFirst, sFirst)) score += 15;
+else if (sFirst.length >= rFirst.length && rFirst.startsWith(sFirst)) score += 15;
 }
 // Middle name/initial — now worth 30 pts so first+mid+last = 90 = Probable
 if (sMiddle && rMiddle) {
@@ -551,12 +529,13 @@ setSsdiLoadingMore(false);
 // FIX 5: addFromSsdi — fix ‘notices’ page (doesn’t exist), clear form, route correctly
 const addFromSsdi = async (r) => {
 const fullName = r.name;
-if (nameAlreadyInList(fullName, r.middle_name)) { alert(fullName + ’ is already on your watchlist!’); return; }
+if (isOnWatchlist(fullName)) { alert(fullName + ’ is already on your watchlist!’); return; }
 setLoading(true);
 try {
 const token = localStorage.getItem(‘doa_token’);
 const birthYear = r.birth_date ? r.birth_date.split(’/’).pop() : ‘’;
-const isDeceased = likelyPassed(r);
+const birthYearInt = r.birth_date ? parseInt(r.birth_date.split(’/’).pop()) : null;
+const isDeceased = !!(r.death_date) || (birthYearInt && birthYearInt < 1920);
 const deathYear = r.death_date ? r.death_date.split(’/’).pop() : null;
 const resp = await fetch(API_BASE + ‘/watchlist’, {
 method: ‘POST’, headers: { ‘Content-Type’: ‘application/json’, ‘Authorization’: ’Bearer ’ + token },
@@ -578,37 +557,26 @@ alert(msg);
 finally { setLoading(false); }
 };
 
-// BUG D: respect middle name in collision check
-const nameAlreadyInList = (name, middleName) => {
+const isOnWatchlist = (name) => {
 if (!name) return false;
 try {
-const qParts = name.trim().split(/\s+/);
-const qFirst = (qParts[0] || ‘’).toLowerCase();
-const qLast = (qParts[qParts.length - 1] || ‘’).toLowerCase();
-const qMid = middleName ? middleName.trim().toLowerCase()
-: (qParts.length > 2 ? qParts.slice(1, -1).join(’ ‘).toLowerCase() : ‘’);
+const normalized = normalizeForWiki(name).toLowerCase();
 return watchlist.some(w => {
 if (!w || !w.name) return false;
-const wParts = w.name.trim().split(/\s+/);
-const wFirst = (wParts[0] || ‘’).toLowerCase();
-const wLast = (wParts[wParts.length - 1] || ‘’).toLowerCase();
-const wMid = wParts.length > 2 ? wParts.slice(1, -1).join(’ ’).toLowerCase() : ‘’;
-if (wFirst !== qFirst || wLast !== qLast) return false;
-if (qMid && wMid) return qMid === wMid || qMid.charAt(0) === wMid.charAt(0);
-return true;
+const stored = normalizeForWiki(w.name).toLowerCase();
+return stored === normalized || w.name.toLowerCase() === name.toLowerCase();
 });
 } catch(e) { return false; }
 };
-const isOnWatchlist = (name) => nameAlreadyInList(name, null);
 
-// BUG C/I: correct assembly — “First M Last”, not “First Last M”
 const buildFullName = () => {
-const nameParts = (nw.name || ‘’).trim().split(/\s+/).filter(Boolean);
-const first = nameParts[0] || ‘’;
-const last = nameParts.length > 1 ? nameParts[nameParts.length - 1] : ‘’;
-const middle = (nw.middle || ‘’).trim();
-const suffix = (nw.suffix || ‘’).trim();
-return [first, middle, last, suffix].filter(Boolean).join(’ ’);
+const rawParts = (nw.name || ‘’).trim().split(’ ‘).filter(Boolean);
+const first = rawParts[0] || ‘’;
+const last = rawParts.length > 1 ? rawParts[rawParts.length - 1] : ‘’;
+const mid = (nw.middle || ‘’).trim();
+const suf = (nw.suffix || ‘’).trim();
+const parts = [first, mid, last, suf].filter(function(p){ return p.length > 0; });
+return parts.join(’ ’);
 };
 
 const checkWatch = async () => {
@@ -846,7 +814,7 @@ const SsdiRecordDrawer = () => {
 if (!ssdiDrawer) return null;
 const r = ssdiDrawer;
 if (!r || !r.name) return null;
-const alreadyWatching = nameAlreadyInList(r.name, r.middle_name);
+const alreadyWatching = isOnWatchlist(r.name);
 return (
 <>
 <div className=“modal-overlay” onClick={() => setSsdiDrawer(null)} />
@@ -856,23 +824,29 @@ return (
 <button onClick={() => setSsdiDrawer(null)} className=“text-gray-400 hover:text-white text-2xl font-bold”>X</button>
 </div>
 <div className="p-4">
-{likelyPassed(r) && (
+{(() => {
+const _by = r.birth_date ? parseInt(r.birth_date.split(’/’).pop()) : null;
+const _passed = r.death_date || (_by && _by < 1920);
+if (!_passed) return null;
+return (
 <div className="px-4 py-2 rounded-xl mb-4 flex items-center gap-3 bg-gray-700">
 <span className="text-white font-black">Passed Away</span>
 {r.death_date && <span className="text-white/80 text-sm ml-auto">Died: {r.death_date}</span>}
 </div>
-)}
+);
+})()}
 <div className="bg-gray-800/60 rounded-xl p-3 mb-4 border border-red-900/30">
 <p className="text-white font-bold text-base mb-1">{r.name}</p>
-{r.middle_name && <p className="text-gray-400 text-xs">Middle name: {r.middle_name}</p>}
+{r.middle_name && <p className="text-gray-400 text-xs">Middle: {r.middle_name}</p>}
 {r.birth_date && <p className="text-gray-300 text-sm">Born: {r.birth_date}</p>}
 {r.death_date && <p className="text-gray-300 text-sm">Died: {r.death_date}</p>}
 {!r.death_date && <p className="text-gray-500 text-xs italic mt-1">Not found in SSDI (pre-2014)</p>}
-<p className="text-gray-500 text-xs mt-1">{formatSource(r.source)}</p>
+<p className="text-gray-500 text-xs mt-1">{r.source}</p>
 </div>
 {(() => {
 if (alreadyWatching) return <p className="text-green-400 text-sm text-center font-bold mb-3">Already in your list</p>;
-if (likelyPassed(r)) return (
+const _birthYr = r.birth_date ? parseInt(r.birth_date.split(’/’).pop()) : null;
+if (r.death_date || (_birthYr && _birthYr < 1920)) return (
 <button onClick={() => addFromSsdi(r)} disabled={loading} className=“w-full py-2.5 bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 mb-3 disabled:opacity-50”>
 <PlusIcon /> {loading ? ‘Saving…’ : ‘Save to Memories’}
 </button>
@@ -929,7 +903,7 @@ return (
 </div>
 {r.birth_date && <p className="text-gray-400 text-xs">Born: {r.birth_date}</p>}
 {r.death_date ? <p className="text-white text-xs font-semibold">Died: {r.death_date}</p> : <p className="text-gray-600 text-xs italic">Not found in SSDI (pre-2014)</p>}
-<p className="text-gray-500 text-xs">{formatSource(r.source)}</p>
+<p className="text-gray-500 text-xs">{r.source}</p>
 </div>
 );
 })}
@@ -1219,7 +1193,7 @@ return (
 </>
 )}
 {!profile || !profile.deathDate ? <div className="mt-2 pt-3 border-t border-red-900/30">
-<p className="text-red-300 text-xs font-bold mb-2">Possible matches in SSDI Master File through 2014</p>
+<p className="text-red-300 text-xs font-bold mb-2">Possible matches in SSDI Master List through 2014</p>
 {ssdiResults && ssdiResults.length > 0 ? (
 <>
 {ssdiHasMore && (
@@ -1246,7 +1220,7 @@ return (
 </div>
 {r.birth_date && <p className="text-gray-400 text-xs">Born: {r.birth_date}</p>}
 {r.death_date ? <p className="text-gray-400 text-xs">Died: {r.death_date}</p> : <p className="text-gray-600 text-xs italic">Not found in SSDI (pre-2014)</p>}
-<p className="text-gray-500 text-xs">{formatSource(r.source)}</p>
+<p className="text-gray-500 text-xs">{r.source}</p>
 </div>
 );
 })}
