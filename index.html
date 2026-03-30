@@ -52,12 +52,12 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.4.23';
+const APP_VERSION = '1.4.24';
 const DECEASED_BIRTH_YEAR_THRESHOLD = new Date().getFullYear() - 100;
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
-const PT = isPhone ? '32vh' : isTablet ? '42vh' : '38vh';
+const PT = isPhone ? '42vh' : isTablet ? '50vh' : '46vh';
 
 const toTitleCase = (str) => {
   if (!str) return str;
@@ -187,7 +187,7 @@ const ClearableInput = ({ value, onChange, onBlur, onKeyPress, placeholder, type
       autoCorrect="off" autoCapitalize="words" autoComplete="off" spellCheck="false"
     />
     {value && value.length > 0 && (
-      <button onClick={() => onChange({ target: { value: '' } })} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white text-lg font-bold leading-none" type="button">X</button>
+      <button onClick={() => onChange({ target: { value: '' } })} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white text-xl font-bold leading-none" type="button">X</button>
     )}
   </div>
 );
@@ -196,14 +196,14 @@ const CardPageHeader = ({ title, subtitle, onHome, hideHome }) => (
   <div className="mb-3 pb-2 border-b border-red-900/30">
     <div className="flex items-center justify-between">
       <div className="w-10" />
-      <h2 className="text-xl font-black text-white tracking-wide text-center flex-1">{title}</h2>
+      <h2 className="text-2xl font-black text-white tracking-wide text-center flex-1">{title}</h2>
       {!hideHome ? (
         <button onClick={onHome} className="flex flex-col items-center text-white hover:text-red-400 transition-colors w-10">
           <HomeIcon /><span className="text-xs">Home</span>
         </button>
       ) : <div className="w-10" />}
     </div>
-    {subtitle && <p className="text-gray-300 text-xs mt-1 text-center">{subtitle}</p>}
+    {subtitle && <p className="text-gray-300 text-lg mt-1 text-center">{subtitle}</p>}
   </div>
 );
 
@@ -816,8 +816,8 @@ function App() {
   };
 
   const unreadCount = notifications.length;
-  const iClass = "w-full px-4 py-2.5 border border-red-900/50 rounded-lg focus:ring-2 focus:ring-red-500 text-base bg-gray-900/60 text-white placeholder-gray-400";
-  const cardClass = "bg-black/35 rounded-2xl p-3 shadow-lg border border-red-900/30 backdrop-blur-sm";
+  const iClass = "w-full px-4 py-3 border border-red-900/50 rounded-lg focus:ring-2 focus:ring-red-500 text-lg bg-gray-900/60 text-white placeholder-gray-400";
+  const cardClass = "bg-black/35 rounded-2xl p-4 shadow-lg border border-red-900/30 backdrop-blur-sm";
   const containerClass = (page === 'about' || page === 'privacy') ? 'w-full max-w-3xl mx-auto px-4' : 'w-full max-w-sm mx-auto px-3';
 
   const SingleProfileCard = ({ profile, showAddButton, onBack }) => {
@@ -827,7 +827,7 @@ function App() {
     return (
       <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
         <div className={'px-5 py-2 flex items-center gap-3 ' + (profile.deathDate ? 'bg-gray-800' : isDisambig ? 'bg-yellow-600' : 'bg-green-700')}>
-          <span className="text-white font-black tracking-widest text-sm">{profile.deathDate ? 'Passed Away' : isDisambig ? 'Multiple Matches' : 'Likely Alive'}</span>
+          <span className="text-white font-black tracking-widest text-lg">{profile.deathDate ? 'Passed Away' : isDisambig ? 'Multiple Matches' : 'Likely Alive'}</span>
           {profile.deathDate && profile.deathDate !== 'deceased' && <span className="text-white/80 text-xs ml-auto">Died: {profile.deathDate}</span>}
           {onBack && <button onClick={onBack} className="ml-auto text-white/60 text-xs underline">Back to list</button>}
         </div>
@@ -835,20 +835,20 @@ function App() {
           <div className="flex gap-3 items-start mb-3">
             {profile.thumbnail ? <img src={profile.thumbnail} alt={profile.title} className="w-16 h-16 rounded-full object-cover border-2 border-red-600/50 shrink-0" /> : <div className="w-16 h-16 rounded-full bg-red-900/40 flex items-center justify-center shrink-0 text-2xl">?</div>}
             <div className="flex-1">
-              <h2 className="text-white text-lg font-bold mb-1">{profile.title}</h2>
-              {profile.birthDate && <p className="text-red-300 text-sm font-bold">Born: {profile.birthDate}</p>}
-              {!isDisambig && <p className="text-red-400 text-xs italic mt-1">{profile.description}</p>}
+              <h2 className="text-white text-xl font-bold mb-1">{profile.title}</h2>
+              {profile.birthDate && <p className="text-red-300 text-xl font-bold">Born: {profile.birthDate}</p>}
+              {!isDisambig && <p className="text-red-400 text-lg italic mt-1">{profile.description}</p>}
             </div>
           </div>
-          {!isDisambig && profile.extract && <p className="text-gray-100 text-sm leading-relaxed mb-3">{profile.extract}</p>}
-          {profile.deathDate && <div className="p-2 bg-gray-700/50 border border-gray-600/30 rounded-xl mb-3"><p className="text-gray-200 text-sm text-center">This person has passed away</p></div>}
+          {!isDisambig && profile.extract && <p className="text-gray-100 text-lg leading-relaxed mb-3">{profile.extract}</p>}
+          {profile.deathDate && <div className="p-2 bg-gray-700/50 border border-gray-600/30 rounded-xl mb-3"><p className="text-gray-200 text-lg text-center">This person has passed away</p></div>}
           {showAddButton && (
             <div className="space-y-2 mb-2">
               {!profile.deathDate && (alreadyWatching
-                ? <button onClick={() => setPage('notifications')} className="w-full py-2 bg-green-700/30 border border-green-500/40 text-green-200 rounded-xl text-sm text-center">Already in your {alreadyWatching}</button>
-                : <button onClick={() => addWatchFromSearch(profile.title)} disabled={loading} className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50"><PlusIcon /> Add to Watchlist</button>
+                ? <button onClick={() => setPage('notifications')} className="w-full py-2 bg-green-700/30 border border-green-500/40 text-green-200 rounded-xl text-lg text-center">Already in your {alreadyWatching}</button>
+                : <button onClick={() => addWatchFromSearch(profile.title)} disabled={loading} className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xl flex items-center justify-center gap-2 disabled:opacity-50"><PlusIcon /> Add to Watchlist</button>
               )}
-              <button onClick={clearSearch} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center">Clear Search</button>
+              <button onClick={clearSearch} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-lg text-center">Clear Search</button>
             </div>
           )}
           <div className="p-2 bg-red-900/20 border border-red-800/20 rounded-xl">
@@ -865,25 +865,25 @@ function App() {
     if (profile.isDisambiguation) {
       return (
         <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
-          <div className="px-5 py-2 bg-yellow-600"><span className="text-white font-black tracking-widest text-sm">MULTIPLE MATCHES</span></div>
+          <div className="px-5 py-2 bg-yellow-600"><span className="text-white font-black tracking-widest text-lg">MULTIPLE MATCHES</span></div>
           <div className="bg-gray-900/70 p-4">
-            <p className="text-gray-300 text-sm mb-1">Several people share this name.</p>
+            <p className="text-gray-300 text-lg mb-1">Several people share this name.</p>
             <div className="space-y-2">
               {(profile.matches || []).map((m, i) => (
                 <button key={i} onClick={() => setSelectedDisambig(m)} className="w-full p-3 bg-gray-800/60 border border-red-900/30 rounded-xl text-left hover:bg-gray-700/60 transition-colors">
                   <div className="flex items-center gap-3">
                     {m.thumbnail ? <img src={m.thumbnail} alt={m.title} className="w-10 h-10 rounded-full object-cover border border-red-600/40 shrink-0" /> : <div className="w-10 h-10 rounded-full bg-red-900/40 flex items-center justify-center shrink-0 text-lg">?</div>}
                     <div className="flex-1 min-w-0">
-                      <p className="text-white text-sm font-bold truncate">{m.title}</p>
-                      <p className="text-red-400 text-xs italic truncate">{m.description}</p>
+                      <p className="text-white text-xl font-bold truncate">{m.title}</p>
+                      <p className="text-red-400 text-lg italic truncate">{m.description}</p>
                     </div>
-                    <span className={'px-2 py-0.5 rounded-full text-xs font-bold ' + (m.deathDate ? 'bg-gray-700 text-gray-300' : 'bg-green-800 text-green-300')}>{m.deathDate ? 'Passed Away' : 'Likely Alive'}</span>
+                    <span className={'px-2 py-0.5 rounded-full text-xl font-bold ' + (m.deathDate ? 'bg-gray-700 text-gray-300' : 'bg-green-800 text-green-300')}>{m.deathDate ? 'Passed Away' : 'Likely Alive'}</span>
                   </div>
                 </button>
               ))}
-              {(profile.matches || []).length === 0 && <p className="text-gray-400 text-sm text-center py-3">No matches found. Try adding a middle name or initial.</p>}
+              {(profile.matches || []).length === 0 && <p className="text-gray-400 text-lg text-center py-3">No matches found. Try adding a middle name or initial.</p>}
             </div>
-            <button onClick={clearSearch} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center mt-3">Clear Search</button>
+            <button onClick={clearSearch} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-lg text-center mt-3">Clear Search</button>
           </div>
         </div>
       );
@@ -899,12 +899,12 @@ function App() {
       if (this.state.hasError) {
         return (
           <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
-            <div className="px-5 py-2 bg-blue-700"><span className="text-white font-black tracking-widest text-sm">Not Found</span></div>
+            <div className="px-5 py-2 bg-blue-700"><span className="text-white font-black tracking-widest text-lg">Not Found</span></div>
             <div className="bg-gray-900/70 p-4">
-              <p className="text-white text-base font-bold mb-2">Not found</p>
-              <p className="text-gray-300 text-sm mb-3">Add to watchlist anyway?</p>
-              <button onClick={() => this.props.onAdd && this.props.onAdd()} className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm mb-2">Add to Watchlist</button>
-              <button onClick={() => this.props.onCancel && this.props.onCancel()} className="w-full py-1.5 text-white/40 text-xs text-center">Cancel</button>
+              <p className="text-white text-xl font-bold mb-2">Not found</p>
+              <p className="text-gray-300 text-lg mb-3">Add to watchlist anyway?</p>
+              <button onClick={() => this.props.onAdd && this.props.onAdd()} className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xl mb-2">Add to Watchlist</button>
+              <button onClick={() => this.props.onCancel && this.props.onCancel()} className="w-full py-1.5 text-white/40 text-lg text-center">Cancel</button>
             </div>
           </div>
         );
@@ -933,21 +933,21 @@ function App() {
             {ssdiPassed && (
               <div className="px-4 py-2 rounded-xl mb-4 flex items-center gap-3 bg-gray-700">
                 <span className="text-white font-black">Passed Away</span>
-                {r.death_date && <span className="text-white/80 text-sm ml-auto">Died: {r.death_date}</span>}
+                {r.death_date && <span className="text-white/80 text-lg ml-auto">Died: {r.death_date}</span>}
               </div>
             )}
             <div className="bg-gray-800/60 rounded-xl p-3 mb-4 border border-red-900/30">
-              <p className="text-white font-bold text-base mb-1">{r.name}</p>
+              <p className="text-white font-bold text-lg mb-1">{r.name}</p>
               {r.middle_name && <p className="text-gray-400 text-xs">Middle: {r.middle_name}</p>}
-              {r.birth_date && <p className="text-gray-300 text-sm">Born: {r.birth_date}</p>}
-              {r.death_date && <p className="text-gray-300 text-sm">Died: {r.death_date}</p>}
-              <p className="text-gray-500 text-xs mt-2">SSDI (thru 2014)</p>
+              {r.birth_date && <p className="text-gray-300 text-lg">Born: {r.birth_date}</p>}
+              {r.death_date && <p className="text-gray-300 text-lg">Died: {r.death_date}</p>}
+              <p className="text-gray-500 text-lg mt-2">SSDI (thru 2014)</p>
             </div>
             {(() => {
-              if (alreadyWatching === 'memories') return <p className="text-green-400 text-sm text-center font-bold mb-3">Already in your Memories</p>;
+              if (alreadyWatching === 'memories') return <p className="text-green-400 text-lg text-center font-bold mb-3">Already in your Memories</p>;
               if (alreadyWatching === 'watchlist' && ssdiPassed) return (
                 <div className="mb-3">
-                  <p className="text-yellow-300 text-sm text-center mb-2">This person is on your Watchlist but the SSDI record shows they have passed.</p>
+                  <p className="text-yellow-300 text-lg text-center mb-2">This person is on your Watchlist but the SSDI record shows they have passed.</p>
                   <button onClick={async () => {
                     setLoading(true);
                     try {
@@ -968,24 +968,24 @@ function App() {
                       setPage('memories');
                     } catch(e) { alert('Error: ' + e.message); }
                     finally { setLoading(false); }
-                  }} disabled={loading} className="w-full py-2.5 bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
+                  }} disabled={loading} className="w-full py-4 bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white rounded-xl font-bold text-xl flex items-center justify-center gap-2 disabled:opacity-50">
                     <PlusIcon /> {loading ? 'Moving...' : 'Move to Memories'}
                   </button>
                 </div>
               );
-              if (alreadyWatching) return <p className="text-green-400 text-sm text-center font-bold mb-3">Already in your {alreadyWatching}</p>;
+              if (alreadyWatching) return <p className="text-green-400 text-lg text-center font-bold mb-3">Already in your {alreadyWatching}</p>;
               if (ssdiPassed) return (
-                <button onClick={() => addFromSsdi(r, true)} disabled={loading} className="w-full py-2.5 bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 mb-3 disabled:opacity-50">
+                <button onClick={() => addFromSsdi(r, true)} disabled={loading} className="w-full py-4 bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white rounded-xl font-bold text-xl flex items-center justify-center gap-2 mb-3 disabled:opacity-50">
                   <PlusIcon /> {loading ? 'Saving...' : 'Save to Memories'}
                 </button>
               );
               return (
-                <button onClick={() => addFromSsdi(r, false)} disabled={loading} className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 mb-3 disabled:opacity-50">
+                <button onClick={() => addFromSsdi(r, false)} disabled={loading} className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xl flex items-center justify-center gap-2 mb-3 disabled:opacity-50">
                   <PlusIcon /> {loading ? 'Adding...' : 'Add to Watchlist'}
                 </button>
               );
             })()}
-            <button onClick={() => setSsdiDrawer(null)} className="w-full py-3 bg-red-900/40 border border-red-800/50 text-white rounded-xl text-sm">Close</button>
+            <button onClick={() => setSsdiDrawer(null)} className="w-full py-3 bg-red-900/40 border border-red-800/50 text-white rounded-xl text-lg">Close</button>
           </div>
         </div>
       </>
@@ -1002,13 +1002,13 @@ function App() {
       <button
         onClick={() => { if (clientHasMore) setSsdiPage(p => p + 1); else if (onLoadMore) onLoadMore(); }}
         disabled={ssdiLoadingMore}
-        className="w-full py-2.5 bg-gray-700 border border-red-800/50 text-white rounded-xl text-sm font-bold mt-1 mb-1">
+        className="w-full py-2.5 bg-gray-700 border border-red-800/50 text-white rounded-xl text-xl font-bold mt-1 mb-1">
         {ssdiLoadingMore ? 'Loading...' : 'Show 10 more \u2193'}
       </button>
     ) : null;
     return (
       <div className="mb-3 p-3 bg-gray-800/60 rounded-xl border border-red-900/30">
-        <p className="text-red-300 text-xs font-bold mb-2">Possible matches in SSDI (thru 2014) — tap a name to view</p>
+        <p className="text-red-300 text-xl font-bold mb-2">Possible matches in SSDI (thru 2014) — tap a name to view</p>
         {birthYearFallback && searchBirthYear && (
           <div className="mb-2 p-2 bg-yellow-900/30 border border-yellow-700/40 rounded-lg">
             <p className="text-yellow-300 text-xs">No exact birth year match found — showing all results. Tap the closest match.</p>
@@ -1032,13 +1032,13 @@ function App() {
             <div key={i} onClick={() => setSsdiDrawer(r)} className="mb-2 pb-2 border-b border-white/10 last:border-0 cursor-pointer hover:bg-white/5 rounded px-1 transition-colors">
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
-                  <p className="text-white text-sm font-semibold underline decoration-dotted">{r.name}</p>
+                  <p className="text-white text-xl font-semibold underline decoration-dotted">{r.name}</p>
                   {r.middle_name && <p className="text-gray-400 text-xs">Middle: {r.middle_name}</p>}
                 </div>
-                <span className={'text-xs font-bold ml-2 shrink-0 ' + confColor}>{conf}</span>
+                <span className={'text-sm font-bold ml-2 shrink-0 ' + confColor}>{conf}</span>
               </div>
               {r.birth_date && <p className="text-gray-400 text-xs">Born: {r.birth_date}</p>}
-              {r.death_date ? <p className="text-white text-xs font-semibold">Died: {r.death_date}</p> : <p className="text-gray-600 text-xs italic">Not found in SSDI (thru 2014)</p>}
+              {r.death_date ? <p className="text-white text-xs font-semibold">Died: {r.death_date}</p> : <p className="text-gray-600 text-lg italic">Not found in SSDI (thru 2014)</p>}
               <p className="text-gray-500 text-xs">SSDI (thru 2014)</p>
             </div>
           );
@@ -1088,7 +1088,7 @@ function App() {
         return (
           <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
             <div className={'px-5 py-2 flex items-center gap-3 ' + (isDeceased ? 'bg-gray-800' : 'bg-green-700')}>
-              <span className="text-white font-black tracking-widest text-sm">{isDeceased ? 'Passed Away' : 'Likely Alive'}</span>
+              <span className="text-white font-black tracking-widest text-lg">{isDeceased ? 'Passed Away' : 'Likely Alive'}</span>
               {isDeceased && selectedDisambig.deathDate !== 'deceased' && <span className="text-white/80 text-xs ml-auto">Died: {selectedDisambig.deathDate}</span>}
               <button onClick={() => setSelectedDisambig(null)} className="ml-auto text-white/60 text-xs underline">Back</button>
             </div>
@@ -1096,38 +1096,38 @@ function App() {
               <div className="flex gap-3 items-start mb-3">
                 {selectedDisambig.thumbnail ? <img src={selectedDisambig.thumbnail} alt={selectedDisambig.title} className="w-16 h-16 rounded-full object-cover border-2 border-red-600/50 shrink-0" /> : <div className="w-16 h-16 rounded-full bg-red-900/40 flex items-center justify-center shrink-0 text-2xl">?</div>}
                 <div className="flex-1">
-                  <h2 className="text-white text-lg font-bold mb-1">{selectedDisambig.title}</h2>
-                  {selectedDisambig.birthDate && <p className="text-red-300 text-sm font-bold">Born: {selectedDisambig.birthDate}</p>}
-                  <p className="text-red-400 text-xs italic mt-1">{selectedDisambig.description}</p>
+                  <h2 className="text-white text-xl font-bold mb-1">{selectedDisambig.title}</h2>
+                  {selectedDisambig.birthDate && <p className="text-red-300 text-xl font-bold">Born: {selectedDisambig.birthDate}</p>}
+                  <p className="text-red-400 text-lg italic mt-1">{selectedDisambig.description}</p>
                 </div>
               </div>
-              {selectedDisambig.extract && <p className="text-gray-100 text-sm leading-relaxed mb-3">{selectedDisambig.extract}</p>}
+              {selectedDisambig.extract && <p className="text-gray-100 text-lg leading-relaxed mb-3">{selectedDisambig.extract}</p>}
               <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} middleFallback={watchlistCheck && watchlistCheck.middleFallback} noMiMatches={watchlistCheck && watchlistCheck.noMiMatches} />
-              {isDeceased && <div className="p-2 bg-gray-700/50 border border-gray-600/30 rounded-xl mb-3"><p className="text-gray-200 text-sm text-center">This person has passed away.{selectedDisambig.deathDate !== 'deceased' ? ' Died: ' + selectedDisambig.deathDate : ''}</p></div>}
+              {isDeceased && <div className="p-2 bg-gray-700/50 border border-gray-600/30 rounded-xl mb-3"><p className="text-gray-200 text-lg text-center">This person has passed away.{selectedDisambig.deathDate !== 'deceased' ? ' Died: ' + selectedDisambig.deathDate : ''}</p></div>}
               {!isDeceased && (
                 <div className="space-y-2 mt-2">
-                  <p className="text-white/80 text-sm text-center font-medium border-t border-white/10 pt-2">Add {selectedDisambig.title} to watchlist?</p>
-                  <button onClick={() => { setWatchlistCheck(Object.assign({}, watchlistCheck, { name: selectedDisambig.title })); confirmAddWatch(); }} disabled={loading} className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
+                  <p className="text-white/80 text-lg text-center font-medium border-t border-white/10 pt-2">Add {selectedDisambig.title} to watchlist?</p>
+                  <button onClick={() => { setWatchlistCheck(Object.assign({}, watchlistCheck, { name: selectedDisambig.title })); confirmAddWatch(); }} disabled={loading} className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xl flex items-center justify-center gap-2 disabled:opacity-50">
                     <PlusIcon /> {loading ? 'Adding...' : 'Yes, Add to Watchlist'}
                   </button>
                   {buildFullName() !== selectedDisambig.title && !isOnWatchlist(buildFullName()) && (
-                    <button onClick={addSearchedNameToWatchlist} disabled={loading} className="w-full py-2 bg-gray-700/50 border border-gray-500/40 text-gray-200 rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-50">
+                    <button onClick={addSearchedNameToWatchlist} disabled={loading} className="w-full py-2 bg-gray-700/50 border border-gray-500/40 text-gray-200 rounded-xl text-lg flex items-center justify-center gap-2 disabled:opacity-50">
                       <PlusIcon /> Add "{buildFullName()}" instead
                     </button>
                   )}
-                  <button onClick={() => setSelectedDisambig(null)} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center">Back to list</button>
+                  <button onClick={() => setSelectedDisambig(null)} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-lg text-center">Back to list</button>
                 </div>
               )}
-              {isDeceased && <button onClick={clearWatchlistCheck} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center mt-2">Try Another Name</button>}
+              {isDeceased && <button onClick={clearWatchlistCheck} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-lg text-center mt-2">Try Another Name</button>}
             </div>
           </div>
         );
       }
       return (
         <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
-          <div className="px-5 py-2 bg-yellow-600"><span className="text-white font-black tracking-widest text-sm">MULTIPLE MATCHES</span></div>
+          <div className="px-5 py-2 bg-yellow-600"><span className="text-white font-black tracking-widest text-lg">MULTIPLE MATCHES</span></div>
           <div className="bg-gray-900/70 p-4">
-            <p className="text-gray-300 text-sm mb-1">Several people share this name.</p>
+            <p className="text-gray-300 text-lg mb-1">Several people share this name.</p>
             <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} middleFallback={watchlistCheck && watchlistCheck.middleFallback} noMiMatches={watchlistCheck && watchlistCheck.noMiMatches} />
             <div className="space-y-2">
               {(profile.matches || []).map((m, i) => (
@@ -1135,27 +1135,27 @@ function App() {
                   <div className="flex items-center gap-3">
                     {m.thumbnail ? <img src={m.thumbnail} alt={m.title} className="w-10 h-10 rounded-full object-cover border border-red-600/40 shrink-0" /> : <div className="w-10 h-10 rounded-full bg-red-900/40 flex items-center justify-center shrink-0 text-lg">?</div>}
                     <div className="flex-1 min-w-0">
-                      <p className="text-white text-sm font-bold truncate">{m.title}</p>
-                      <p className="text-red-400 text-xs italic truncate">{m.description}</p>
+                      <p className="text-white text-xl font-bold truncate">{m.title}</p>
+                      <p className="text-red-400 text-lg italic truncate">{m.description}</p>
                     </div>
-                    <span className={'px-2 py-0.5 rounded-full text-xs font-bold ' + (m.deathDate ? 'bg-gray-700 text-gray-300' : 'bg-green-800 text-green-300')}>{m.deathDate ? 'Passed Away' : 'Likely Alive'}</span>
+                    <span className={'px-2 py-0.5 rounded-full text-xl font-bold ' + (m.deathDate ? 'bg-gray-700 text-gray-300' : 'bg-green-800 text-green-300')}>{m.deathDate ? 'Passed Away' : 'Likely Alive'}</span>
                   </div>
                 </button>
               ))}
-              {(profile.matches || []).length === 0 && <p className="text-gray-400 text-sm text-center py-3">No matches found. Try adding a middle name or initial.</p>}
+              {(profile.matches || []).length === 0 && <p className="text-gray-400 text-lg text-center py-3">No matches found. Try adding a middle name or initial.</p>}
             </div>
             {!isOnWatchlist(buildFullName()) && (
-              <button onClick={addSearchedNameToWatchlist} disabled={loading} className="w-full py-2.5 bg-red-600/80 hover:bg-red-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 mt-3 disabled:opacity-50">
+              <button onClick={addSearchedNameToWatchlist} disabled={loading} className="w-full py-2.5 bg-red-600/80 hover:bg-red-700 text-white rounded-xl font-bold text-lg flex items-center justify-center gap-2 mt-3 disabled:opacity-50">
                 <PlusIcon /> {loading ? 'Adding...' : 'Add "' + buildFullName() + '" to Watchlist'}
               </button>
             )}
             {/* FIX 1: Save to Memories always available */}
             {!isOnWatchlist(buildFullName()) && (
-              <button onClick={saveSearchedNameToMemories} disabled={loading} className="w-full py-2 bg-gray-700/60 border border-gray-500/40 text-gray-200 rounded-xl text-sm flex items-center justify-center gap-2 mt-2 disabled:opacity-50">
+              <button onClick={saveSearchedNameToMemories} disabled={loading} className="w-full py-2 bg-gray-700/60 border border-gray-500/40 text-gray-200 rounded-xl text-lg flex items-center justify-center gap-2 mt-2 disabled:opacity-50">
                 <PlusIcon /> {loading ? 'Saving...' : 'Save "' + buildFullName() + '" to Memories'}
               </button>
             )}
-            <button onClick={clearWatchlistCheck} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center mt-2 flex items-center justify-center gap-2">
+            <button onClick={clearWatchlistCheck} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-lg text-center mt-2 flex items-center justify-center gap-2">
               <EditIcon /> Search for another name
             </button>
           </div>
@@ -1175,7 +1175,7 @@ function App() {
     return (
       <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
         {showBanner && <div className={'px-5 py-2 ' + bannerBg}>
-          <span className="text-white font-black tracking-widest text-sm">{bannerText}</span>
+          <span className="text-white font-black tracking-widest text-lg">{bannerText}</span>
           {isDeceased && profile.deathDate && profile.deathDate !== 'deceased' && (
             <span className="text-white/80 text-xs ml-3">Died: {profile.deathDate}</span>
           )}
@@ -1186,12 +1186,12 @@ function App() {
               <div className="flex gap-3 items-start mb-3">
                 {profile.thumbnail ? <img src={profile.thumbnail} alt={profile.title} className="w-16 h-16 rounded-full object-cover border-2 border-red-600/50 shrink-0" /> : <div className="w-16 h-16 rounded-full bg-red-900/40 flex items-center justify-center shrink-0 text-2xl">?</div>}
                 <div className="flex-1">
-                  <h2 className="text-white text-lg font-bold mb-1">{profile.title}</h2>
-                  {profile.birthDate && <p className="text-red-300 text-sm font-bold">Born: {profile.birthDate}</p>}
-                  <p className="text-red-400 text-xs italic mt-1">{profile.description}</p>
+                  <h2 className="text-white text-xl font-bold mb-1">{profile.title}</h2>
+                  {profile.birthDate && <p className="text-red-300 text-xl font-bold">Born: {profile.birthDate}</p>}
+                  <p className="text-red-400 text-lg italic mt-1">{profile.description}</p>
                 </div>
               </div>
-              {profile.extract && <p className="text-gray-100 text-sm leading-relaxed mb-3">{profile.extract}</p>}
+              {profile.extract && <p className="text-gray-100 text-lg leading-relaxed mb-3">{profile.extract}</p>}
             </>
           )}
 
@@ -1213,13 +1213,13 @@ function App() {
 
           {isDeceased && (
             <div className="p-2 bg-gray-700/50 border border-gray-600/30 rounded-xl mb-3">
-              <p className="text-gray-200 text-sm text-center">This person has passed away.{profile.deathDate && profile.deathDate !== 'deceased' ? ' Died: ' + profile.deathDate : ''}</p>
+              <p className="text-gray-200 text-lg text-center">This person has passed away.{profile.deathDate && profile.deathDate !== 'deceased' ? ' Died: ' + profile.deathDate : ''}</p>
             </div>
           )}
 
           {!isDeceased && (
             <div className="space-y-2 mt-2 border-t border-white/10 pt-2">
-              {hasSSdi && <p className="text-gray-400 text-xs text-center">Tap a name above to add to your list, or:</p>}
+              {hasSSdi && <p className="text-gray-400 text-lg text-center">Tap a name above to add to your list, or:</p>}
               {(() => {
                 // If ANY top-10 SSDI result is deceased, offer Memories as primary
                 var topResult = ssdiResults && ssdiResults[0];
@@ -1230,27 +1230,27 @@ function App() {
                   var by = res.birth_date ? parseInt(res.birth_date.split('/').pop()) : null;
                   return !!(res.death_date) || (by && by < DECEASED_BIRTH_YEAR_THRESHOLD);
                 });
-                if (fullNameStatus) return <p className="w-full py-2.5 text-center text-green-400 text-sm font-bold">Already in your {fullNameStatus}</p>;
+                if (fullNameStatus) return <p className="w-full py-2.5 text-center text-green-400 text-xl font-bold">Already in your {fullNameStatus}</p>;
                 if ((topPassed || allPassed) && hasSSdi) return (
-                  <button onClick={saveSearchedNameToMemories} disabled={loading} className="w-full py-2.5 bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
+                  <button onClick={saveSearchedNameToMemories} disabled={loading} className="w-full py-4 bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white rounded-xl font-bold text-xl flex items-center justify-center gap-2 disabled:opacity-50">
                     <PlusIcon /> {loading ? 'Saving...' : 'Save "' + buildFullName() + '" to Memories'}
                   </button>
                 );
                 return (
                   <>
-                    <button onClick={addSearchedNameToWatchlist} disabled={loading} className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
+                    <button onClick={addSearchedNameToWatchlist} disabled={loading} className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xl flex items-center justify-center gap-2 disabled:opacity-50">
                       <PlusIcon /> {loading ? 'Adding...' : 'Add "' + buildFullName() + '" to Watchlist'}
                     </button>
-                    <button onClick={saveSearchedNameToMemories} disabled={loading} className="w-full py-2 bg-gray-700/60 border border-gray-500/40 text-gray-200 rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-50">
+                    <button onClick={saveSearchedNameToMemories} disabled={loading} className="w-full py-2 bg-gray-700/60 border border-gray-500/40 text-gray-200 rounded-xl text-lg flex items-center justify-center gap-2 disabled:opacity-50">
                       <PlusIcon /> {loading ? 'Saving...' : 'Save to Memories instead'}
                     </button>
                   </>
                 );
               })()}
-              <button onClick={() => { setWatchlistChecked(false); setWatchlistCheck(null); setSelectedDisambig(null); setSsdiPage(1); window.scrollTo(0,0); document.documentElement.scrollTop = 0; document.body.scrollTop = 0; }} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center flex items-center justify-center gap-2">
+              <button onClick={() => { setWatchlistChecked(false); setWatchlistCheck(null); setSelectedDisambig(null); setSsdiPage(1); window.scrollTo(0,0); document.documentElement.scrollTop = 0; document.body.scrollTop = 0; }} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-lg text-center flex items-center justify-center gap-2">
                 <EditIcon /> Edit Name
               </button>
-              <button onClick={clearWatchlistCheck} className="w-full py-1.5 text-white/40 text-xs text-center">Search for another name</button>
+              <button onClick={clearWatchlistCheck} className="w-full py-1.5 text-white/40 text-lg text-center">Search for another name</button>
             </div>
           )}
 
@@ -1258,7 +1258,7 @@ function App() {
             <div className="space-y-2 mt-2">
               {profile && profile.title && (() => {
                 var titleStatus = isOnWatchlist(profile.title);
-                if (titleStatus) return <p className="text-green-400 text-sm text-center font-bold">Already in your {titleStatus}</p>;
+                if (titleStatus) return <p className="text-green-400 text-lg text-center font-bold">Already in your {titleStatus}</p>;
                 return (
                   <button onClick={async () => {
                     setLoading(true);
@@ -1275,17 +1275,17 @@ function App() {
                       setPage('search');
                     } catch(e) { alert('Error saving to Memories: ' + e.message); }
                     finally { setLoading(false); }
-                  }} disabled={loading} className="w-full py-2.5 bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
+                  }} disabled={loading} className="w-full py-4 bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white rounded-xl font-bold text-xl flex items-center justify-center gap-2 disabled:opacity-50">
                     <PlusIcon /> {loading ? 'Saving...' : 'Save to Memories'}
                   </button>
                 );
               })()}
               {profile && profile.title && buildFullName() !== profile.title && !isOnWatchlist(buildFullName()) && (
-                <button onClick={addSearchedNameToWatchlist} disabled={loading} className="w-full py-2 bg-gray-600/50 border border-gray-500/40 text-gray-200 rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-50">
+                <button onClick={addSearchedNameToWatchlist} disabled={loading} className="w-full py-2 bg-gray-600/50 border border-gray-500/40 text-gray-200 rounded-xl text-lg flex items-center justify-center gap-2 disabled:opacity-50">
                   <PlusIcon /> Save "{buildFullName()}" to Memories
                 </button>
               )}
-              <button onClick={clearWatchlistCheck} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-sm text-center">Search for another name</button>
+              <button onClick={clearWatchlistCheck} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-lg text-center">Search for another name</button>
             </div>
           )}
         </div>
@@ -1320,7 +1320,7 @@ function App() {
                   <>
                     <div className="px-4 py-2 rounded-xl mb-3 flex items-center gap-3 bg-gray-700">
                       <span className="text-white font-black">Passed Away</span>
-                      {deathYear && <span className="text-white/80 text-sm ml-auto">{deathYear}</span>}
+                      {deathYear && <span className="text-white/80 text-lg ml-auto">{deathYear}</span>}
                     </div>
                     {(() => {
                       // FIX 4: Only show Wikipedia if title closely matches saved name
@@ -1338,18 +1338,18 @@ function App() {
                             <div className="flex gap-3 items-start mb-3">
                               {profile.thumbnail ? <img src={profile.thumbnail} alt={profile.title} className="w-16 h-16 rounded-full object-cover border-2 border-red-600/50 shrink-0" /> : <div className="w-16 h-16 rounded-full bg-red-900/40 flex items-center justify-center shrink-0 text-2xl">?</div>}
                               <div className="flex-1">
-                                <h2 className="text-white text-lg font-bold mb-1">{profile.title}</h2>
-                                {profile.birthDate && <p className="text-red-300 text-sm font-bold">Born: {profile.birthDate}</p>}
-                                {profile.description && <p className="text-red-400 text-xs italic mt-1">{profile.description}</p>}
+                                <h2 className="text-white text-xl font-bold mb-1">{profile.title}</h2>
+                                {profile.birthDate && <p className="text-red-300 text-xl font-bold">Born: {profile.birthDate}</p>}
+                                {profile.description && <p className="text-red-400 text-lg italic mt-1">{profile.description}</p>}
                               </div>
                             </div>
-                            {profile.extract && <p className="text-gray-100 text-sm leading-relaxed mb-3">{profile.extract}</p>}
+                            {profile.extract && <p className="text-gray-100 text-lg leading-relaxed mb-3">{profile.extract}</p>}
                           </>
                         );
                       }
                       return (
                         <div className="text-center py-3 mb-3">
-                          <p className="text-gray-400 text-sm">No Wikipedia entry found for this person.</p>
+                          <p className="text-gray-400 text-lg">No Wikipedia entry found for this person.</p>
                         </div>
                       );
                     })()}
@@ -1361,36 +1361,36 @@ function App() {
                   <>
                     {noWikiInfo && (!ssdiResults || ssdiResults.length === 0) ? (
                       <div className="text-center py-3 mb-3">
-                        <p className="text-gray-400 text-sm">No public records found. Monitoring for changes.</p>
+                        <p className="text-gray-400 text-lg">No public records found. Monitoring for changes.</p>
                       </div>
                     ) : noWikiInfo ? null : profile && (
                       <>
                         <div className={'px-4 py-2 rounded-xl mb-3 flex items-center gap-3 ' + (profile.deathDate ? 'bg-gray-700' : profile.isDisambiguation ? 'bg-yellow-600' : 'bg-green-700')}>
                           <span className="text-white font-black">{profile.deathDate ? 'Passed Away' : profile.isDisambiguation ? 'Multiple Matches' : 'Likely Alive'}</span>
-                          {profile.deathDate && <span className="text-white/80 text-sm ml-auto">{profile.deathDate !== 'deceased' ? 'Died: ' + profile.deathDate : 'Deceased'}</span>}
+                          {profile.deathDate && <span className="text-white/80 text-lg ml-auto">{profile.deathDate !== 'deceased' ? 'Died: ' + profile.deathDate : 'Deceased'}</span>}
                         </div>
                         {newlyDeceased && (
                           <div className="p-3 bg-red-900/60 border border-red-600 rounded-xl mb-3">
-                            <p className="text-red-200 text-sm text-center font-bold">Status just updated -- this person has passed away. Notification sent.</p>
+                            <p className="text-red-200 text-lg text-center font-bold">Status just updated -- this person has passed away. Notification sent.</p>
                           </div>
                         )}
                         <div className="flex gap-3 items-start mb-3">
                           {profile.thumbnail ? <img src={profile.thumbnail} alt={profile.title} className="w-16 h-16 rounded-full object-cover border-2 border-red-600/50 shrink-0" /> : <div className="w-16 h-16 rounded-full bg-red-900/40 flex items-center justify-center shrink-0 text-2xl">?</div>}
                           <div className="flex-1">
-                            <h2 className="text-white text-lg font-bold mb-1">{profile.title}</h2>
-                            {profile.birthDate && <p className="text-red-300 text-sm font-bold">Born: {profile.birthDate}</p>}
-                            {!profile.isDisambiguation && <p className="text-red-400 text-xs italic mt-1">{profile.description}</p>}
+                            <h2 className="text-white text-xl font-bold mb-1">{profile.title}</h2>
+                            {profile.birthDate && <p className="text-red-300 text-xl font-bold">Born: {profile.birthDate}</p>}
+                            {!profile.isDisambiguation && <p className="text-red-400 text-lg italic mt-1">{profile.description}</p>}
                           </div>
                         </div>
-                        {!profile.isDisambiguation && profile.extract && <p className="text-gray-100 text-sm leading-relaxed mb-3">{profile.extract}</p>}
-                        {profile.isDisambiguation && <div className="p-3 bg-yellow-500/20 border border-yellow-400/30 rounded-xl mb-3"><p className="text-yellow-200 text-sm text-center">Multiple people share this name</p></div>}
+                        {!profile.isDisambiguation && profile.extract && <p className="text-gray-100 text-lg leading-relaxed mb-3">{profile.extract}</p>}
+                        {profile.isDisambiguation && <div className="p-3 bg-yellow-500/20 border border-yellow-400/30 rounded-xl mb-3"><p className="text-yellow-200 text-lg text-center">Multiple people share this name</p></div>}
                       </>
                     )}
                     {/* Only show SSDI section when there are results */}
                     {(!profile || !profile.deathDate) && ssdiResults && ssdiResults.length > 0 ? <div className="mt-2 pt-3 border-t border-red-900/30">
-                      <p className="text-red-300 text-xs font-bold mb-2">Possible matches in SSDI (thru 2014)</p>
+                      <p className="text-red-300 text-xl font-bold mb-2">Possible matches in SSDI (thru 2014)</p>
                       {ssdiHasMore && (
-                        <button onClick={() => loadMoreSsdi(name)} disabled={ssdiLoadingMore} className="w-full py-2 bg-gray-800/60 border border-red-900/30 text-gray-300 rounded-lg text-xs mb-2 disabled:opacity-50">
+                        <button onClick={() => loadMoreSsdi(name)} disabled={ssdiLoadingMore} className="w-full py-2 bg-gray-800/60 border border-red-900/30 text-gray-300 rounded-lg text-lg mb-2 disabled:opacity-50">
                           {ssdiLoadingMore ? 'Loading...' : 'Show 10 more \u2193'}
                         </button>
                       )}
@@ -1406,10 +1406,10 @@ function App() {
                           <div key={i} onClick={() => { setDrawerData(null); setSsdiDrawer(r); }} className="mb-2 pb-2 border-b border-white/10 last:border-0 cursor-pointer hover:bg-white/5 rounded px-1 transition-colors">
                             <div className="flex items-start justify-between">
                               <div className="flex-1 min-w-0">
-                                <p className="text-white text-sm font-semibold underline decoration-dotted">{r.name}</p>
+                                <p className="text-white text-xl font-semibold underline decoration-dotted">{r.name}</p>
                                 {r.middle_name && <p className="text-gray-400 text-xs">Middle: {r.middle_name}</p>}
                               </div>
-                              <span className={'text-xs font-bold ml-2 shrink-0 ' + confColor}>{conf}</span>
+                              <span className={'text-sm font-bold ml-2 shrink-0 ' + confColor}>{conf}</span>
                             </div>
                             {r.birth_date && <p className="text-gray-400 text-xs">Born: {r.birth_date}</p>}
                             {r.death_date && <p className="text-gray-400 text-xs">Died: {r.death_date}</p>}
@@ -1422,7 +1422,7 @@ function App() {
                 )}
               </>
             )}
-            <button onClick={() => setDrawerData(null)} className="w-full py-3 bg-red-900/40 border border-red-800/50 text-white rounded-xl text-sm mt-4">Close</button>
+            <button onClick={() => setDrawerData(null)} className="w-full py-3 bg-red-900/40 border border-red-800/50 text-white rounded-xl text-lg mt-4">Close</button>
           </div>
         </div>
       </>
@@ -1435,19 +1435,19 @@ function App() {
         <div style={{ width: '100%', maxWidth: '22rem' }}>
           <div className="bg-black/60 backdrop-blur-sm rounded-2xl p-4 shadow-2xl border border-red-900/40 space-y-3">
             <div className="text-center">
-              <p className="text-white/50 text-xs mt-1">Free during beta</p>
+              <p className="text-white/50 text-lg mt-1">Free during beta</p>
             </div>
-            <input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && doAuth()} className="w-full px-4 py-2 rounded-xl bg-white/15 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-red-500 text-base" />
+            <input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && doAuth()} className="w-full px-4 py-2 rounded-xl bg-white/15 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-red-500 text-lg" />
             <div className="relative">
-              <input type={showPassword ? 'text' : 'password'} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && doAuth()} className="w-full px-4 py-2 rounded-xl bg-white/15 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-red-500 text-base" />
+              <input type={showPassword ? 'text' : 'password'} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && doAuth()} className="w-full px-4 py-2 rounded-xl bg-white/15 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-red-500 text-lg" />
               <button onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60">{showPassword ? <EyeOffIcon /> : <EyeIcon />}</button>
             </div>
-            {backendWaking && <p className="text-white/60 text-xs text-center animate-pulse">Waking up the server...</p>}
+            {backendWaking && <p className="text-white/60 text-lg text-center animate-pulse">Waking up the server...</p>}
             <div className="grid grid-cols-2 gap-3">
-              <button onClick={() => { setMode('login'); doAuth(); }} disabled={loading} className="py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl disabled:opacity-50 text-base">{loading && mode === 'login' ? '...' : 'Sign In'}</button>
-              <button onClick={() => { setMode('register'); doAuth(); }} disabled={loading} className="py-2 bg-white/20 hover:bg-white/30 text-white font-bold rounded-xl disabled:opacity-50 text-base border border-white/30">{loading && mode === 'register' ? '...' : 'Register'}</button>
+              <button onClick={() => { setMode('login'); doAuth(); }} disabled={loading} className="py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl disabled:opacity-50 text-xl">{loading && mode === 'login' ? '...' : 'Sign In'}</button>
+              <button onClick={() => { setMode('register'); doAuth(); }} disabled={loading} className="py-3 bg-white/20 hover:bg-white/30 text-white font-bold rounded-xl disabled:opacity-50 text-xl border border-white/30">{loading && mode === 'register' ? '...' : 'Register'}</button>
             </div>
-            <p className="text-white/40 text-xs text-center">You'll stay signed in automatically</p>
+            <p className="text-white/40 text-lg text-center">You'll stay signed in automatically</p>
           </div>
         </div>
       </div>
@@ -1464,80 +1464,63 @@ function App() {
           <div className="space-y-3" style={{ paddingTop: watchlist.filter(w => !w.is_deceased).length > 0 ? '1rem' : PT }}>
             <div className={cardClass}>
               <div className="flex items-center justify-between mb-2">
-                <h2 className="text-xl font-black text-white tracking-wide">Watchlist</h2>
-                <button onClick={() => { clearWatchlistCheck(); setPage('search'); }} className="flex items-center gap-1 px-3 py-1.5 bg-red-600/80 border border-red-500 text-white rounded-lg text-sm font-bold">
-                  <SearchIcon /><span className="text-xs">Search</span>
+                <h2 className="text-2xl font-black text-white tracking-wide">Watchlist</h2>
+                <button onClick={() => { clearWatchlistCheck(); setPage('search'); }} className="flex items-center gap-1 px-4 py-2 bg-red-600/80 border border-red-500 text-white rounded-lg text-base font-bold">
+                  <SearchIcon /><span className="text-base ml-1">Search</span>
                 </button>
               </div>
-              <p className="text-gray-300 text-xs mb-3 text-center">People you are following — we'll notify you when they pass</p>
+              <p className="text-gray-300 text-base mb-3 text-center">Tap a name to check their status — we'll notify you when they pass</p>
+              {/* WATCHLIST SEARCH FORM — commented out, use Search page instead
               {watchlistChecking && <p className="text-white text-center py-4 animate-pulse">Searching...</p>}
               {watchlist.filter(w => !w.is_deceased).length === 0 && !watchlistChecked && (
                 <div className="mb-3 p-3 bg-gray-800/30 rounded-xl border border-red-900/20">
-                  <p className="text-gray-300 text-sm leading-relaxed">Add the people you are looking for to your Watchlist. DORA searches Wikipedia for notable people and the Social Security Administration's records of people who have passed (through 2014). When we find a match, we'll notify you here.</p>
-                  <p className="text-red-300 text-sm mt-2 font-medium">Find a person you are missing on the Search page.</p>
+                  <p className="text-gray-300 text-lg leading-relaxed">Add the people you are looking for to your Watchlist.</p>
+                  <p className="text-red-300 text-lg mt-2 font-medium">Find a person on the Search page.</p>
                 </div>
               )}
               {!watchlistChecked ? (
                 <div className="space-y-3">
-                  <ClearableInput value={nw.name} onChange={(e) => setNw(Object.assign({}, nw, { name: e.target.value }))} onBlur={(e) => setNw(Object.assign({}, nw, { name: toTitleCase(e.target.value.trim()) }))} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="First and Last Name *" inputClass={iClass} noAutoCorrect={true} />
-                  <ClearableInput value={nw.middle} onChange={(e) => setNw(Object.assign({}, nw, { middle: e.target.value }))} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Middle Name or Initial — Helpful" inputClass={iClass} noAutoCorrect={true} />
-                  <ClearableInput value={nw.suffix} onChange={(e) => setNw(Object.assign({}, nw, { suffix: e.target.value }))} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Suffix: Jr., Sr., MD, III" inputClass={iClass} noAutoCorrect={true} />
-                  <ClearableInput value={nw.birthYear} onChange={(e) => setNw(Object.assign({}, nw, { birthYear: e.target.value.replace(/\D/g, '').slice(0, 4) }))} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Birth Year — Helpful" maxLength={4} inputClass={iClass} numeric={true} />
-                  <button onClick={checkWatch} disabled={watchlistChecking} className="w-full py-3 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 text-base font-bold">
-                    <SearchIcon /> {watchlistChecking ? 'Checking...' : 'Check Name'}
-                  </button>
+                  <ClearableInput value={nw.name} ... />
+                  ...
                 </div>
-              ) : (() => {
-                try { return React.createElement(WatchlistCheckCard); }
-                catch(e) {
-                  console.error('WatchlistCheckCard crash:', e);
-                  const sr = watchlistCheck && watchlistCheck.ssdiResults;
-                  return React.createElement('div', {className: 'rounded-2xl overflow-hidden border border-red-800'},
-                    React.createElement('div', {className: 'px-5 py-2 bg-gray-700'},
-                      React.createElement('span', {className: 'text-white font-black tracking-widest text-sm'}, 'Possible Matches')),
-                    React.createElement('div', {className: 'bg-gray-900/70 p-4'},
-                      sr && sr.length > 0
-                        ? sr.map((r,i) => React.createElement('div', {key:i, className:'mb-2 pb-2 border-b border-white/10'},
-                            React.createElement('p', {className:'text-white text-sm font-bold'}, r.name),
-                            r.birth_date && React.createElement('p', {className:'text-gray-400 text-xs'}, 'Born: ' + r.birth_date),
-                            r.death_date && React.createElement('p', {className:'text-gray-400 text-xs'}, 'Died: ' + r.death_date)
-                          ))
-                        : React.createElement('p', {className:'text-gray-400 text-sm'}, 'No results found. Check console for error.'),
-                      React.createElement('button', {onClick: clearWatchlistCheck, className:'w-full py-2 bg-white/10 text-white rounded-xl text-sm mt-3'}, 'Try Again')
-                    )
-                  );
-                }
-              })()}
+              ) : <WatchlistCheckCard />}
+              END WATCHLIST SEARCH FORM */}
+              {watchlist.filter(w => !w.is_deceased).length === 0 && (
+                <div className="py-6 text-center">
+                  <p className="text-gray-300 text-base leading-relaxed mb-2">No one on your watchlist yet.</p>
+                  <p className="text-red-300 text-base font-medium">Use Search to find and add people.</p>
+                </div>
+              )}
             </div>
             {watchlist.filter(w => !w.is_deceased).length > 0 && (
               <div className={cardClass + ' mt-3'}>
-                <h2 className="text-lg font-bold mb-0.5 text-white text-center">Your Watchlist ({watchlist.filter(w => !w.is_deceased).length})</h2>
-                <p className="text-xs text-gray-400 mb-3 text-center">Tap a name to check their current status</p>
+                <h2 className="text-2xl font-bold mb-1 text-white text-center">Your Watchlist ({watchlist.filter(w => !w.is_deceased).length})</h2>
+                <p className="text-base text-gray-400 mb-3 text-center">Tap a name to check their current status</p>
                 <div className="space-y-2">
                   {watchlist.filter(w => !w.is_deceased).map(w => (
-                    <div key={w.id} className="p-3 rounded-lg border bg-gray-800/50 border-red-900/20">
+                    <div key={w.id} className="p-4 rounded-lg border bg-gray-800/50 border-red-900/20">
                       {editingId === w.id ? (
                         <div className="space-y-2">
-                          <ClearableInput value={editingName} onChange={(e) => setEditingName(e.target.value)} placeholder="Enter name" inputClass="w-full px-3 py-2 border border-red-700 rounded-lg focus:ring-2 focus:ring-red-500 text-base bg-gray-700 text-white placeholder-gray-400" />
+                          <ClearableInput value={editingName} onChange={(e) => setEditingName(e.target.value)} placeholder="Enter name" inputClass="w-full px-3 py-3 border border-red-700 rounded-lg focus:ring-2 focus:ring-red-500 text-xl bg-gray-700 text-white placeholder-gray-400" />
                           <div className="flex gap-2">
                             <button onClick={async () => {
                               await delWatch(w.id);
                               const token = localStorage.getItem('doa_token');
                               await fetch(API_BASE + '/watchlist', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ name: toTitleCase(editingName), location: w.location, dob: w.dob }) });
                               await loadWatchlist(); setEditingId(null); setEditingName('');
-                            }} className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-bold">Save</button>
-                            <button onClick={() => { setEditingId(null); setEditingName(''); }} className="flex-1 py-2 bg-gray-600 text-gray-200 rounded-lg text-sm">Cancel</button>
+                            }} className="flex-1 py-3 bg-red-600 text-white rounded-lg text-xl font-bold">Save</button>
+                            <button onClick={() => { setEditingId(null); setEditingName(''); }} className="flex-1 py-3 bg-gray-600 text-gray-200 rounded-lg text-xl">Cancel</button>
                           </div>
                         </div>
                       ) : (
                         <div className="flex items-center justify-between">
                           <div className="flex-1 min-w-0">
                             <button onClick={() => openWatchlistDrawer(w)} className="text-left w-full">
-                              <h3 className="font-semibold text-base text-white hover:text-red-300 underline decoration-dotted truncate">{w.name}</h3>
+                              <h3 className="font-semibold text-xl text-white hover:text-red-300 underline decoration-dotted truncate">{w.name}</h3>
                             </button>
-                            {w.location && <p className="text-xs text-gray-400">{w.location}</p>}
+                            {w.location && <p className="text-base text-gray-400">{w.location}</p>}
                             <div className="flex items-center gap-1 mt-1">
-                              <CheckIcon /><span className="text-xs text-green-400">Following</span>
+                              <CheckIcon /><span className="text-base text-green-400">Following</span>
                             </div>
                           </div>
                           <div className="flex gap-2 ml-2 shrink-0">
@@ -1558,8 +1541,8 @@ function App() {
           <div className="space-y-3" style={{ paddingTop: PT }}>
             <div className={cardClass}>
               <div className="mb-3 pb-2 border-b border-red-900/30 text-center">
-                <p className="text-red-300 text-base font-bold italic">Whatever happened to...</p>
-                <p className="text-gray-400 text-xs mt-1">Search Wikipedia and SSDI records</p>
+                <p className="text-red-300 text-xl font-bold italic">Whatever happened to...</p>
+                <p className="text-gray-400 text-lg mt-1">Search Wikipedia and SSDI records</p>
               </div>
               {watchlistChecking && <p className="text-white text-center py-4 animate-pulse">Searching...</p>}
               {!watchlistChecked ? (
@@ -1568,7 +1551,7 @@ function App() {
                   <ClearableInput value={nw.middle} onChange={(e) => setNw(Object.assign({}, nw, { middle: e.target.value }))} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Middle Name or Initial — Helpful" inputClass={iClass} noAutoCorrect={true} />
                   <ClearableInput value={nw.suffix} onChange={(e) => setNw(Object.assign({}, nw, { suffix: e.target.value }))} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Suffix: Jr., Sr., MD, III" inputClass={iClass} noAutoCorrect={true} />
                   <ClearableInput value={nw.birthYear} onChange={(e) => setNw(Object.assign({}, nw, { birthYear: e.target.value.replace(/\D/g, '').slice(0, 4) }))} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Birth Year — Helpful" maxLength={4} inputClass={iClass} numeric={true} />
-                  <button onClick={checkWatch} disabled={watchlistChecking} className="w-full py-3 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 text-base font-bold">
+                  <button onClick={checkWatch} disabled={watchlistChecking} className="w-full py-3 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 text-xl font-bold">
                     <SearchIcon /> {watchlistChecking ? 'Searching...' : 'Search'}
                   </button>
                 </div>
@@ -1585,21 +1568,21 @@ function App() {
               <CardPageHeader title="Memories" subtitle="People you have found who have passed" onHome={() => setPage('watchlist')} />
               {watchlist.filter(w => w.is_deceased).length === 0 ? (
                 <div className="text-center py-6">
-                  <p className="text-gray-300 text-sm leading-relaxed">If the person you are looking for has passed, you can save them here for future review by touching their name.</p>
+                  <p className="text-gray-300 text-lg leading-relaxed">If the person you are looking for has passed, you can save them here for future review by touching their name.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {watchlist.filter(w => w.is_deceased).map(w => (
-                    <div key={w.id} className="p-3 bg-gray-900/70 rounded-lg border border-gray-600/50">
+                    <div key={w.id} className="p-4 bg-gray-900/70 rounded-lg border border-gray-600/50">
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
                           <button onClick={() => openWatchlistDrawer(w)} className="text-left w-full">
-                            <h3 className="font-semibold text-base text-gray-300 line-through underline decoration-dotted truncate">{w.name}</h3>
+                            <h3 className="font-semibold text-xl text-gray-300 line-through underline decoration-dotted truncate">{w.name}</h3>
                           </button>
-                          <span className="text-xs text-gray-400 font-bold">Passed Away{w.death_year ? ' — ' + w.death_year : ''}</span>
+                          <span className="text-base text-gray-400 font-bold">Passed Away{w.death_year ? ' — ' + w.death_year : ''}</span>
                         </div>
                         <div className="flex gap-2 ml-2 shrink-0">
-                          <button onClick={() => openWatchlistDrawer(w)} className="px-3 py-1.5 bg-red-700/50 border border-red-600/50 text-white rounded-lg text-xs font-bold">View</button>
+                          <button onClick={() => openWatchlistDrawer(w)} className="px-3 py-1.5 bg-red-700/50 border border-red-600/50 text-white rounded-lg text-xl font-bold">View</button>
                           <button onClick={() => delWatch(w.id)} className="p-2 text-red-500 hover:bg-red-900/30 rounded-lg"><TrashIcon /></button>
                         </div>
                       </div>
@@ -1618,17 +1601,17 @@ function App() {
               {notifications.length === 0 ? (
                 <div className="text-center py-4">
                   <p className="text-white font-bold text-xl">No alerts yet</p>
-                  <p className="text-gray-200 text-base mt-1">We'll alert you when someone on your watchlist passes away</p>
+                  <p className="text-gray-200 text-lg mt-1">We'll alert you when someone on your watchlist passes away</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {notifications.map(n => (
                     <div key={n.id} className="p-3 bg-red-950/50 border border-red-800 rounded-xl">
-                      <h3 className="font-bold text-white text-base mb-1">{n.name}</h3>
-                      <p className="text-gray-300 text-sm">{n.message}</p>
-                      <p className="text-gray-500 text-xs mt-1 mb-2">{new Date(n.created_at).toLocaleDateString()}</p>
+                      <h3 className="font-bold text-white text-lg mb-1">{n.name}</h3>
+                      <p className="text-gray-300 text-lg">{n.message}</p>
+                      <p className="text-gray-500 text-lg mt-1 mb-2">{new Date(n.created_at).toLocaleDateString()}</p>
                       <div className="flex gap-2">
-                        <button onClick={() => viewAlert(n)} className="flex-1 py-1.5 bg-red-700/50 border border-red-600/50 text-white rounded-lg text-xs font-bold">View</button>
+                        <button onClick={() => viewAlert(n)} className="flex-1 py-1.5 bg-red-700/50 border border-red-600/50 text-white rounded-lg text-xl font-bold">View</button>
                         <button onClick={() => keepAlert(n.id, n.watchlist_id)} className="flex-1 py-1.5 bg-gray-700/50 border border-gray-600/50 text-gray-300 rounded-lg text-xs">Keep</button>
                         <button onClick={() => dismissAlert(n.id, n.watchlist_id)} className="flex-1 py-1.5 bg-transparent border border-red-900/50 text-red-500 rounded-lg text-xs">Dismiss</button>
                       </div>
@@ -1644,8 +1627,8 @@ function App() {
           <div className="space-y-4 pb-8" style={{ paddingTop: '1rem' }}>
             <div className={cardClass}>
               <CardPageHeader title="About Dead or Alive" onHome={() => setPage('watchlist')} />
-              <p className="text-red-300 italic text-base leading-relaxed mb-4">Find people you miss. Find out if they are dead or alive.</p>
-              <div className="space-y-3 text-gray-200 text-sm leading-relaxed">
+              <p className="text-red-300 italic text-lg leading-relaxed mb-4">Find people you miss. Find out if they are dead or alive.</p>
+              <div className="space-y-3 text-gray-200 text-lg leading-relaxed">
                 <p>Dead or Alive was built by three brains -- mine, ChatGPT, and Claude (Anthropic). I'm a retired 74 year old former high-tech entrepreneur. As I get older, I look at the obituaries and wonder about old friends. Did they make it? Are they still out there?</p>
                 <p>Traditional search engines are frustrating for this. So I built Dead or Alive -- a straight answer to a simple question, with a watchlist that alerts you the moment someone passes away.</p>
                 <p>We partner with Legacy, the largest obituary platform in the US, covering more than 70% of all U.S. deaths. We also partner with Wikipedia for biographical information on notable people.</p>
@@ -1655,24 +1638,24 @@ function App() {
                 <div className="flex items-center gap-4">
                   <img src={BILL_PHOTO} alt="Bill Spencer" className="w-14 h-14 rounded-full object-cover border-2 border-red-600 shadow-lg" />
                   <div>
-                    <p className="font-bold text-white text-base">Bill Spencer</p>
-                    <p className="text-red-400 italic text-sm">Idea Hamster</p>
-                    <a href="mailto:bspencer413@me.com" className="text-red-400 text-xs mt-1 block">bspencer413@me.com</a>
+                    <p className="font-bold text-white text-lg">Bill Spencer</p>
+                    <p className="text-red-400 italic text-lg">Idea Hamster</p>
+                    <a href="mailto:bspencer413@me.com" className="text-red-400 text-lg mt-1 block">bspencer413@me.com</a>
                   </div>
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-red-900/30">
-                <div className="p-3 bg-gray-800/50 rounded-lg mb-3"><p className="font-medium text-gray-200 text-sm text-center">{user && user.email}</p></div>
-                <button onClick={doLogout} className="w-full py-3 bg-red-700 text-white rounded-lg text-base font-bold mb-3">Sign Out</button>
+                <div className="p-3 bg-gray-800/50 rounded-lg mb-3"><p className="font-medium text-gray-200 text-lg text-center">{user && user.email}</p></div>
+                <button onClick={doLogout} className="w-full py-3 bg-red-700 text-white rounded-lg text-xl font-bold mb-3">Sign Out</button>
                 <div className="pt-3 border-t border-red-900/30">
-                  <button onClick={() => setShowDangerZone(!showDangerZone)} className="w-full py-2 text-gray-500 text-sm text-center">{showDangerZone ? 'Hide' : 'Account Removal'}</button>
+                  <button onClick={() => setShowDangerZone(!showDangerZone)} className="w-full py-2 text-gray-500 text-lg text-center">{showDangerZone ? 'Hide' : 'Account Removal'}</button>
                   {showDangerZone && (
                     <div className="mt-3 space-y-3">
                       {!showDeleteConfirm
-                        ? <button onClick={() => setShowDeleteConfirm(true)} className="w-full py-3 bg-gray-900/70 border border-red-800 text-red-500 rounded-lg text-sm">Delete Account</button>
+                        ? <button onClick={() => setShowDeleteConfirm(true)} className="w-full py-3 bg-gray-900/70 border border-red-800 text-red-500 rounded-lg text-lg">Delete Account</button>
                         : <div className="bg-red-950/90 border border-red-800 rounded-2xl p-5 space-y-3">
                             <h3 className="font-bold text-red-400 text-lg">Are you sure?</h3>
-                            <p className="text-red-300 text-base">This will permanently delete your account and all watchlist data.</p>
+                            <p className="text-red-300 text-lg">This will permanently delete your account and all watchlist data.</p>
                             <button onClick={doDeleteAccount} className="w-full py-3 bg-red-700 text-white rounded-lg font-bold">Yes, Permanently Delete My Account</button>
                             <button onClick={() => { setShowDeleteConfirm(false); setShowDangerZone(false); }} className="w-full py-3 bg-gray-800 border border-gray-600 text-gray-300 rounded-lg font-medium">Cancel</button>
                           </div>
@@ -1684,8 +1667,8 @@ function App() {
             </div>
             <div className={cardClass}>
               <h3 className="font-bold text-white mb-1">Privacy Policy</h3>
-              <p className="text-gray-400 text-xs mb-3">Last updated: March 17, 2026</p>
-              <div className="space-y-3 text-gray-200 text-sm leading-relaxed">
+              <p className="text-gray-400 text-lg mb-3">Last updated: March 17, 2026</p>
+              <div className="space-y-3 text-gray-200 text-lg leading-relaxed">
                 <p><strong className="text-white">Information We Collect:</strong> Your email address, watchlist names, search queries, and anonymous usage data.</p>
                 <p><strong className="text-white">How We Use It:</strong> We do not sell your personal information. Ever.</p>
                 <p><strong className="text-white">Data Sources:</strong> Search results are powered by Legacy obituary feeds and Wikipedia.</p>
@@ -1703,25 +1686,25 @@ function App() {
       <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(10,0,0,0.95)', backdropFilter: 'blur(8px)', borderTop: '1px solid #7f1d1d', padding: '0.5rem 1rem', paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
         <div className="flex justify-around max-w-sm mx-auto">
           <button onClick={() => setPage('watchlist')} className={'flex flex-col items-center gap-0.5 px-1 py-1 ' + (page === 'watchlist' ? 'text-red-500' : 'text-gray-400')}>
-            <HeartIcon /><span className="text-xs font-medium">Watchlist</span>
+            <HeartIcon /><span className="text-lg font-medium">Watchlist</span>
           </button>
           <button onClick={() => { clearWatchlistCheck(); setPage('search'); }} className={'flex flex-col items-center gap-0.5 px-1 py-1 ' + (page === 'search' ? 'text-red-500' : 'text-gray-400')}>
-            <SearchIcon /><span className="text-xs font-medium">Search</span>
+            <SearchIcon /><span className="text-lg font-medium">Search</span>
           </button>
           <button onClick={() => setPage('memories')} className={'flex flex-col items-center gap-0.5 px-1 py-1 ' + (page === 'memories' ? 'text-red-500' : 'text-gray-400')}>
             <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-            <span className="text-xs font-medium">Memories</span>
+            <span className="text-lg font-medium">Memories</span>
           </button>
           <button onClick={() => setPage('about')} className={'flex flex-col items-center gap-0.5 px-1 py-1 ' + (page === 'about' ? 'text-red-500' : 'text-gray-400')}>
-            <InfoIcon /><span className="text-xs font-medium">Info</span>
+            <InfoIcon /><span className="text-lg font-medium">Info</span>
           </button>
           <button onClick={() => setPage('notifications')} className={'flex flex-col items-center gap-0.5 px-1 py-1 relative ' + (page === 'notifications' ? 'text-red-500' : 'text-gray-400')}>
             <BellIcon red={unreadCount > 0} />
-            {unreadCount > 0 && <span className="absolute top-0 right-1 bg-red-600 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">{unreadCount > 9 ? '9+' : unreadCount}</span>}
-            <span className="text-xs font-medium" style={unreadCount > 0 ? {color:'#dc2626'} : {}}>Alerts</span>
+            {unreadCount > 0 && <span className="absolute top-0 right-1 bg-red-600 text-white text-xl font-bold rounded-full w-4 h-4 flex items-center justify-center">{unreadCount > 9 ? '9+' : unreadCount}</span>}
+            <span className="text-lg font-medium" style={unreadCount > 0 ? {color:'#dc2626'} : {}}>Alerts</span>
           </button>
         </div>
-        <p className="text-center text-gray-600 text-xs mt-1">app v{APP_VERSION} | api v{apiVersion}</p>
+        <p className="text-center text-gray-600 text-lg mt-1">app v{APP_VERSION} | api v{apiVersion}</p>
       </div>
     </PageWrapper>
   );
