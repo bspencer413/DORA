@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.4.20';
+const APP_VERSION = '1.4.21';
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
@@ -622,7 +622,7 @@ function App() {
       const ssdiName = firstName === lastName ? firstName : (firstName + ' ' + lastName).trim();
       const params = new URLSearchParams({ name: ssdiName });
       if (nw.birthYear) params.append('birth_year', nw.birthYear);
-      // MI is scoring-only — never sent to BigQuery (SSDI records often omit middle name)
+      if (nw.middle) params.append('middle_name', nw.middle.trim());
       const [ssdiResp, wikiResp] = await Promise.allSettled([
         fetch(API_BASE + '/ssdi/search?' + params.toString(), { headers: { 'Authorization': 'Bearer ' + token } })
           .then(r => r.ok ? r.json() : { results: [], has_more: false })
@@ -633,20 +633,45 @@ function App() {
       var ssdiApiHasMore = ssdiResp.status === 'fulfilled' ? (ssdiResp.value.has_more || false) : false;
       var birthYearFallback = false;
       var middleFallback = false;
-      // Fallback: birth year returned nothing — retry without it
-      if (ssdiRaw.length === 0 && nw.birthYear) {
-        try {
-          const fb = new URLSearchParams({ name: ssdiName });
-          const fbResp = await fetch(API_BASE + '/ssdi/search?' + fb.toString(), { headers: { 'Authorization': 'Bearer ' + token } });
-          if (fbResp.ok) {
-            const fbData = await fbResp.json();
-            if ((fbData.results || []).length > 0) {
-              ssdiRaw = fbData.results || [];
-              ssdiApiHasMore = fbData.has_more || false;
-              birthYearFallback = true;
+      var noMiMatches = false;
+
+      var hasMi = !!(nw.middle && nw.middle.trim());
+      var hasDob = !!(nw.birthYear && nw.birthYear.trim());
+
+      if (ssdiRaw.length === 0) {
+        if (hasMi && hasDob) {
+          // Case 4 fallback: drop DOB, keep MI
+          try {
+            const fb = new URLSearchParams({ name: ssdiName });
+            fb.append('middle_name', nw.middle.trim());
+            const fbResp = await fetch(API_BASE + '/ssdi/search?' + fb.toString(), { headers: { 'Authorization': 'Bearer ' + token } });
+            if (fbResp.ok) {
+              const fbData = await fbResp.json();
+              if ((fbData.results || []).length > 0) {
+                ssdiRaw = fbData.results || [];
+                ssdiApiHasMore = fbData.has_more || false;
+                birthYearFallback = true;
+              }
             }
-          }
-        } catch(e) { console.log('birth year fallback error:', e); }
+          } catch(e) { console.log('case4 fallback error:', e); }
+        } else if (!hasMi && hasDob) {
+          // Case 3 fallback: drop DOB, keep name only
+          try {
+            const fb = new URLSearchParams({ name: ssdiName });
+            const fbResp = await fetch(API_BASE + '/ssdi/search?' + fb.toString(), { headers: { 'Authorization': 'Bearer ' + token } });
+            if (fbResp.ok) {
+              const fbData = await fbResp.json();
+              if ((fbData.results || []).length > 0) {
+                ssdiRaw = fbData.results || [];
+                ssdiApiHasMore = fbData.has_more || false;
+                birthYearFallback = true;
+              }
+            }
+          } catch(e) { console.log('case3 fallback error:', e); }
+        } else if (hasMi && !hasDob) {
+          // Case 2: MI returned nothing — flag it, show no results
+          noMiMatches = true;
+        }
       }
       const ssdiResults = ssdiRaw.map(r => Object.assign({}, r, { _score: scoreResult(r, firstName, nw.middle, lastName, nw.birthYear, nw.suffix) })).sort((a, b) => {
         if (b._score !== a._score) return b._score - a._score;
@@ -658,10 +683,10 @@ function App() {
       const profile = wikiResp.status === 'fulfilled'
         ? (wikiResp.value || { isDisambiguation: false, notFound: true })
         : { isDisambiguation: false, notFound: true };
-      setWatchlistCheck({ profile, name, ssdiResults, ssdiHasMore: ssdiApiHasMore, birthYearFallback, middleFallback });
+      setWatchlistCheck({ profile, name, ssdiResults, ssdiHasMore: ssdiApiHasMore, birthYearFallback, middleFallback, noMiMatches });
       setWatchlistChecked(true);
     } catch (error) {
-      setWatchlistCheck({ profile: { isDisambiguation: false, notFound: true }, name, ssdiResults: [], ssdiHasMore: false, birthYearFallback: false, middleFallback: false });
+      setWatchlistCheck({ profile: { isDisambiguation: false, notFound: true }, name, ssdiResults: [], ssdiHasMore: false, birthYearFallback: false, middleFallback: false, noMiMatches: false });
       setWatchlistChecked(true);
     } finally { setWatchlistChecking(false); }
   };
@@ -832,7 +857,6 @@ function App() {
           <div className="px-5 py-2 bg-yellow-600"><span className="text-white font-black tracking-widest text-sm">MULTIPLE MATCHES</span></div>
           <div className="bg-gray-900/70 p-4">
             <p className="text-gray-300 text-sm mb-1">Several people share this name.</p>
-            <p className="text-yellow-300 text-xs mb-3">Tip: Add a middle name or initial to find the right person directly.</p>
             <div className="space-y-2">
               {(profile.matches || []).map((m, i) => (
                 <button key={i} onClick={() => setSelectedDisambig(m)} className="w-full p-3 bg-gray-800/60 border border-red-900/30 rounded-xl text-left hover:bg-gray-700/60 transition-colors">
@@ -983,8 +1007,7 @@ function App() {
           <div className="mb-2 p-2 bg-yellow-900/30 border border-yellow-700/40 rounded-lg">
             <p className="text-yellow-300 text-xs">No middle initial match found in SSDI — showing all first/last name results.</p>
           </div>
-        )}
-        {tooMany && (
+        )}        {tooMany && (
           <div className="mb-2 p-2 bg-yellow-900/30 border border-yellow-700/40 rounded-lg">
             <p className="text-yellow-300 text-xs">Many matches found. Add a middle name, initial or birth year to narrow results.</p>
           </div>
@@ -1018,6 +1041,7 @@ function App() {
   const WatchlistCheckCard = () => {
     if (!watchlistCheck) return null;
     const { profile: rawProfile, name, ssdiResults: rawSsdi } = watchlistCheck;
+    var noMiMatches = watchlistCheck.noMiMatches || false;
     const ssdiResults = rawSsdi || [];
     const searchFirst = (nw.name || '').trim().split(/\s+/)[0] || '';
     const searchLast = (nw.name || '').trim().split(/\s+/).slice(-1)[0] || '';
@@ -1067,7 +1091,7 @@ function App() {
                 </div>
               </div>
               {selectedDisambig.extract && <p className="text-gray-100 text-sm leading-relaxed mb-3">{selectedDisambig.extract}</p>}
-              <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} middleFallback={watchlistCheck && watchlistCheck.middleFallback} />
+              <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} middleFallback={watchlistCheck && watchlistCheck.middleFallback} noMiMatches={watchlistCheck && watchlistCheck.noMiMatches} />
               {isDeceased && <div className="p-2 bg-gray-700/50 border border-gray-600/30 rounded-xl mb-3"><p className="text-gray-200 text-sm text-center">This person has passed away.{selectedDisambig.deathDate !== 'deceased' ? ' Died: ' + selectedDisambig.deathDate : ''}</p></div>}
               {!isDeceased && (
                 <div className="space-y-2 mt-2">
@@ -1093,8 +1117,7 @@ function App() {
           <div className="px-5 py-2 bg-yellow-600"><span className="text-white font-black tracking-widest text-sm">MULTIPLE MATCHES</span></div>
           <div className="bg-gray-900/70 p-4">
             <p className="text-gray-300 text-sm mb-1">Several people share this name.</p>
-            <p className="text-yellow-300 text-xs mb-3">Tip: Add a middle name or initial to find the right person directly.</p>
-            <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} middleFallback={watchlistCheck && watchlistCheck.middleFallback} />
+            <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} middleFallback={watchlistCheck && watchlistCheck.middleFallback} noMiMatches={watchlistCheck && watchlistCheck.noMiMatches} />
             <div className="space-y-2">
               {(profile.matches || []).map((m, i) => (
                 <button key={i} onClick={() => setSelectedDisambig(m)} className="w-full p-3 bg-gray-800/60 border border-red-900/30 rounded-xl text-left">
@@ -1167,8 +1190,14 @@ function App() {
             </div>
           )}
 
+          {!isDeceased && noMiMatches && (
+            <div className="mb-3 p-2 bg-yellow-900/20 border border-yellow-700/30 rounded-lg">
+              <p className="text-yellow-300 text-xs">No records found in SSDI with middle initial "{nw.middle}". This person may not be in SSDI, or their middle initial wasn't recorded.</p>
+            </div>
+          )}
+
           {!isDeceased && (
-            <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} middleFallback={watchlistCheck && watchlistCheck.middleFallback} />
+            <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} middleFallback={watchlistCheck && watchlistCheck.middleFallback} noMiMatches={watchlistCheck && watchlistCheck.noMiMatches} />
           )}
 
           {isDeceased && (
