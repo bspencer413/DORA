@@ -52,12 +52,12 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.4.25';
+const APP_VERSION = '1.4.26';
 const DECEASED_BIRTH_YEAR_THRESHOLD = new Date().getFullYear() - 100;
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
-const PT = isPhone ? '36vh' : isTablet ? '44vh' : '40vh';
+const PT = isPhone ? '42vh' : isTablet ? '48vh' : '44vh';
 
 const toTitleCase = (str) => {
   if (!str) return str;
@@ -1447,7 +1447,7 @@ function App() {
 
   if (page === 'login') {
     return (
-      <div style={{ minHeight: '100dvh', width: '100%', backgroundColor: POSTER_STYLE.backgroundColor, backgroundImage: POSTER_STYLE.backgroundImage, backgroundSize: POSTER_STYLE.backgroundSize, backgroundPosition: POSTER_STYLE.backgroundPosition, backgroundRepeat: POSTER_STYLE.backgroundRepeat, backgroundAttachment: POSTER_STYLE.backgroundAttachment, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: isPhone ? '52vh' : isTablet ? '56vh' : '54vh', paddingLeft: '1.5rem', paddingRight: '1.5rem', paddingBottom: '2rem' }}>
+      <div style={{ minHeight: '100dvh', width: '100%', backgroundColor: POSTER_STYLE.backgroundColor, backgroundImage: POSTER_STYLE.backgroundImage, backgroundSize: POSTER_STYLE.backgroundSize, backgroundPosition: POSTER_STYLE.backgroundPosition, backgroundRepeat: POSTER_STYLE.backgroundRepeat, backgroundAttachment: POSTER_STYLE.backgroundAttachment, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: isPhone ? '44vh' : isTablet ? '48vh' : '46vh', paddingLeft: '1.5rem', paddingRight: '1.5rem', paddingBottom: '2rem' }}>
         <div style={{ width: '100%', maxWidth: '22rem' }}>
           <div className="bg-black/60 backdrop-blur-sm rounded-2xl p-4 shadow-2xl border border-red-900/40 space-y-3">
             <div className="text-center">
