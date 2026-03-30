@@ -1479,7 +1479,8 @@ function App() {
           <div className="space-y-3" style={{ paddingTop: watchlist.filter(w => !w.is_deceased).length > 0 ? '1rem' : PT }}>
             <div className={cardClass}>
               <div className="flex items-center justify-between mb-2">
-                <h2 className="text-3xl font-black text-white tracking-wide">Watchlist</h2>
+                <div className="w-10" />
+                <h2 className="text-3xl font-black text-white tracking-wide flex-1 text-center">Watchlist</h2>
                 <button onClick={() => { clearWatchlistCheck(); setPage('search'); }} className="flex flex-col items-center text-white hover:text-red-400 transition-colors w-10">
                   <SearchIcon /><span className="text-xs">Search</span>
                 </button>
@@ -1555,9 +1556,9 @@ function App() {
         {page === 'search' && (
           <div className="space-y-3" style={{ paddingTop: PT }}>
             <div className={cardClass}>
-              <div className="mb-3 pb-2 border-b border-red-900/30 text-center">
+              <div className="mb-1 pb-1 border-b border-red-900/30 text-center">
                 <p className="text-red-300 text-2xl font-bold italic whitespace-nowrap">Whatever happened to...</p>
-                <p className="text-gray-300 text-lg mt-1">Search Wikipedia and SSDI records</p>
+                <p className="text-gray-300 text-base mt-0">Search Wikipedia and SSDI records</p>
               </div>
               {watchlistChecking && <p className="text-white text-center py-4 animate-pulse">Searching...</p>}
               {!watchlistChecked ? (
