@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.4.18';
+const APP_VERSION = '1.4.19';
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
@@ -621,6 +621,7 @@ function App() {
       const ssdiName = firstName === lastName ? firstName : (firstName + ' ' + lastName).trim();
       const params = new URLSearchParams({ name: ssdiName });
       if (nw.birthYear) params.append('birth_year', nw.birthYear);
+      if (nw.middle) params.append('middle_name', nw.middle.trim());
       const [ssdiResp, wikiResp] = await Promise.allSettled([
         fetch(API_BASE + '/ssdi/search?' + params.toString(), { headers: { 'Authorization': 'Bearer ' + token } })
           .then(r => r.ok ? r.json() : { results: [], has_more: false })
@@ -630,20 +631,54 @@ function App() {
       var ssdiRaw = ssdiResp.status === 'fulfilled' ? (ssdiResp.value.results || []) : [];
       var ssdiApiHasMore = ssdiResp.status === 'fulfilled' ? (ssdiResp.value.has_more || false) : false;
       var birthYearFallback = false;
-      // FIX: If birth year filter returned nothing, retry without birth year
+      var middleFallback = false;
+      // Fallback 1: MI returned nothing — retry without MI (keep birth year if set)
+      if (ssdiRaw.length === 0 && nw.middle) {
+        try {
+          const fb1 = new URLSearchParams({ name: ssdiName });
+          if (nw.birthYear) fb1.append('birth_year', nw.birthYear);
+          const fb1Resp = await fetch(API_BASE + '/ssdi/search?' + fb1.toString(), { headers: { 'Authorization': 'Bearer ' + token } });
+          if (fb1Resp.ok) {
+            const fb1Data = await fb1Resp.json();
+            if ((fb1Data.results || []).length > 0) {
+              ssdiRaw = fb1Data.results || [];
+              ssdiApiHasMore = fb1Data.has_more || false;
+              middleFallback = true;
+            }
+          }
+        } catch(e) { console.log('middle fallback error:', e); }
+      }
+      // Fallback 2: Birth year returned nothing — retry without birth year
       if (ssdiRaw.length === 0 && nw.birthYear) {
         try {
-          const fallbackParams = new URLSearchParams({ name: ssdiName });
-          const fallbackResp = await fetch(API_BASE + '/ssdi/search?' + fallbackParams.toString(), { headers: { 'Authorization': 'Bearer ' + token } });
-          if (fallbackResp.ok) {
-            const fallbackData = await fallbackResp.json();
-            if ((fallbackData.results || []).length > 0) {
-              ssdiRaw = fallbackData.results || [];
-              ssdiApiHasMore = fallbackData.has_more || false;
+          const fb2 = new URLSearchParams({ name: ssdiName });
+          if (nw.middle) fb2.append('middle_name', nw.middle.trim());
+          const fb2Resp = await fetch(API_BASE + '/ssdi/search?' + fb2.toString(), { headers: { 'Authorization': 'Bearer ' + token } });
+          if (fb2Resp.ok) {
+            const fb2Data = await fb2Resp.json();
+            if ((fb2Data.results || []).length > 0) {
+              ssdiRaw = fb2Data.results || [];
+              ssdiApiHasMore = fb2Data.has_more || false;
               birthYearFallback = true;
             }
           }
-        } catch(e) { console.log('fallback search error:', e); }
+        } catch(e) { console.log('birth year fallback error:', e); }
+      }
+      // Fallback 3: Both MI and birth year returned nothing — retry with name only
+      if (ssdiRaw.length === 0 && nw.middle && nw.birthYear) {
+        try {
+          const fb3 = new URLSearchParams({ name: ssdiName });
+          const fb3Resp = await fetch(API_BASE + '/ssdi/search?' + fb3.toString(), { headers: { 'Authorization': 'Bearer ' + token } });
+          if (fb3Resp.ok) {
+            const fb3Data = await fb3Resp.json();
+            if ((fb3Data.results || []).length > 0) {
+              ssdiRaw = fb3Data.results || [];
+              ssdiApiHasMore = fb3Data.has_more || false;
+              middleFallback = true;
+              birthYearFallback = true;
+            }
+          }
+        } catch(e) { console.log('full fallback error:', e); }
       }
       const ssdiResults = ssdiRaw.map(r => Object.assign({}, r, { _score: scoreResult(r, firstName, nw.middle, lastName, nw.birthYear, nw.suffix) })).sort((a, b) => {
         if (b._score !== a._score) return b._score - a._score;
@@ -655,10 +690,10 @@ function App() {
       const profile = wikiResp.status === 'fulfilled'
         ? (wikiResp.value || { isDisambiguation: false, notFound: true })
         : { isDisambiguation: false, notFound: true };
-      setWatchlistCheck({ profile, name, ssdiResults, ssdiHasMore: ssdiApiHasMore, birthYearFallback });
+      setWatchlistCheck({ profile, name, ssdiResults, ssdiHasMore: ssdiApiHasMore, birthYearFallback, middleFallback });
       setWatchlistChecked(true);
     } catch (error) {
-      setWatchlistCheck({ profile: { isDisambiguation: false, notFound: true }, name, ssdiResults: [], ssdiHasMore: false, birthYearFallback: false });
+      setWatchlistCheck({ profile: { isDisambiguation: false, notFound: true }, name, ssdiResults: [], ssdiHasMore: false, birthYearFallback: false, middleFallback: false });
       setWatchlistChecked(true);
     } finally { setWatchlistChecking(false); }
   };
@@ -955,7 +990,7 @@ function App() {
   };
 
   // ── SSDI Results block ──────────────────────────────────────────────────────
-  const SSIDResultsBlock = ({ ssdiResults, searchFirst, searchMiddle, searchLast, searchBirthYear, searchSuffix, apiHasMore, onLoadMore, birthYearFallback }) => {
+  const SSIDResultsBlock = ({ ssdiResults, searchFirst, searchMiddle, searchLast, searchBirthYear, searchSuffix, apiHasMore, onLoadMore, birthYearFallback, middleFallback }) => {
     if (!ssdiResults || ssdiResults.length === 0) return null;
     const tooMany = ssdiResults.length >= 10 && !searchMiddle && !searchBirthYear;
     const visibleResults = ssdiResults.slice(0, ssdiPage * 10);
@@ -974,6 +1009,11 @@ function App() {
         {birthYearFallback && (
           <div className="mb-2 p-2 bg-yellow-900/30 border border-yellow-700/40 rounded-lg">
             <p className="text-yellow-300 text-xs">No exact birth year match found — showing all results. Tap the closest match.</p>
+          </div>
+        )}
+        {middleFallback && (
+          <div className="mb-2 p-2 bg-yellow-900/30 border border-yellow-700/40 rounded-lg">
+            <p className="text-yellow-300 text-xs">No middle initial match found in SSDI — showing all first/last name results.</p>
           </div>
         )}
         {tooMany && (
@@ -1059,7 +1099,7 @@ function App() {
                 </div>
               </div>
               {selectedDisambig.extract && <p className="text-gray-100 text-sm leading-relaxed mb-3">{selectedDisambig.extract}</p>}
-              <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} />
+              <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} middleFallback={watchlistCheck && watchlistCheck.middleFallback} />
               {isDeceased && <div className="p-2 bg-gray-700/50 border border-gray-600/30 rounded-xl mb-3"><p className="text-gray-200 text-sm text-center">This person has passed away.{selectedDisambig.deathDate !== 'deceased' ? ' Died: ' + selectedDisambig.deathDate : ''}</p></div>}
               {!isDeceased && (
                 <div className="space-y-2 mt-2">
@@ -1086,7 +1126,7 @@ function App() {
           <div className="bg-gray-900/70 p-4">
             <p className="text-gray-300 text-sm mb-1">Several people share this name.</p>
             <p className="text-yellow-300 text-xs mb-3">Tip: Add a middle name or initial to find the right person directly.</p>
-            <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} />
+            <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} middleFallback={watchlistCheck && watchlistCheck.middleFallback} />
             <div className="space-y-2">
               {(profile.matches || []).map((m, i) => (
                 <button key={i} onClick={() => setSelectedDisambig(m)} className="w-full p-3 bg-gray-800/60 border border-red-900/30 rounded-xl text-left">
@@ -1160,7 +1200,7 @@ function App() {
           )}
 
           {!isDeceased && (
-            <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} />
+            <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} middleFallback={watchlistCheck && watchlistCheck.middleFallback} />
           )}
 
           {isDeceased && (
