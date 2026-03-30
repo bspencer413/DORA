@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.4.12';
+const APP_VERSION = '1.4.13';
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
@@ -559,7 +559,7 @@ function App() {
       await loadWatchlist();
       clearWatchlistCheck();
       setSsdiDrawer(null);
-      setPage(isDeceased ? 'search' : 'watchlist');
+      setPage(isDeceased ? 'memories' : 'watchlist');
     } catch(e) {
       const msg = e.message === 'Failed to fetch' || e.message === 'Load failed'
         ? 'Network error — the server may be waking up. Please try again in a moment.'
@@ -872,7 +872,7 @@ function App() {
               {r.middle_name && <p className="text-gray-400 text-xs">Middle: {r.middle_name}</p>}
               {r.birth_date && <p className="text-gray-300 text-sm">Born: {r.birth_date}</p>}
               {r.death_date && <p className="text-gray-300 text-sm">Died: {r.death_date}</p>}
-              <p className="text-gray-500 text-xs mt-2">Social Security Death Index (pre-2014)</p>
+              <p className="text-gray-500 text-xs mt-2">SSDI (pre-2014)</p>
             </div>
             {(() => {
               if (alreadyWatching) return <p className="text-green-400 text-sm text-center font-bold mb-3">Already in your {alreadyWatching}</p>;
