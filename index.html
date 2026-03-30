@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.4.22';
+const APP_VERSION = '1.4.23';
 const DECEASED_BIRTH_YEAR_THRESHOLD = new Date().getFullYear() - 100;
 
 const isPhone = window.innerWidth < 500;
@@ -495,9 +495,19 @@ function App() {
     }
     const [profile, ssdiData] = await Promise.allSettled([
       fetchWikiAction(nameWithPeriods).catch(() => ({ notFound: true })),
-      fetch(API_BASE + '/ssdi/search?name=' + encodeURIComponent(watchItem.name) + '&offset=0', {
-        headers: { 'Authorization': 'Bearer ' + token }
-      }).then(r => r.ok ? r.json() : { results: [], has_more: false }).catch(() => ({ results: [], has_more: false }))
+      (() => {
+        // FIX: Build SSDI search name from first+last only, extract MI for scoring
+        var nameParts = watchItem.name.trim().split(/\s+/);
+        var drawerFirst = nameParts[0] || '';
+        var drawerLast = nameParts[nameParts.length - 1] || '';
+        var ssdiSearchName = drawerFirst === drawerLast ? drawerFirst : (drawerFirst + ' ' + drawerLast).trim();
+        var drawerMI = nameParts.length >= 3 ? nameParts.slice(1, -1).join(' ') : '';
+        var ssdiUrl = API_BASE + '/ssdi/search?name=' + encodeURIComponent(ssdiSearchName) + '&offset=0';
+        if (drawerMI) ssdiUrl += '&middle_name=' + encodeURIComponent(drawerMI);
+        return fetch(ssdiUrl, { headers: { 'Authorization': 'Bearer ' + token } })
+          .then(r => r.ok ? r.json() : { results: [], has_more: false })
+          .catch(() => ({ results: [], has_more: false }));
+      })()
     ]);
     const wikiProfile = profile.status === 'fulfilled' ? (profile.value || { notFound: true }) : { notFound: true };
     const ssdi = ssdiData.status === 'fulfilled' ? ssdiData.value : { results: [], has_more: false };
@@ -1211,12 +1221,17 @@ function App() {
             <div className="space-y-2 mt-2 border-t border-white/10 pt-2">
               {hasSSdi && <p className="text-gray-400 text-xs text-center">Tap a name above to add to your list, or:</p>}
               {(() => {
-                // If top SSDI result is deceased (has death date or born 100+ years ago), offer Memories
+                // If ANY top-10 SSDI result is deceased, offer Memories as primary
                 var topResult = ssdiResults && ssdiResults[0];
                 var topByear = topResult && topResult.birth_date ? parseInt(topResult.birth_date.split('/').pop()) : null;
                 var topPassed = topResult && (!!(topResult.death_date) || (topByear && topByear < DECEASED_BIRTH_YEAR_THRESHOLD));
+                // Also check if all visible results are deceased
+                var allPassed = ssdiResults && ssdiResults.length > 0 && ssdiResults.every(function(res) {
+                  var by = res.birth_date ? parseInt(res.birth_date.split('/').pop()) : null;
+                  return !!(res.death_date) || (by && by < DECEASED_BIRTH_YEAR_THRESHOLD);
+                });
                 if (fullNameStatus) return <p className="w-full py-2.5 text-center text-green-400 text-sm font-bold">Already in your {fullNameStatus}</p>;
-                if (topPassed && hasSSdi) return (
+                if ((topPassed || allPassed) && hasSSdi) return (
                   <button onClick={saveSearchedNameToMemories} disabled={loading} className="w-full py-2.5 bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
                     <PlusIcon /> {loading ? 'Saving...' : 'Save "' + buildFullName() + '" to Memories'}
                   </button>
@@ -1286,6 +1301,7 @@ function App() {
     const nameParts = name.trim().split(/\s+/);
     const drawerFirst = nameParts[0] || '';
     const drawerLast = nameParts[nameParts.length - 1] || '';
+    const drawerMI = nameParts.length >= 3 ? nameParts.slice(1, -1).join(' ') : '';
 
     return (
       <>
@@ -1379,7 +1395,7 @@ function App() {
                         </button>
                       )}
                       {ssdiResults.map((r, i) => {
-                        const rawScore = scoreResult(r, drawerFirst, '', drawerLast, '', '');
+                        const rawScore = scoreResult(r, drawerFirst, drawerMI, drawerLast, '', '');
                         const exactMatch = r.first_name && r.last_name &&
                           r.first_name.toUpperCase() === drawerFirst.toUpperCase() &&
                           r.last_name.toUpperCase() === drawerLast.toUpperCase();
