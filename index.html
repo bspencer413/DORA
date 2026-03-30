@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.4.16';
+const APP_VERSION = '1.4.17';
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
@@ -539,7 +539,6 @@ function App() {
       const ssdiName = firstName === lastName ? firstName : (firstName + ' ' + lastName).trim();
       const params = new URLSearchParams({ name: ssdiName });
       if (nw.birthYear) params.append('birth_year', nw.birthYear);
-      if (nw.middle) params.append('middle_name', nw.middle.trim());
       params.append('offset', String(watchlistCheck.ssdiResults.length));
       const r = await fetch(API_BASE + '/ssdi/search?' + params.toString(), { headers: { 'Authorization': 'Bearer ' + token } });
       if (r.ok) {
@@ -622,7 +621,6 @@ function App() {
       const ssdiName = firstName === lastName ? firstName : (firstName + ' ' + lastName).trim();
       const params = new URLSearchParams({ name: ssdiName });
       if (nw.birthYear) params.append('birth_year', nw.birthYear);
-      if (nw.middle) params.append('middle_name', nw.middle.trim());
       const [ssdiResp, wikiResp] = await Promise.allSettled([
         fetch(API_BASE + '/ssdi/search?' + params.toString(), { headers: { 'Authorization': 'Bearer ' + token } })
           .then(r => r.ok ? r.json() : { results: [], has_more: false })
@@ -892,6 +890,35 @@ function App() {
               <p className="text-gray-500 text-xs mt-2">SSDI (thru 2014)</p>
             </div>
             {(() => {
+              if (alreadyWatching === 'memories') return <p className="text-green-400 text-sm text-center font-bold mb-3">Already in your Memories</p>;
+              if (alreadyWatching === 'watchlist' && ssdiPassed) return (
+                <div className="mb-3">
+                  <p className="text-yellow-300 text-sm text-center mb-2">This person is on your Watchlist but the SSDI record shows they have passed.</p>
+                  <button onClick={async () => {
+                    setLoading(true);
+                    try {
+                      const token = localStorage.getItem('doa_token');
+                      const found = watchlist.find(w => {
+                        const stored = normalizeForWiki(w.name).toLowerCase();
+                        const check = normalizeForWiki(r.name).toLowerCase();
+                        return stored === check || w.name.toLowerCase() === r.name.toLowerCase();
+                      });
+                      if (found) await fetch(API_BASE + '/watchlist/' + found.id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
+                      const deathYear = r.death_date ? r.death_date.split('/').pop() : null;
+                      await fetch(API_BASE + '/watchlist', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                        body: JSON.stringify({ name: r.name, location: '', dob: r.birth_date ? r.birth_date.split('/').pop() : '', is_deceased: true, death_year: deathYear })
+                      });
+                      await loadWatchlist();
+                      setSsdiDrawer(null);
+                      setPage('memories');
+                    } catch(e) { alert('Error: ' + e.message); }
+                    finally { setLoading(false); }
+                  }} disabled={loading} className="w-full py-2.5 bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
+                    <PlusIcon /> {loading ? 'Moving...' : 'Move to Memories'}
+                  </button>
+                </div>
+              );
               if (alreadyWatching) return <p className="text-green-400 text-sm text-center font-bold mb-3">Already in your {alreadyWatching}</p>;
               if (ssdiPassed) return (
                 <button onClick={() => addFromSsdi(r)} disabled={loading} className="w-full py-2.5 bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 mb-3 disabled:opacity-50">
