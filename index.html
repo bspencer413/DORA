@@ -57,7 +57,7 @@ const DECEASED_BIRTH_YEAR_THRESHOLD = new Date().getFullYear() - 100;
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
-const PT = isPhone ? '43vh' : isTablet ? '48vh' : '46vh';
+const PT = isPhone ? '41vh' : isTablet ? '46vh' : '44vh';
 
 const toTitleCase = (str) => {
   if (!str) return str;
@@ -1720,7 +1720,7 @@ function App() {
             <span className="text-lg font-medium" style={unreadCount > 0 ? {color:'#dc2626'} : {}}>Alerts</span>
           </button>
         </div>
-        <p className="text-center text-gray-600 text-lg mt-1">app v{APP_VERSION} | api v{apiVersion}</p>
+        <p className="text-center text-gray-600 text-xs mt-1" style={{display: page === 'search' ? 'none' : 'block'}}>app v{APP_VERSION} | api v{apiVersion}</p>
       </div>
     </PageWrapper>
   );
