@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.4.33';
+const APP_VERSION = '1.4.34';
 const DECEASED_BIRTH_YEAR_THRESHOLD = new Date().getFullYear() - 100;
 
 const isPhone = window.innerWidth < 500;
@@ -244,6 +244,7 @@ function isDeceasedCheck(extract, description, deathDate, type) {
   const firstSentence = extract ? extract.split('.')[0] : '';
   const hasDeathInBrackets = /\(\d{4}\s*[-\u2013\u2014]+\s*\d{4}\)/.test(firstSentence);
   const hasYearsInDescription = /\(\d{4}\s*[-\u2013\u2014]+\s*\d{4}\)/.test(description);
+  // FIX v1.4.34: escaped literal open paren — was /([^)]*born/ (unclosed capture group)
   const hasBornOnly = /\([^)]*born\s+\w+\s+\d+,\s+\d{4}\)/.test(firstSentence);
   if (hasBornOnly && !hasDeathInBrackets && !hasYearsInDescription) return false;
   const isPastTense = /^[^.]*\bwas (an?|the)\b[^.]*\./.test(extract) && !/\([^)]*born/.test(firstSentence) && !/born\s+\d{4}/.test(description);
@@ -335,7 +336,6 @@ function App() {
     const token = localStorage.getItem('doa_token');
     setNotifications(prev => prev.filter(n => n.id !== notifId));
     try { await fetch(API_BASE + '/notifications/' + notifId, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } }); } catch(e) {}
-    // FIX 4: Mark as deceased in Memories when user taps Keep
     if (watchlistId) {
       try {
         await fetch(API_BASE + '/watchlist/' + watchlistId, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
@@ -495,7 +495,6 @@ function App() {
     } catch(e) { return { isDisambiguation: false, notFound: true }; }
   };
 
-  // FIX 4: Pass isMemory flag so WikiDrawer knows to suppress SSDI
   const openWatchlistDrawer = async (watchItem) => {
     const isMemory = !!(watchItem.is_deceased);
     setDrawerData({ name: watchItem.name, watchlistId: watchItem.id, profile: null, ssdiResults: [], loading: true, newlyDeceased: false, isMemory: isMemory, deathYear: watchItem.death_year || null });
@@ -506,7 +505,6 @@ function App() {
       .then(r => { if (r.ok) r.json().then(data => { if (data.newly_deceased) { loadWatchlist(); loadNotifications(); } else { loadWatchlist(); } }); })
       .catch(() => {});
     const nameWithPeriods = addInitialPeriods(toTitleCase(watchItem.name));
-    // FIX 4: If Memories entry, skip SSDI fetch — only look up Wikipedia
     if (isMemory) {
       const profile = await fetchWikiAction(nameWithPeriods).catch(() => ({ notFound: true }));
       setDrawerData({ name: watchItem.name, watchlistId: watchItem.id, profile: profile || { notFound: true }, ssdiResults: [], loading: false, newlyDeceased: false, isMemory: true, deathYear: watchItem.death_year || null });
@@ -516,7 +514,6 @@ function App() {
     const [profile, ssdiData] = await Promise.allSettled([
       fetchWikiAction(nameWithPeriods).catch(() => ({ notFound: true })),
       (() => {
-        // FIX: Build SSDI search name from first+last only, extract MI for scoring
         var nameParts = watchItem.name.trim().split(/\s+/);
         var drawerFirst = nameParts[0] || '';
         var drawerLast = nameParts[nameParts.length - 1] || '';
@@ -559,7 +556,6 @@ function App() {
     setSsdiLoadingMore(false);
   };
 
-  // FIX Bug 3: increment ssdiPage after appending so bottom button works on first tap
   const loadMoreSsdiSearch = async () => {
     if (!watchlistCheck) return;
     setSsdiLoadingMore(true);
@@ -579,7 +575,6 @@ function App() {
         });
         const combined = watchlistCheck.ssdiResults.concat(scored);
         setWatchlistCheck(Object.assign({}, watchlistCheck, { ssdiResults: combined, ssdiHasMore: data.has_more || false }));
-        // FIX Bug 3: advance page so newly loaded results are immediately visible
         setSsdiPage(function(p) { return p + 1; });
       }
     } catch(e) { console.log('loadMoreSsdiSearch error:', e); }
@@ -595,7 +590,6 @@ function App() {
       const token = localStorage.getItem('doa_token');
       const birthYear = r.birth_date ? r.birth_date.split('/').pop() : '';
       const birthYearInt = r.birth_date ? parseInt(r.birth_date.split('/').pop()) : null;
-      // forceMemories: button explicitly said "Save to Memories" — always deceased
       const isDeceased = forceMemories || !!(r.death_date) || (birthYearInt && birthYearInt < DECEASED_BIRTH_YEAR_THRESHOLD);
       const deathYear = r.death_date ? r.death_date.split('/').pop() : null;
       const resp = await fetch(API_BASE + '/watchlist', {
@@ -616,7 +610,6 @@ function App() {
     finally { setLoading(false); }
   };
 
-  // returns 'watchlist' | 'memories' | false
   const isOnWatchlist = (name) => {
     if (!name) return false;
     try {
@@ -671,7 +664,6 @@ function App() {
 
       if (ssdiRaw.length === 0) {
         if (hasMi && hasDob) {
-          // Case 4 fallback: drop DOB, keep MI
           try {
             const fb = new URLSearchParams({ name: ssdiName });
             fb.append('middle_name', nw.middle.trim());
@@ -686,7 +678,6 @@ function App() {
             }
           } catch(e) { console.log('case4 fallback error:', e); }
         } else if (!hasMi && hasDob) {
-          // Case 3 fallback: drop DOB, keep name only
           try {
             const fb = new URLSearchParams({ name: ssdiName });
             const fbResp = await fetch(API_BASE + '/ssdi/search?' + fb.toString(), { headers: { 'Authorization': 'Bearer ' + token } });
@@ -700,7 +691,6 @@ function App() {
             }
           } catch(e) { console.log('case3 fallback error:', e); }
         } else if (hasMi && !hasDob) {
-          // Case 2: MI returned nothing — flag it, show no results
           noMiMatches = true;
         }
       }
@@ -768,7 +758,6 @@ function App() {
     finally { setLoading(false); }
   };
 
-  // FIX 1: Save searched name directly to Memories (user asserts deceased)
   const saveSearchedNameToMemories = async () => {
     const fullName = buildFullName() || (watchlistCheck && watchlistCheck.name) || '';
     if (!fullName) return;
@@ -933,7 +922,6 @@ function App() {
     }
   }
 
-  // ── SSDI mini drawer ────────────────────────────────────────────────────────
   const SsdiRecordDrawer = () => {
     if (!ssdiDrawer) return null;
     const r = ssdiDrawer;
@@ -1012,7 +1000,6 @@ function App() {
     );
   };
 
-  // ── SSDI Results block ──────────────────────────────────────────────────────
   const SSIDResultsBlock = ({ ssdiResults, searchFirst, searchMiddle, searchLast, searchBirthYear, searchSuffix, apiHasMore, onLoadMore, birthYearFallback, middleFallback }) => {
     if (!ssdiResults || ssdiResults.length === 0) return null;
     const tooMany = ssdiResults.length >= 10 && !searchMiddle && !searchBirthYear;
@@ -1038,7 +1025,8 @@ function App() {
           <div className="mb-2 p-2 bg-yellow-900/30 border border-yellow-700/40 rounded-lg">
             <p className="text-yellow-300 text-xs">No middle initial match found in SSDI — showing all first/last name results.</p>
           </div>
-        )}        {tooMany && (
+        )}
+        {tooMany && (
           <div className="mb-2 p-2 bg-yellow-900/30 border border-yellow-700/40 rounded-lg">
             <p className="text-yellow-300 text-xs">Many matches found. Add a middle name, initial or birth year to narrow results.</p>
           </div>
@@ -1068,7 +1056,6 @@ function App() {
     );
   };
 
-  // ── WatchlistCheckCard ──────────────────────────────────────────────────────
   const WatchlistCheckCard = () => {
     if (!watchlistCheck) return null;
     const { profile: rawProfile, name, ssdiResults: rawSsdi } = watchlistCheck;
@@ -1169,7 +1156,6 @@ function App() {
                 <PlusIcon /> {loading ? 'Adding...' : 'Add "' + buildFullName() + '" to Watchlist'}
               </button>
             )}
-            {/* FIX 1: Save to Memories always available */}
             {!isOnWatchlist(buildFullName()) && (
               <button onClick={saveSearchedNameToMemories} disabled={loading} className="w-full py-2 bg-gray-700/60 border border-gray-500/40 text-gray-200 rounded-xl text-lg flex items-center justify-center gap-2 mt-2 disabled:opacity-50">
                 <PlusIcon /> {loading ? 'Saving...' : 'Save "' + buildFullName() + '" to Memories'}
@@ -1241,11 +1227,9 @@ function App() {
             <div className="space-y-2 mt-2 border-t border-white/10 pt-2">
               {hasSSdi && <p className="text-gray-400 text-lg text-center">Tap a name above to add to your list, or:</p>}
               {(() => {
-                // If ANY top-10 SSDI result is deceased, offer Memories as primary
                 var topResult = ssdiResults && ssdiResults[0];
                 var topByear = topResult && topResult.birth_date ? parseInt(topResult.birth_date.split('/').pop()) : null;
                 var topPassed = topResult && (!!(topResult.death_date) || (topByear && topByear < DECEASED_BIRTH_YEAR_THRESHOLD));
-                // Also check if all visible results are deceased
                 var allPassed = ssdiResults && ssdiResults.length > 0 && ssdiResults.every(function(res) {
                   var by = res.birth_date ? parseInt(res.birth_date.split('/').pop()) : null;
                   return !!(res.death_date) || (by && by < DECEASED_BIRTH_YEAR_THRESHOLD);
@@ -1313,7 +1297,6 @@ function App() {
     );
   };
 
-  // ── Watchlist / Memories drawer ─────────────────────────────────────────────
   const WikiDrawer = () => {
     if (!drawerData) return null;
     const { name, profile, ssdiResults, loading: drawerLoading, newlyDeceased, isMemory, deathYear } = drawerData;
@@ -1335,7 +1318,6 @@ function App() {
             {drawerLoading && <div className="text-center py-8"><p className="text-white animate-pulse">Checking records...</p></div>}
             {!drawerLoading && (
               <>
-                {/* FIX 4: Memories drawer — always show Passed Away banner, skip SSDI */}
                 {isMemory && (
                   <>
                     <div className="px-4 py-2 rounded-xl mb-3 flex items-center gap-3 bg-gray-700">
@@ -1343,7 +1325,6 @@ function App() {
                       {deathYear && <span className="text-white/80 text-lg ml-auto">{deathYear}</span>}
                     </div>
                     {(() => {
-                      // FIX 4: Only show Wikipedia if title closely matches saved name
                       var savedLower = name.trim().toLowerCase();
                       var wikiLower = (profile && profile.title || '').trim().toLowerCase();
                       var savedParts = savedLower.split(/\s+/);
@@ -1376,7 +1357,6 @@ function App() {
                   </>
                 )}
 
-                {/* Watchlist drawer — original behavior */}
                 {!isMemory && (
                   <>
                     {noWikiInfo && (!ssdiResults || ssdiResults.length === 0) ? (
@@ -1406,7 +1386,6 @@ function App() {
                         {profile.isDisambiguation && <div className="p-3 bg-yellow-500/20 border border-yellow-400/30 rounded-xl mb-3"><p className="text-yellow-200 text-lg text-center">Multiple people share this name</p></div>}
                       </>
                     )}
-                    {/* Only show SSDI section when there are results */}
                     {(!profile || !profile.deathDate) && ssdiResults && ssdiResults.length > 0 ? <div className="mt-2 pt-3 border-t border-red-900/30">
                       <p className="text-red-300 text-xl font-bold mb-2">Possible matches in SSDI (thru 2014)</p>
                       {ssdiHasMore && (
@@ -1491,21 +1470,6 @@ function App() {
                 </button>
               </div>
               <p className="text-gray-300 text-base mb-3 text-center">Tap a name to check their status — we'll notify you when they pass</p>
-              {/* WATCHLIST SEARCH FORM — commented out, use Search page instead
-              {watchlistChecking && <p className="text-white text-center py-4 animate-pulse">Searching...</p>}
-              {watchlist.filter(w => !w.is_deceased).length === 0 && !watchlistChecked && (
-                <div className="mb-3 p-3 bg-gray-800/30 rounded-xl border border-red-900/20">
-                  <p className="text-gray-300 text-lg leading-relaxed">Add the people you are looking for to your Watchlist.</p>
-                  <p className="text-red-300 text-lg mt-2 font-medium">Find a person on the Search page.</p>
-                </div>
-              )}
-              {!watchlistChecked ? (
-                <div className="space-y-3">
-                  <ClearableInput value={nw.name} ... />
-                  ...
-                </div>
-              ) : <WatchlistCheckCard />}
-              END WATCHLIST SEARCH FORM */}
               {watchlist.filter(w => !w.is_deceased).length === 0 && (
                 <div className="py-6 text-center">
                   <p className="text-gray-300 text-base leading-relaxed mb-2">No one on your watchlist yet.</p>
