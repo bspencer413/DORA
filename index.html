@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.4.35';
+const APP_VERSION = '1.4.36';
 const DECEASED_BIRTH_YEAR_THRESHOLD = new Date().getFullYear() - 100;
 
 const isPhone = window.innerWidth < 500;
@@ -743,6 +743,7 @@ function App() {
     finally { setLoading(false); }
   };
 
+  // ── FIX: saveSearchedNameToMemories only marks deceased if wiki confirms death ──
   const saveSearchedNameToMemories = async () => {
     const fullName = buildFullName() || (watchlistCheck && watchlistCheck.name) || '';
     if (!fullName) return;
@@ -751,9 +752,14 @@ function App() {
     setLoading(true);
     try {
       const token = localStorage.getItem('doa_token');
+      const profile = watchlistCheck && watchlistCheck.profile;
+      const isActuallyDeceased = !!(profile && profile.deathDate);
+      const deathYr = isActuallyDeceased && profile.deathDate
+        ? (profile.deathDate.match(/\d{4}/) ? profile.deathDate.match(/\d{4}/)[0] : null)
+        : null;
       const r = await fetch(API_BASE + '/watchlist', {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ name: fullName, location: nw.location, dob: nw.birthYear, is_deceased: true, death_year: null })
+        body: JSON.stringify({ name: fullName, location: nw.location, dob: nw.birthYear, is_deceased: true, death_year: deathYr })
       });
       if (!r.ok) throw new Error('Failed');
       await loadWatchlist(); clearWatchlistCheck(); setPage('memories');
@@ -1254,8 +1260,8 @@ function App() {
               <>
                 {isMemory && (
                   <>
-                    <div className="px-4 py-2 rounded-xl mb-3 flex items-center gap-3 bg-gray-700">
-                      <span className="text-white font-black">Passed Away</span>
+                    <div className={'px-4 py-2 rounded-xl mb-3 flex items-center gap-3 ' + (deathYear ? 'bg-gray-700' : 'bg-green-800')}>
+                      <span className="text-white font-black">{deathYear ? 'Passed Away' : 'Saved'}</span>
                       {deathYear && <span className="text-white/80 text-lg ml-auto">{deathYear}</span>}
                     </div>
                     {(() => {
@@ -1482,22 +1488,29 @@ function App() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {watchlist.filter(w => w.is_deceased).map(w => (
-                    <div key={w.id} className="p-4 bg-gray-900/70 rounded-lg border border-gray-600/50">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 min-w-0">
-                          <button onClick={() => openWatchlistDrawer(w)} className="text-left w-full">
-                            <h3 className="font-semibold text-xl text-gray-300 line-through underline decoration-dotted truncate">{w.name}</h3>
-                          </button>
-                          <span className="text-base text-gray-400 font-bold">Passed Away{w.death_year ? ' — ' + w.death_year : ''}</span>
-                        </div>
-                        <div className="flex gap-2 ml-2 shrink-0">
-                          <button onClick={() => openWatchlistDrawer(w)} className="px-3 py-1.5 bg-red-700/50 border border-red-600/50 text-white rounded-lg text-xl font-bold">View</button>
-                          <button onClick={() => delWatch(w.id)} className="p-2 text-red-500 hover:bg-red-900/30 rounded-lg"><TrashIcon /></button>
+                  {watchlist.filter(w => w.is_deceased).map(w => {
+                    // ── FIX: show "Saved" for living, "Passed Away" only if death confirmed ──
+                    const confirmedDeceased = !!(w.death_year);
+                    const statusText = confirmedDeceased
+                      ? ('Passed Away — ' + w.death_year)
+                      : 'Saved';
+                    return (
+                      <div key={w.id} className="p-4 bg-gray-900/70 rounded-lg border border-gray-600/50">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <button onClick={() => openWatchlistDrawer(w)} className="text-left w-full">
+                              <h3 className={'font-semibold text-xl underline decoration-dotted truncate ' + (confirmedDeceased ? 'text-gray-300 line-through' : 'text-white')}>{w.name}</h3>
+                            </button>
+                            <span className="text-base text-gray-400 font-bold">{statusText}</span>
+                          </div>
+                          <div className="flex gap-2 ml-2 shrink-0">
+                            <button onClick={() => openWatchlistDrawer(w)} className="px-3 py-1.5 bg-red-700/50 border border-red-600/50 text-white rounded-lg text-xl font-bold">View</button>
+                            <button onClick={() => delWatch(w.id)} className="p-2 text-red-500 hover:bg-red-900/30 rounded-lg"><TrashIcon /></button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -1535,7 +1548,6 @@ function App() {
 
         {page === 'about' && (
           <div className="space-y-4 pb-8" style={{ paddingTop: '1rem' }}>
-
             <div className={cardClass + ' relative'}>
               <div className="mb-3 pb-2 border-b border-red-900/30 text-center">
                 <h2 className="text-3xl font-black text-white tracking-wide">About</h2>
@@ -1588,6 +1600,7 @@ function App() {
                 <p><strong className="text-white">Data Sources:</strong> Search results are powered by Wikipedia and the Social Security Death Index.</p>
                 <p><strong className="text-white">Your Rights:</strong> You may delete your account and all data at any time.</p>
                 <p><strong className="text-white">Minor Protection:</strong> Dead or Alive is not intended for searching individuals under 18 years of age.</p>
+                <p><strong className="text-white">Disclaimer:</strong> Information is provided for research purposes only. Dead or Alive makes no guarantee of accuracy. Do not rely on this service as confirmation of death.</p>
                 <a href="mailto:bspencer413@me.com" className="text-red-400 text-lg">bspencer413@me.com</a>
               </div>
             </div>
@@ -1610,7 +1623,6 @@ function App() {
                 </div>
               )}
             </div>
-
             <p className="text-white/30 text-center text-xs pb-4">v{APP_VERSION}</p>
           </div>
         )}
