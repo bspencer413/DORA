@@ -628,7 +628,8 @@ function App() {
     if (isMemory) {
       const profile = await fetchWikiAction(nameWithPeriods).catch(() => ({ notFound: true }));
       const cachedSsdi = getCachedSsdiFlexible(watchItem.name);
-      setDrawerData({ name: watchItem.name, watchlistId: watchItem.id, profile: profile || { notFound: true }, ssdiResults: [], loading: false, newlyDeceased: false, isMemory: true, deathYear: watchItem.death_year || null, dob: watchItem.dob || null, cachedSsdi: cachedSsdi, location: watchItem.location || null });
+      const memLocation = (cachedSsdi && cachedSsdi.state) ? cachedSsdi.state : (watchItem.location || null);
+      setDrawerData({ name: watchItem.name, watchlistId: watchItem.id, profile: profile || { notFound: true }, ssdiResults: [], loading: false, newlyDeceased: false, isMemory: true, deathYear: watchItem.death_year || null, dob: watchItem.dob || null, cachedSsdi: cachedSsdi, location: memLocation });
       setDrawerRefreshing(false);
       return;
     }
@@ -716,7 +717,7 @@ function App() {
       cacheSsdiRecord(fullName, r);
       const resp = await fetch(API_BASE + '/watchlist', {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ name: fullName, location: '', dob: birthYear, is_deceased: isDeceased, death_year: deathYear })
+        body: JSON.stringify({ name: fullName, location: r.state || nw.location || '', dob: birthYear, is_deceased: isDeceased, death_year: deathYear })
       });
       if (!resp.ok) throw new Error('Failed');
       await loadWatchlist();
@@ -1017,8 +1018,6 @@ function App() {
 // ====== END PART 1 -- paste Part 2 immediately after this line ======
 // ====== START PART 2 ======
 
-  // ====== START PART 2 ======
-
   const SsdiRecordDrawer = () => {
     if (!ssdiDrawer) return null;
     const r = ssdiDrawer;
@@ -1054,7 +1053,7 @@ function App() {
                       const found = watchlist.find(w => { const stored = normalizeForWiki(w.name).toLowerCase(); const check = normalizeForWiki(r.name).toLowerCase(); return stored === check || w.name.toLowerCase() === r.name.toLowerCase(); });
                       if (found) await fetch(API_BASE + '/watchlist/' + found.id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
                       cacheSsdiRecord(r.name, r);
-                      await fetch(API_BASE + '/watchlist', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ name: r.name, location: '', dob: extractYear(r.birth_date) || '', is_deceased: true, death_year: extractYear(r.death_date) }) });
+                      await fetch(API_BASE + '/watchlist', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ name: r.name, location: r.state || '', dob: extractYear(r.birth_date) || '', is_deceased: true, death_year: extractYear(r.death_date) }) });
                       await loadWatchlist(); setSsdiDrawer(null); setPage('memories');
                     } catch(e) { alert('Error: ' + e.message); }
                     finally { setLoading(false); }
@@ -1562,9 +1561,10 @@ function App() {
               {!watchlistChecked ? (
                 <div className="space-y-3">
                   <ClearableInput value={nw.name} onChange={(e) => setNw(Object.assign({}, nw, { name: e.target.value }))} onBlur={(e) => setNw(Object.assign({}, nw, { name: toTitleCase(e.target.value.trim()) }))} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="First and Last Name *" inputClass={iClass} noAutoCorrect={true} />
-                  <ClearableInput value={nw.middle} onChange={(e) => setNw(Object.assign({}, nw, { middle: e.target.value }))} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Middle Name or Initial -- Helpful" inputClass={iClass} noAutoCorrect={true} />
+                  <ClearableInput value={nw.middle} onChange={(e) => setNw(Object.assign({}, nw, { middle: e.target.value }))} onBlur={(e) => { var v = e.target.value.trim(); if (v.length === 1) setNw(Object.assign({}, nw, { middle: v.toUpperCase() })); }} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Middle Name or Initial -- Helpful" inputClass={iClass} noAutoCorrect={true} />
                   <ClearableInput value={nw.suffix} onChange={(e) => setNw(Object.assign({}, nw, { suffix: e.target.value }))} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Suffix: Jr., Sr., MD, III" inputClass={iClass} noAutoCorrect={true} />
                   <ClearableInput value={nw.birthYear} onChange={(e) => setNw(Object.assign({}, nw, { birthYear: e.target.value.replace(/\D/g, '').slice(0, 4) }))} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Birth Year -- Helpful" maxLength={4} inputClass={iClass} numeric={true} />
+                  <ClearableInput value={nw.location} onChange={(e) => setNw(Object.assign({}, nw, { location: e.target.value }))} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Location -- City, State or Country" inputClass={iClass} noAutoCorrect={true} />
                   <button onClick={checkWatch} disabled={watchlistChecking} className="w-full py-3 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 text-xl font-bold"><SearchIcon /> {watchlistChecking ? 'Searching...' : 'Search'}</button>
                   <p className="text-gray-300 text-base text-center pt-1">Search Wikipedia and SSDI records</p>
                 </div>
