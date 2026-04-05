@@ -1017,6 +1017,8 @@ function App() {
 // ====== END PART 1 -- paste Part 2 immediately after this line ======
 // ====== START PART 2 ======
 
+  // ====== START PART 2 ======
+
   const SsdiRecordDrawer = () => {
     if (!ssdiDrawer) return null;
     const r = ssdiDrawer;
@@ -1554,8 +1556,7 @@ function App() {
           <div className="space-y-3" style={{ paddingTop: PT }}>
             <div className={cardClass}>
               <div className="mb-1 pb-1 border-b border-red-900/30 text-center">
-                <p className="text-red-300 text-2xl font-bold italic whitespace-nowrap">Whatever happened to...</p>
-                <p className="text-gray-300 text-base mt-0">Search Wikipedia and SSDI records</p>
+                <p className="text-red-300 text-4xl font-bold italic whitespace-nowrap">Whatever happened to...</p>
               </div>
               {watchlistChecking && <p className="text-white text-center py-4 animate-pulse">Searching...</p>}
               {!watchlistChecked ? (
@@ -1565,6 +1566,7 @@ function App() {
                   <ClearableInput value={nw.suffix} onChange={(e) => setNw(Object.assign({}, nw, { suffix: e.target.value }))} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Suffix: Jr., Sr., MD, III" inputClass={iClass} noAutoCorrect={true} />
                   <ClearableInput value={nw.birthYear} onChange={(e) => setNw(Object.assign({}, nw, { birthYear: e.target.value.replace(/\D/g, '').slice(0, 4) }))} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Birth Year -- Helpful" maxLength={4} inputClass={iClass} numeric={true} />
                   <button onClick={checkWatch} disabled={watchlistChecking} className="w-full py-3 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 text-xl font-bold"><SearchIcon /> {watchlistChecking ? 'Searching...' : 'Search'}</button>
+                  <p className="text-gray-300 text-base text-center pt-1">Search Wikipedia and SSDI records</p>
                 </div>
               ) : (
                 <WatchlistCheckCard />
