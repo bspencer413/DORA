@@ -1019,6 +1019,8 @@ function App() {
 // ====== END PART 1 -- paste Part 2 immediately after this line ======
 // ====== START PART 2 ======
 
+  // ====== START PART 2 ======
+
   const SsdiRecordDrawer = () => {
     if (!ssdiDrawer) return null;
     const r = ssdiDrawer;
@@ -1395,6 +1397,7 @@ function App() {
                         return (
                           <>
                             <SsdiRecordBlock r={cachedSsdi} />
+                            {location && <p className="text-gray-300 text-lg mb-2">Location: {location}</p>}
                             <div className="p-2 bg-red-900/10 border border-red-800/20 rounded-xl mb-3">
                               <p className="text-red-300 text-sm">Saved from SSDI records (through 2014). No Wikipedia entry found.</p>
                             </div>
