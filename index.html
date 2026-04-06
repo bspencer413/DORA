@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.0.5';
+const APP_VERSION = '1.4.37';
 const DECEASED_BIRTH_YEAR_THRESHOLD = new Date().getFullYear() - 100;
 const SSDI_CACHE_KEY = 'doa_ssdi_cache';
 
@@ -1019,8 +1019,6 @@ function App() {
 // ====== END PART 1 -- paste Part 2 immediately after this line ======
 // ====== START PART 2 ======
 
-  // ====== START PART 2 ======
-
   const SsdiRecordDrawer = () => {
     if (!ssdiDrawer) return null;
     const r = ssdiDrawer;
@@ -1397,7 +1395,6 @@ function App() {
                         return (
                           <>
                             <SsdiRecordBlock r={cachedSsdi} />
-                            {location && <p className="text-gray-300 text-lg mb-2">Location: {location}</p>}
                             <div className="p-2 bg-red-900/10 border border-red-800/20 rounded-xl mb-3">
                               <p className="text-red-300 text-sm">Saved from SSDI records (through 2014). No Wikipedia entry found.</p>
                             </div>
@@ -1571,9 +1568,9 @@ function App() {
 
         {page === 'search' && (
           <div className="space-y-3" style={{ paddingTop: PT }}>
-            <div className={cardClass}3
+            <div className={cardClass}>
               <div className="mb-1 pb-1 border-b border-red-900/30 text-center">
-                <p className="text-red-300 text-4xl font-bold italic whitespace-nowrap">Whatever happened to...</p>
+                <p className="text-red-300 text-3xl font-bold italic whitespace-nowrap">Whatever happened to...</p>
               </div>
               {watchlistChecking && <p className="text-white text-center py-4 animate-pulse">Searching...</p>}
               {!watchlistChecked ? (
