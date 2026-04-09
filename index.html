@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.4.39';
+const APP_VERSION = '1.4.40';
 const DECEASED_BIRTH_YEAR_THRESHOLD = new Date().getFullYear() - 100;
 const SSDI_CACHE_KEY = 'doa_ssdi_cache';
 
@@ -1282,8 +1282,8 @@ function App() {
                     <button onClick={saveSearchedNameToMemories} disabled={loadingMem} className="w-full py-4 bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white rounded-xl font-bold text-xl flex items-center justify-center gap-2 disabled:opacity-50">
                       <PlusIcon /> {loadingMem ? 'Saving...' : 'Save "' + buildFullName() + '" to Memories'}
                     </button>
-                    <button onClick={addSearchedNameToWatchlist} disabled={loadingWl} className="w-full py-2 bg-gray-700/60 border border-gray-500/40 text-gray-200 rounded-xl text-lg flex items-center justify-center gap-2 disabled:opacity-50">
-                      <PlusIcon /> {loadingWl ? 'Adding...' : 'Add to Watchlist instead'}
+                    <button onClick={addSearchedNameToWatchlist} disabled={loadingWl} className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xl flex items-center justify-center gap-2 disabled:opacity-50">
+                      <PlusIcon /> {loadingWl ? 'Adding...' : 'Add "' + buildFullName() + '" to Watchlist'}
                     </button>
                   </>
               }
