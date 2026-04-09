@@ -52,13 +52,14 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.4.37';
+const APP_VERSION = '1.4.39';
 const DECEASED_BIRTH_YEAR_THRESHOLD = new Date().getFullYear() - 100;
 const SSDI_CACHE_KEY = 'doa_ssdi_cache';
 
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
 const PT = isPhone ? '41vh' : isTablet ? '46vh' : '44vh';
+const SEARCH_PT = isPhone ? '28vh' : isTablet ? '32vh' : '30vh';
 
 const extractYear = (dateStr) => {
   if (!dateStr) return null;
@@ -303,7 +304,7 @@ const PageWrapper = ({ children, bgStyle }) => {
   var bg = bgStyle || POSTER_STYLE;
   var isListPage = bg === WOOD_STYLE;
   return (
-  <div style={{ minHeight: '100dvh', width: '100%', position: 'relative', paddingBottom: '7rem', backgroundColor: bg.backgroundColor, backgroundImage: bg.backgroundImage || 'none', backgroundSize: bg.backgroundSize || 'auto', backgroundPosition: bg.backgroundPosition || 'top', backgroundRepeat: bg.backgroundRepeat || 'no-repeat', backgroundAttachment: bg.backgroundAttachment || 'scroll' }}>
+  <div style={{ minHeight: '100dvh', width: '100%', position: 'relative', paddingBottom: '5rem', backgroundColor: bg.backgroundColor, backgroundImage: bg.backgroundImage || 'none', backgroundSize: bg.backgroundSize || 'auto', backgroundPosition: bg.backgroundPosition || 'top', backgroundRepeat: bg.backgroundRepeat || 'no-repeat', backgroundAttachment: bg.backgroundAttachment || 'scroll' }}>
     {isListPage && <div style={{ position: 'fixed', inset: 0, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', backgroundColor: 'rgba(10,4,0,0.55)', zIndex: 0 }} />}
     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: isListPage ? 'transparent' : 'rgba(0,0,0,0.22)' }} />
     <div style={{ position: 'relative', zIndex: 10 }}>{children}</div>
@@ -1520,7 +1521,7 @@ function App() {
   }
 
   return (
-    <PageWrapper bgStyle={page === 'watchlist' || page === 'memories' || page === 'notifications' ? WOOD_STYLE : POSTER_STYLE}>
+    <PageWrapper bgStyle={page === 'watchlist' || page === 'memories' || page === 'notifications' || page === 'about' ? WOOD_STYLE : POSTER_STYLE}>
       <WikiDrawer />
       <SsdiRecordDrawer />
       <div className={containerClass}>
@@ -1573,8 +1574,8 @@ function App() {
         )}
 
         {page === 'search' && (
-          <div className="space-y-3" style={{ paddingTop: PT }}>
-            <div className={cardClass} style={{ overflowY: 'auto', maxHeight: 'calc(100dvh - ' + PT + ' - 6rem)' }}>
+          <div className="space-y-3" style={{ paddingTop: SEARCH_PT }}>
+            <div className={cardClass}>
               <div className="mb-1 pb-1 border-b border-red-900/30 text-center">
                 <p className="text-red-300 text-3xl font-bold italic whitespace-nowrap">Whatever happened to...</p>
               </div>
@@ -1759,4 +1760,4 @@ function App() {
 ReactDOM.render(React.createElement(App), document.getElementById('root'));
 </script>
 </body>
-</html>a
+</html>
