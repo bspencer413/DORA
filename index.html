@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#dc2626">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.0.5';
+const APP_VERSION = '1.4.36';
 const DECEASED_BIRTH_YEAR_THRESHOLD = new Date().getFullYear() - 100;
 const SSDI_CACHE_KEY = 'doa_ssdi_cache';
 
@@ -64,6 +64,12 @@ const extractYear = (dateStr) => {
   if (!dateStr) return null;
   const m = String(dateStr).match(/\b(19|20)\d{2}\b/);
   return m ? m[0] : null;
+};
+
+const parseBirthYear = (birth_date) => {
+  if (!birth_date) return 9999;
+  var yr = parseInt(extractYear(birth_date) || '0');
+  return yr > 0 ? yr : 9999;
 };
 
 const getSsdiCache = () => {
@@ -187,7 +193,7 @@ const scoreResult = (result, searchFirst, searchMiddle, searchLast, searchBirthY
 
 const confidenceLabel = (score) => {
   if (score >= 90) return 'Probable Match';
-  if (score >= 60) return 'Possible Match';
+  if (score >= 60) return 'Potential Match';
   return 'Partial Match';
 };
 
@@ -613,6 +619,7 @@ function App() {
     } catch(e) { return { isDisambiguation: false, notFound: true }; }
   };
 
+  // ── openWatchlistDrawer: Wiki fires always; SSDI only if watchItem.dob exists ──
   const openWatchlistDrawer = async (watchItem) => {
     const isMemory = watchItem.is_deceased === true || watchItem.is_deceased === 1;
     setDrawerData({ name: watchItem.name, watchlistId: watchItem.id, profile: null, ssdiResults: [], loading: true, newlyDeceased: false, isMemory: isMemory, deathYear: watchItem.death_year || null, dob: watchItem.dob || null, cachedSsdi: null, location: watchItem.location || null });
@@ -632,27 +639,26 @@ function App() {
       setDrawerRefreshing(false);
       return;
     }
-    const [profile, ssdiData] = await Promise.allSettled([
-      fetchWikiAction(nameWithPeriods).catch(() => ({ notFound: true })),
-      (() => {
-        var nameParts = watchItem.name.trim().split(/\s+/);
-        var drawerFirst = nameParts[0] || '';
-        var drawerLast = nameParts[nameParts.length - 1] || '';
-        var ssdiSearchName = drawerFirst === drawerLast ? drawerFirst : (drawerFirst + ' ' + drawerLast).trim();
-        var drawerMI = nameParts.length >= 3 ? nameParts.slice(1, -1).join(' ') : '';
-        var ssdiUrl = API_BASE + '/ssdi/search?name=' + encodeURIComponent(ssdiSearchName) + '&offset=0';
-        if (drawerMI) ssdiUrl += '&middle_name=' + encodeURIComponent(drawerMI);
-        return fetch(ssdiUrl, { headers: { 'Authorization': 'Bearer ' + token } })
+    const wikiProfile = await fetchWikiAction(nameWithPeriods).catch(() => ({ notFound: true })) || { notFound: true };
+    var ssdiResults = [];
+    if (watchItem.dob) {
+      var nameParts2 = watchItem.name.trim().split(/\s+/);
+      var drawerFirst2 = nameParts2[0] || '';
+      var drawerLast2 = nameParts2[nameParts2.length - 1] || '';
+      var ssdiSearchName2 = drawerFirst2 === drawerLast2 ? drawerFirst2 : (drawerFirst2 + ' ' + drawerLast2).trim();
+      var drawerMI2 = nameParts2.length >= 3 ? nameParts2.slice(1, -1).join(' ') : '';
+      var ssdiUrl2 = API_BASE + '/ssdi/search?name=' + encodeURIComponent(ssdiSearchName2) + '&offset=0';
+      if (drawerMI2) ssdiUrl2 += '&middle_name=' + encodeURIComponent(drawerMI2);
+      try {
+        const ssdiResp2 = await fetch(ssdiUrl2, { headers: { 'Authorization': 'Bearer ' + token } })
           .then(r => r.ok ? r.json() : { results: [], has_more: false })
           .catch(() => ({ results: [], has_more: false }));
-      })()
-    ]);
-    const wikiProfile = profile.status === 'fulfilled' ? (profile.value || { notFound: true }) : { notFound: true };
-    const ssdi = ssdiData.status === 'fulfilled' ? ssdiData.value : { results: [], has_more: false };
-    const ssdiResults = ssdi.results || [];
+        ssdiResults = (ssdiResp2.results || []).slice().sort((a, b) => parseBirthYear(a.birth_date) - parseBirthYear(b.birth_date));
+        setSsdiHasMore(ssdiResp2.has_more || false);
+        setSsdiOffset(ssdiResults.length);
+      } catch(e) {}
+    }
     setSsdiAllResults(ssdiResults);
-    setSsdiHasMore(ssdi.has_more || false);
-    setSsdiOffset(ssdiResults.length);
     setDrawerData({ name: watchItem.name, watchlistId: watchItem.id, profile: wikiProfile, ssdiResults, loading: false, newlyDeceased: false, isMemory: false, deathYear: null, dob: watchItem.dob || null, cachedSsdi: null, location: watchItem.location || null });
     setDrawerRefreshing(false);
   };
@@ -667,7 +673,7 @@ function App() {
       if (r.ok) {
         const data = await r.json();
         const newResults = data.results || [];
-        const combined = ssdiAllResults.concat(newResults);
+        const combined = ssdiAllResults.concat(newResults).slice().sort((a, b) => parseBirthYear(a.birth_date) - parseBirthYear(b.birth_date));
         setSsdiAllResults(combined);
         setSsdiHasMore(data.has_more || false);
         setSsdiOffset(combined.length);
@@ -694,7 +700,10 @@ function App() {
         const scored = (data.results || []).map(function(rec) {
           return Object.assign({}, rec, { _score: scoreResult(rec, firstName, nw.middle, lastName, nw.birthYear, nw.suffix) });
         });
-        const combined = watchlistCheck.ssdiResults.concat(scored);
+        const combined = watchlistCheck.ssdiResults.concat(scored).slice().sort((a, b) => {
+          if (b._score !== a._score) return b._score - a._score;
+          return parseBirthYear(a.birth_date) - parseBirthYear(b.birth_date);
+        });
         setWatchlistCheck(Object.assign({}, watchlistCheck, { ssdiResults: combined, ssdiHasMore: data.has_more || false }));
         setSsdiPage(function(p) { return p + 1; });
       }
@@ -755,6 +764,7 @@ function App() {
     return [first, mid, last, suf].filter(Boolean).join(' ');
   };
 
+  // ── checkWatch: Wiki fires first; SSDI only if !wikiDeceased && (hasMi || hasDob) ──
   const checkWatch = async () => {
     if (document.activeElement) document.activeElement.blur();
     const name = toTitleCase((nw.name || '').trim().replace(/\s+/g, ' '));
@@ -770,57 +780,49 @@ function App() {
       const params = new URLSearchParams({ name: ssdiName });
       if (nw.birthYear) params.append('birth_year', nw.birthYear);
       if (nw.middle) params.append('middle_name', nw.middle.trim());
-      const [ssdiResp, wikiResp] = await Promise.allSettled([
-        fetch(API_BASE + '/ssdi/search?' + params.toString(), { headers: { 'Authorization': 'Bearer ' + token } })
-          .then(r => r.ok ? r.json() : { results: [], has_more: false })
-          .catch(() => ({ results: [], has_more: false })),
-        fetchWikiProfile(name).catch(() => ({ isDisambiguation: false, notFound: true }))
-      ]);
-      var ssdiRaw = ssdiResp.status === 'fulfilled' ? (ssdiResp.value.results || []) : [];
-      var ssdiApiHasMore = ssdiResp.status === 'fulfilled' ? (ssdiResp.value.has_more || false) : false;
+      var ssdiRaw = [];
+      var ssdiApiHasMore = false;
       var birthYearFallback = false;
-      var middleFallback = false;
       var noMiMatches = false;
       var hasMi = !!(nw.middle && nw.middle.trim());
       var hasDob = !!(nw.birthYear && nw.birthYear.trim());
-      if (ssdiRaw.length === 0) {
-        if (hasMi && hasDob) {
-          try {
-            const fb = new URLSearchParams({ name: ssdiName });
-            fb.append('middle_name', nw.middle.trim());
-            const fbResp = await fetch(API_BASE + '/ssdi/search?' + fb.toString(), { headers: { 'Authorization': 'Bearer ' + token } });
-            if (fbResp.ok) {
-              const fbData = await fbResp.json();
-              if ((fbData.results || []).length > 0) { ssdiRaw = fbData.results || []; ssdiApiHasMore = fbData.has_more || false; birthYearFallback = true; }
-            }
-          } catch(e) { console.log('case4 fallback error:', e); }
-        } else if (!hasMi && hasDob) {
-          try {
-            const fb = new URLSearchParams({ name: ssdiName });
-            const fbResp = await fetch(API_BASE + '/ssdi/search?' + fb.toString(), { headers: { 'Authorization': 'Bearer ' + token } });
-            if (fbResp.ok) {
-              const fbData = await fbResp.json();
-              if ((fbData.results || []).length > 0) { ssdiRaw = fbData.results || []; ssdiApiHasMore = fbData.has_more || false; birthYearFallback = true; }
-            }
-          } catch(e) { console.log('case3 fallback error:', e); }
-        } else if (hasMi && !hasDob) {
-          noMiMatches = true;
+      const wikiResult = await fetchWikiProfile(name).catch(() => ({ isDisambiguation: false, notFound: true }));
+      const profile = wikiResult || { isDisambiguation: false, notFound: true };
+      const isWikiDeceased = !!(profile && profile.deathDate);
+      if (!isWikiDeceased && (hasMi || hasDob)) {
+        try {
+          const ssdiResp = await fetch(API_BASE + '/ssdi/search?' + params.toString(), { headers: { 'Authorization': 'Bearer ' + token } })
+            .then(r => r.ok ? r.json() : { results: [], has_more: false })
+            .catch(() => ({ results: [], has_more: false }));
+          ssdiRaw = ssdiResp.results || [];
+          ssdiApiHasMore = ssdiResp.has_more || false;
+        } catch(e) {}
+        if (ssdiRaw.length === 0) {
+          if (hasMi && hasDob) {
+            try {
+              const fb = new URLSearchParams({ name: ssdiName });
+              fb.append('middle_name', nw.middle.trim());
+              const fbResp = await fetch(API_BASE + '/ssdi/search?' + fb.toString(), { headers: { 'Authorization': 'Bearer ' + token } });
+              if (fbResp.ok) { const fbData = await fbResp.json(); if ((fbData.results || []).length > 0) { ssdiRaw = fbData.results || []; ssdiApiHasMore = fbData.has_more || false; birthYearFallback = true; } }
+            } catch(e) {}
+          } else if (!hasMi && hasDob) {
+            try {
+              const fb = new URLSearchParams({ name: ssdiName });
+              const fbResp = await fetch(API_BASE + '/ssdi/search?' + fb.toString(), { headers: { 'Authorization': 'Bearer ' + token } });
+              if (fbResp.ok) { const fbData = await fbResp.json(); if ((fbData.results || []).length > 0) { ssdiRaw = fbData.results || []; ssdiApiHasMore = fbData.has_more || false; birthYearFallback = true; } }
+            } catch(e) {}
+          } else if (hasMi && !hasDob) { noMiMatches = true; }
         }
       }
       const ssdiResults = ssdiRaw.map(r => Object.assign({}, r, { _score: scoreResult(r, firstName, nw.middle, lastName, nw.birthYear, nw.suffix) })).sort((a, b) => {
         if (b._score !== a._score) return b._score - a._score;
-        const aYear = a.birth_date ? parseInt(a.birth_date.split('/').pop()) : 9999;
-        const bYear = b.birth_date ? parseInt(b.birth_date.split('/').pop()) : 9999;
-        return aYear - bYear;
+        return parseBirthYear(a.birth_date) - parseBirthYear(b.birth_date);
       });
       if (ssdiResults.length === 1) ssdiResults[0]._score = 95;
-      const profile = wikiResp.status === 'fulfilled'
-        ? (wikiResp.value || { isDisambiguation: false, notFound: true })
-        : { isDisambiguation: false, notFound: true };
-      setWatchlistCheck({ profile, name, ssdiResults, ssdiHasMore: ssdiApiHasMore, birthYearFallback, middleFallback, noMiMatches });
+      setWatchlistCheck({ profile, name, ssdiResults, ssdiHasMore: ssdiApiHasMore, birthYearFallback, noMiMatches });
       setWatchlistChecked(true);
     } catch (error) {
-      setWatchlistCheck({ profile: { isDisambiguation: false, notFound: true }, name, ssdiResults: [], ssdiHasMore: false, birthYearFallback: false, middleFallback: false, noMiMatches: false });
+      setWatchlistCheck({ profile: { isDisambiguation: false, notFound: true }, name, ssdiResults: [], ssdiHasMore: false, birthYearFallback: false, noMiMatches: false });
       setWatchlistChecked(true);
     } finally { setWatchlistChecking(false); }
   };
@@ -1016,9 +1018,6 @@ function App() {
     }
   }
 
-// ====== END PART 1 -- paste Part 2 immediately after this line ======
-// ====== START PART 2 ======
-
   const SsdiRecordDrawer = () => {
     if (!ssdiDrawer) return null;
     const r = ssdiDrawer;
@@ -1059,7 +1058,7 @@ function App() {
                     } catch(e) { alert('Error: ' + e.message); }
                     finally { setLoading(false); }
                   }} disabled={loading} className="w-full py-4 bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white rounded-xl font-bold text-xl flex items-center justify-center gap-2 disabled:opacity-50">
-                    <PlusIcon /> {loading ? 'Moving...' : 'Move to Memories'}
+                    <PlusIcon /> {loading ? 'Saving...' : 'Save as Memory'}
                   </button>
                 </div>
               );
@@ -1082,7 +1081,7 @@ function App() {
     );
   };
 
-  const SSIDResultsBlock = ({ ssdiResults, searchFirst, searchMiddle, searchLast, searchBirthYear, searchSuffix, apiHasMore, onLoadMore, birthYearFallback, middleFallback }) => {
+  const SSIDResultsBlock = ({ ssdiResults, searchFirst, searchMiddle, searchLast, searchBirthYear, searchSuffix, apiHasMore, onLoadMore, birthYearFallback }) => {
     if (!ssdiResults || ssdiResults.length === 0) return null;
     const tooMany = ssdiResults.length >= 10 && !searchMiddle && !searchBirthYear;
     const visibleResults = ssdiResults.slice(0, ssdiPage * 10);
@@ -1096,13 +1095,12 @@ function App() {
       <div className="mb-3 p-3 bg-gray-800/60 rounded-xl border border-red-900/30">
         <p className="text-red-300 text-xl font-bold mb-2">Possible matches in SSDI (thru 2014) -- tap a name to view</p>
         {birthYearFallback && searchBirthYear && <div className="mb-2 p-2 bg-yellow-900/30 border border-yellow-700/40 rounded-lg"><p className="text-yellow-300 text-xs">No exact birth year match found -- showing all results. Tap the closest match.</p></div>}
-        {middleFallback && <div className="mb-2 p-2 bg-yellow-900/30 border border-yellow-700/40 rounded-lg"><p className="text-yellow-300 text-xs">No middle initial match found in SSDI -- showing all first/last name results.</p></div>}
         {tooMany && <div className="mb-2 p-2 bg-yellow-900/30 border border-yellow-700/40 rounded-lg"><p className="text-yellow-300 text-xs">Many matches found. Add a middle name, initial or birth year to narrow results.</p></div>}
         {showMoreBtn()}
         {visibleResults.map((r, i) => {
           const score = r._score !== undefined ? r._score : 50;
           const conf = confidenceLabel(score);
-          const confColor = conf === 'Probable Match' ? 'text-green-400' : conf === 'Possible Match' ? 'text-yellow-400' : 'text-gray-400';
+          const confColor = conf === 'Probable Match' ? 'text-green-400' : conf === 'Potential Match' ? 'text-yellow-400' : 'text-gray-400';
           return (
             <div key={i} onClick={() => setSsdiDrawer(r)} className="mb-2 pb-2 border-b border-white/10 last:border-0 cursor-pointer hover:bg-white/5 rounded px-1 transition-colors">
               <div className="flex items-start justify-between">
@@ -1115,7 +1113,6 @@ function App() {
               {r.birth_date && <p className="text-gray-400 text-xs">DOB: {r.birth_date}</p>}
               {r.death_date ? <p className="text-white text-xs font-semibold">DOD: {r.death_date}</p> : <p className="text-gray-600 text-lg italic">Not found in SSDI (thru 2014)</p>}
               {r.state && <p className="text-gray-400 text-xs">State: {r.state}</p>}
-              <p className="text-gray-500 text-xs">SSDI (thru 2014)</p>
             </div>
           );
         })}
@@ -1156,14 +1153,26 @@ function App() {
       return true;
     })();
 
+    const topSsdiResult = ssdiResults && ssdiResults[0];
+    const ssdiDeceased = !!(topSsdiResult && topSsdiResult.death_date) ||
+      !!(topSsdiResult && topSsdiResult.birth_date && parseInt(extractYear(topSsdiResult.birth_date)||'0') > 0 && parseInt(extractYear(topSsdiResult.birth_date)||'0') < DECEASED_BIRTH_YEAR_THRESHOLD);
+    const isWikiDeceased = !!(profile && profile.deathDate);
+    const isDeceased = isWikiDeceased || ssdiDeceased;
+    const notFound = !profile || profile.notFound === true || (!profile.title && !profile.extract);
+    const hasSSdi = ssdiResults && ssdiResults.length > 0;
+    const showWikiBio = (!notFound) && (wikiMatchConfident || isWikiDeceased);
+    const showBanner = showWikiBio || (!hasSSdi && notFound);
+    const bannerBg = isWikiDeceased ? 'bg-gray-800' : (!notFound && wikiMatchConfident ? 'bg-green-700' : 'bg-blue-700');
+    const bannerText = isWikiDeceased ? 'Passed Away' : (!notFound && wikiMatchConfident ? 'Likely Alive' : 'Not Found');
+
     if (profile && profile.isDisambiguation === true) {
       if (selectedDisambig) {
-        const isDeceased = selectedDisambig.deathDate;
+        const selDeceased = selectedDisambig.deathDate;
         return (
           <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
-            <div className={'px-5 py-3 text-center ' + (isDeceased ? 'bg-gray-800' : 'bg-green-700')}>
+            <div className={'px-5 py-3 text-center ' + (selDeceased ? 'bg-gray-800' : 'bg-green-700')}>
               <p className="text-white font-black text-xl">{selectedDisambig.title}</p>
-              <p className="text-white/80 text-lg">{isDeceased ? 'Passed Away' : 'Likely Alive'}</p>
+              <p className="text-white/80 text-lg">{selDeceased ? 'Passed Away' : 'Likely Alive'}</p>
               <button onClick={() => setSelectedDisambig(null)} className="text-white/60 text-sm underline mt-1">Back</button>
             </div>
             <div className="bg-gray-900/70 p-4">
@@ -1172,13 +1181,13 @@ function App() {
                 <div className="flex-1">
                   <h2 className="text-white text-xl font-bold mb-1">{selectedDisambig.title}</h2>
                   {selectedDisambig.birthDate && <p className="text-red-300 text-xl font-bold">DOB: {selectedDisambig.birthDate}</p>}
-                  {isDeceased && selectedDisambig.deathDate && selectedDisambig.deathDate !== 'deceased' && <p className="text-gray-300 text-xl font-bold">DOD: {selectedDisambig.deathDate}</p>}
+                  {selDeceased && selectedDisambig.deathDate && selectedDisambig.deathDate !== 'deceased' && <p className="text-gray-300 text-xl font-bold">DOD: {selectedDisambig.deathDate}</p>}
                   <p className="text-red-400 text-lg italic mt-1">{selectedDisambig.description}</p>
                 </div>
               </div>
               {selectedDisambig.extract && <p className="text-gray-100 text-lg leading-relaxed mb-3">{selectedDisambig.extract}</p>}
-              <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} middleFallback={watchlistCheck && watchlistCheck.middleFallback} />
-              {isDeceased ? (
+              <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} />
+              {selDeceased ? (
                 <div className="space-y-2 mt-2">
                   {!isOnWatchlist(selectedDisambig.title) && (
                     <button onClick={async () => {
@@ -1213,7 +1222,7 @@ function App() {
           <div className="px-5 py-2 bg-yellow-600"><span className="text-white font-black tracking-widest text-lg">MULTIPLE MATCHES</span></div>
           <div className="bg-gray-900/70 p-4">
             <p className="text-gray-300 text-lg mb-1">Several people share this name.</p>
-            <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} middleFallback={watchlistCheck && watchlistCheck.middleFallback} />
+            <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} />
             <div className="space-y-2">
               {(profile.matches || []).map((m, i) => (
                 <button key={i} onClick={() => setSelectedDisambig(m)} className="w-full p-3 bg-gray-800/60 border border-red-900/30 rounded-xl text-left">
@@ -1240,14 +1249,6 @@ function App() {
       );
     }
 
-    const isDeceased = profile && profile.deathDate;
-    const notFound = !profile || profile.notFound === true || (!profile.title && !profile.extract);
-    const hasSSdi = ssdiResults && ssdiResults.length > 0;
-    const showWikiBio = (!notFound) && (wikiMatchConfident || isDeceased);
-    const showBanner = showWikiBio || (!hasSSdi && notFound);
-    const bannerBg = isDeceased ? 'bg-gray-800' : (!notFound && wikiMatchConfident ? 'bg-green-700' : 'bg-blue-700');
-    const bannerText = isDeceased ? 'Passed Away' : (!notFound && wikiMatchConfident ? 'Likely Alive' : 'Not Found');
-
     return (
       <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
         {showBanner && <div className={'px-5 py-3 text-center ' + bannerBg}>
@@ -1269,10 +1270,29 @@ function App() {
               {profile.extract && <p className="text-gray-100 text-lg leading-relaxed mb-3">{profile.extract}</p>}
             </>
           )}
-          {!notFound && !wikiMatchConfident && !isDeceased && !nw.middle && <div className="mb-3 p-2 bg-yellow-900/20 border border-yellow-700/30 rounded-lg"><p className="text-yellow-300 text-xs">Wikipedia found a "{profile.title}" but details don't fully match your search. SSDI records may be a better fit.</p></div>}
-          {!isDeceased && noMiMatches && <div className="mb-3 p-2 bg-yellow-900/20 border border-yellow-700/30 rounded-lg"><p className="text-yellow-300 text-xs">No records found in SSDI with middle initial "{nw.middle}". This person may not be in SSDI, or their middle initial wasn't recorded.</p></div>}
-          {!isDeceased && <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} middleFallback={watchlistCheck && watchlistCheck.middleFallback} />}
-          {isDeceased && (
+          {!notFound && !wikiMatchConfident && !isWikiDeceased && !nw.middle && <div className="mb-3 p-2 bg-yellow-900/20 border border-yellow-700/30 rounded-lg"><p className="text-yellow-300 text-xs">Wikipedia found a "{profile.title}" but details don't fully match your search. SSDI records may be a better fit.</p></div>}
+          {!isWikiDeceased && noMiMatches && <div className="mb-3 p-2 bg-yellow-900/20 border border-yellow-700/30 rounded-lg"><p className="text-yellow-300 text-xs">No records found in SSDI with middle initial "{nw.middle}". This person may not be in SSDI, or their middle initial wasn't recorded.</p></div>}
+          {!isWikiDeceased && <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} />}
+          {ssdiDeceased && !isWikiDeceased && (
+            <div className="space-y-2 mt-2 border-t border-white/10 pt-2">
+              {fullNameStatus
+                ? <p className="w-full py-2.5 text-center text-green-400 text-xl font-bold">Already in your {fullNameStatus}</p>
+                : <>
+                    <button onClick={saveSearchedNameToMemories} disabled={loadingMem} className="w-full py-4 bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white rounded-xl font-bold text-xl flex items-center justify-center gap-2 disabled:opacity-50">
+                      <PlusIcon /> {loadingMem ? 'Saving...' : 'Save "' + buildFullName() + '" to Memories'}
+                    </button>
+                    <button onClick={addSearchedNameToWatchlist} disabled={loadingWl} className="w-full py-2 bg-gray-700/60 border border-gray-500/40 text-gray-200 rounded-xl text-lg flex items-center justify-center gap-2 disabled:opacity-50">
+                      <PlusIcon /> {loadingWl ? 'Adding...' : 'Add to Watchlist instead'}
+                    </button>
+                  </>
+              }
+              <button onClick={() => { setWatchlistChecked(false); setWatchlistCheck(null); setSelectedDisambig(null); setSsdiPage(1); window.scrollTo(0,0); }} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-lg text-center flex items-center justify-center gap-2">
+                <EditIcon /> Edit Name
+              </button>
+              <button onClick={clearWatchlistCheck} className="w-full py-1.5 text-white/40 text-lg text-center">Search for another name</button>
+            </div>
+          )}
+          {isWikiDeceased && (
             <>
               <div className="p-2 bg-gray-700/50 border border-gray-600/30 rounded-xl mb-3">
                 <p className="text-gray-200 text-lg text-center">This person has passed away.{profile.deathDate && profile.deathDate !== 'deceased' ? ' DOD: ' + profile.deathDate : ''}</p>
@@ -1303,22 +1323,9 @@ function App() {
           {!isDeceased && (
             <div className="space-y-2 mt-2 border-t border-white/10 pt-2">
               {hasSSdi && <p className="text-gray-400 text-lg text-center">Tap a name above to add to your list, or:</p>}
-              {(() => {
-                var topResult = ssdiResults && ssdiResults[0];
-                var topByear = topResult && topResult.birth_date ? (parseInt(extractYear(topResult.birth_date)) || null) : null;
-                var topPassed = topResult && (!!(topResult.death_date) || (topByear && topByear < DECEASED_BIRTH_YEAR_THRESHOLD));
-                var allPassed = ssdiResults && ssdiResults.length > 0 && ssdiResults.every(function(res) {
-                  var by = res.birth_date ? (parseInt(extractYear(res.birth_date)) || null) : null;
-                  return !!(res.death_date) || (by && by < DECEASED_BIRTH_YEAR_THRESHOLD);
-                });
-                if (fullNameStatus) return <p className="w-full py-2.5 text-center text-green-400 text-xl font-bold">Already in your {fullNameStatus}</p>;
-                if ((topPassed || allPassed) && hasSSdi) return (
-                  <button onClick={saveSearchedNameToMemories} disabled={loadingMem} className="w-full py-4 bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white rounded-xl font-bold text-xl flex items-center justify-center gap-2 disabled:opacity-50">
-                    <PlusIcon /> {loadingMem ? 'Saving...' : 'Save "' + buildFullName() + '" to Memories'}
-                  </button>
-                );
-                return (
-                  <>
+              {fullNameStatus
+                ? <p className="w-full py-2.5 text-center text-green-400 text-xl font-bold">Already in your {fullNameStatus}</p>
+                : <>
                     <button onClick={addSearchedNameToWatchlist} disabled={loadingWl} className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xl flex items-center justify-center gap-2 disabled:opacity-50">
                       <PlusIcon /> {loadingWl ? 'Adding...' : 'Add "' + buildFullName() + '" to Watchlist'}
                     </button>
@@ -1326,8 +1333,7 @@ function App() {
                       <PlusIcon /> {loadingMem ? 'Saving...' : 'Save to Memories instead'}
                     </button>
                   </>
-                );
-              })()}
+              }
               {!hasSSdi && notFound && <p className="text-gray-300 text-lg leading-relaxed text-center">We found nothing on {buildFullName()} at this time. Try adding a middle initial, suffix, or birth year.</p>}
               <button onClick={() => { setWatchlistChecked(false); setWatchlistCheck(null); setSelectedDisambig(null); setSsdiPage(1); window.scrollTo(0,0); document.documentElement.scrollTop = 0; document.body.scrollTop = 0; }} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-lg text-center flex items-center justify-center gap-2">
                 <EditIcon /> Edit Name
@@ -1407,7 +1413,7 @@ function App() {
                           {dob && <p className="text-gray-300 text-lg">DOB: {dob}</p>}
                           {deathYear && <p className="text-gray-300 text-lg">DOD: {deathYear}</p>}
                           {location && <p className="text-gray-300 text-lg">Location: {location}</p>}
-                          {!dob && !deathYear && !location && <p className="text-gray-400 text-lg mt-1">No additional details on file.</p>}
+                          {!dob && !deathYear && !location && <p className="text-gray-400 text-lg mt-1">No additional information available at this time.</p>}
                           <p className="text-gray-500 text-sm mt-2">No Wikipedia or SSDI record found.</p>
                         </div>
                       );
@@ -1417,7 +1423,7 @@ function App() {
                 {!isMemory && (
                   <>
                     {noWikiInfo && (!ssdiResults || ssdiResults.length === 0) ? (
-                      <div className="text-center py-3 mb-3"><p className="text-gray-400 text-lg">No public records found. Monitoring for changes.</p></div>
+                      <div className="text-center py-3 mb-3"><p className="text-gray-400 text-lg">No public records found. Watching for new information.</p></div>
                     ) : noWikiInfo ? null : profile && (
                       <>
                         <div className={'px-4 py-3 rounded-xl mb-3 text-center ' + (profile.deathDate ? 'bg-gray-700' : profile.isDisambiguation ? 'bg-yellow-600' : 'bg-green-700')}>
@@ -1448,7 +1454,7 @@ function App() {
                           const exactMatch = r.first_name && r.last_name && r.first_name.toUpperCase() === drawerFirst.toUpperCase() && r.last_name.toUpperCase() === drawerLast.toUpperCase();
                           const score = (ssdiResults.length === 1 || exactMatch) ? 95 : rawScore;
                           const conf = confidenceLabel(score);
-                          const confColor = conf === 'Probable Match' ? 'text-green-400' : conf === 'Possible Match' ? 'text-yellow-400' : 'text-gray-400';
+                          const confColor = conf === 'Probable Match' ? 'text-green-400' : conf === 'Potential Match' ? 'text-yellow-400' : 'text-gray-400';
                           return (
                             <div key={i} onClick={() => { setDrawerData(null); setSsdiDrawer(r); }} className="mb-2 pb-2 border-b border-white/10 last:border-0 cursor-pointer hover:bg-white/5 rounded px-1 transition-colors">
                               <div className="flex items-start justify-between">
