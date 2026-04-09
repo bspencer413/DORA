@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.4.36';
+const APP_VERSION = '1.4.37';
 const DECEASED_BIRTH_YEAR_THRESHOLD = new Date().getFullYear() - 100;
 const SSDI_CACHE_KEY = 'doa_ssdi_cache';
 
@@ -303,7 +303,7 @@ const PageWrapper = ({ children, bgStyle }) => {
   var bg = bgStyle || POSTER_STYLE;
   var isListPage = bg === WOOD_STYLE;
   return (
-  <div style={{ minHeight: '100dvh', width: '100%', position: 'relative', paddingBottom: '5rem', backgroundColor: bg.backgroundColor, backgroundImage: bg.backgroundImage || 'none', backgroundSize: bg.backgroundSize || 'auto', backgroundPosition: bg.backgroundPosition || 'top', backgroundRepeat: bg.backgroundRepeat || 'no-repeat', backgroundAttachment: bg.backgroundAttachment || 'scroll' }}>
+  <div style={{ minHeight: '100dvh', width: '100%', position: 'relative', paddingBottom: '7rem', backgroundColor: bg.backgroundColor, backgroundImage: bg.backgroundImage || 'none', backgroundSize: bg.backgroundSize || 'auto', backgroundPosition: bg.backgroundPosition || 'top', backgroundRepeat: bg.backgroundRepeat || 'no-repeat', backgroundAttachment: bg.backgroundAttachment || 'scroll' }}>
     {isListPage && <div style={{ position: 'fixed', inset: 0, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', backgroundColor: 'rgba(10,4,0,0.55)', zIndex: 0 }} />}
     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: isListPage ? 'transparent' : 'rgba(0,0,0,0.22)' }} />
     <div style={{ position: 'relative', zIndex: 10 }}>{children}</div>
@@ -1574,7 +1574,7 @@ function App() {
 
         {page === 'search' && (
           <div className="space-y-3" style={{ paddingTop: PT }}>
-            <div className={cardClass}>
+            <div className={cardClass} style={{ overflowY: 'auto', maxHeight: 'calc(100dvh - ' + PT + ' - 6rem)' }}>
               <div className="mb-1 pb-1 border-b border-red-900/30 text-center">
                 <p className="text-red-300 text-3xl font-bold italic whitespace-nowrap">Whatever happened to...</p>
               </div>
@@ -1664,17 +1664,17 @@ function App() {
                 <h2 className="text-3xl font-black text-white tracking-wide">Dead or Alive</h2>
                 <button onClick={() => { clearWatchlistCheck(); setPage('search'); }} className="absolute right-3 top-3 flex flex-col items-center text-white hover:text-red-400 transition-colors"><SearchIcon /><span className="text-xs">Search</span></button>
               </div>
-              <p className="text-red-300 italic text-lg text-center mb-3">v{APP_VERSION}</p>
+              <p className="text-red-300 italic text-xl text-center mb-3">v{APP_VERSION}</p>
               <div className="flex items-center gap-4 mb-4">
                 <img src={BILL_PHOTO} alt="Bill Spencer" className="w-14 h-14 rounded-full object-cover border-2 border-red-600 shadow-lg shrink-0" />
                 <div>
-                  <p className="font-bold text-white text-lg">Bill Spencer</p>
-                  <p className="text-red-400 italic text-lg">Idea Hamster</p>
-                  <a href="mailto:bspencer413@me.com" className="text-red-400 text-lg mt-1 block">bspencer413@me.com</a>
+                  <p className="font-bold text-white text-xl">Bill Spencer</p>
+                  <p className="text-red-400 italic text-xl">Idea Hamster</p>
+                  <a href="mailto:bspencer413@me.com" className="text-red-400 text-xl mt-1 block">bspencer413@me.com</a>
                 </div>
               </div>
               <p className="text-red-200 text-xl font-bold italic mb-3">Whatever happened to...</p>
-              <div className="space-y-3 text-gray-200 text-lg leading-relaxed">
+              <div className="space-y-3 text-gray-200 text-xl leading-relaxed">
                 <p>As I get older, I look at the obituaries and wonder about old friends. Did they make it? Are they still out there? "Google it!", they say. They don't know my eyes and fingers.</p>
                 <p>So I built Dead or Alive to help you find out whatever happened to long-lost friends, family and even notable people.</p>
                 <p>No games, no search-and-pay, no ads and no more search engine frustration.</p>
@@ -1683,14 +1683,14 @@ function App() {
             <div className={cardClass}>
               <h3 className="text-white text-xl font-bold mb-4 text-center">How it works</h3>
               <div className="space-y-4">
-                <div className="flex gap-3 items-start"><span className="text-red-400 text-xl font-black w-7 shrink-0">1.</span><div><p className="text-white text-lg font-semibold">Search</p><p className="text-gray-300 text-lg">Type a name to find out if someone has passed. We search Wikipedia and the SSDI, which is current through 2014.</p></div></div>
-                <div className="flex gap-3 items-start"><span className="text-red-400 text-xl font-black w-7 shrink-0">2.</span><div><p className="text-white text-lg font-semibold">Watchlist</p><p className="text-gray-300 text-lg">Add living people to your Watchlist and we'll notify you the moment they pass away.</p></div></div>
-                <div className="flex gap-3 items-start"><span className="text-red-400 text-xl font-black w-7 shrink-0">3.</span><div><p className="text-white text-lg font-semibold">Memories</p><p className="text-gray-300 text-lg">People you've confirmed have passed are saved here for future reference.</p></div></div>
+                <div className="flex gap-3 items-start"><span className="text-red-400 text-xl font-black w-7 shrink-0">1.</span><div><p className="text-white text-xl font-semibold">Search</p><p className="text-gray-300 text-xl">Type a name to find out if someone has passed. We search Wikipedia and the SSDI, which is current through 2014.</p></div></div>
+                <div className="flex gap-3 items-start"><span className="text-red-400 text-xl font-black w-7 shrink-0">2.</span><div><p className="text-white text-xl font-semibold">Watchlist</p><p className="text-gray-300 text-xl">Add living people to your Watchlist and we'll notify you the moment they pass away.</p></div></div>
+                <div className="flex gap-3 items-start"><span className="text-red-400 text-xl font-black w-7 shrink-0">3.</span><div><p className="text-white text-xl font-semibold">Memories</p><p className="text-gray-300 text-xl">People you've confirmed have passed are saved here for future reference.</p></div></div>
               </div>
             </div>
             <div className={cardClass}>
               <h3 className="text-white text-xl font-bold mb-3">About Alerts</h3>
-              <div className="space-y-2 text-gray-200 text-lg leading-relaxed">
+              <div className="space-y-2 text-gray-200 text-xl leading-relaxed">
                 <p>When we find new information about someone on your Watchlist, you'll receive an Alert.</p>
                 <p><strong className="text-white">View</strong> -- opens their profile with the latest information.</p>
                 <p><strong className="text-white">Keep</strong> -- saves this person to your Memories and removes them from your Watchlist.</p>
@@ -1699,30 +1699,30 @@ function App() {
             </div>
             <div className={cardClass}>
               <h3 className="font-bold text-white mb-1 text-xl">Privacy Policy</h3>
-              <p className="text-gray-400 text-lg mb-3">Last updated: March 2026</p>
-              <div className="space-y-3 text-gray-200 text-lg leading-relaxed">
+              <p className="text-gray-400 text-xl mb-3">Last updated: March 2026</p>
+              <div className="space-y-3 text-gray-200 text-xl leading-relaxed">
                 <p><strong className="text-white">Information We Collect:</strong> Your email address, watchlist names, search queries, and anonymous usage data.</p>
                 <p><strong className="text-white">How We Use It:</strong> We do not sell your personal information. Ever.</p>
                 <p><strong className="text-white">Data Sources:</strong> Search results are powered by Wikipedia and the Social Security Death Index.</p>
                 <p><strong className="text-white">Your Rights:</strong> You may delete your account and all data at any time.</p>
                 <p><strong className="text-white">Minor Protection:</strong> Dead or Alive is not intended for searching individuals under 18 years of age.</p>
                 <p><strong className="text-white">Disclaimer:</strong> Information is provided for research purposes only. Dead or Alive makes no guarantee of accuracy. Do not rely on this service as confirmation of death.</p>
-                <a href="mailto:bspencer413@me.com" className="text-red-400 text-lg">bspencer413@me.com</a>
+                <a href="mailto:bspencer413@me.com" className="text-red-400 text-xl">bspencer413@me.com</a>
               </div>
             </div>
             <div className="px-1 space-y-3 pb-2">
-              <div className="p-3 bg-black/30 rounded-xl"><p className="font-medium text-gray-200 text-lg text-center">{user && user.email}</p></div>
+              <div className="p-3 bg-black/30 rounded-xl"><p className="font-medium text-gray-200 text-xl text-center">{user && user.email}</p></div>
               <button onClick={doLogout} className="w-full py-4 bg-red-700 hover:bg-red-800 text-white rounded-xl text-xl font-bold">Sign Out</button>
-              <button onClick={() => setShowDangerZone(!showDangerZone)} className="w-full py-3 text-gray-500 text-lg text-center">{showDangerZone ? 'Hide' : 'Account Removal'}</button>
+              <button onClick={() => setShowDangerZone(!showDangerZone)} className="w-full py-3 text-gray-500 text-xl text-center">{showDangerZone ? 'Hide' : 'Account Removal'}</button>
               {showDangerZone && (
                 <div className="space-y-3">
                   {!showDeleteConfirm
-                    ? <button onClick={() => setShowDeleteConfirm(true)} className="w-full py-4 bg-gray-900/70 border border-red-800 text-red-500 rounded-xl text-lg">Delete Account</button>
+                    ? <button onClick={() => setShowDeleteConfirm(true)} className="w-full py-4 bg-gray-900/70 border border-red-800 text-red-500 rounded-xl text-xl">Delete Account</button>
                     : <div className="bg-red-950/90 border border-red-800 rounded-2xl p-5 space-y-3">
-                        <h3 className="font-bold text-red-400 text-lg">Are you sure?</h3>
-                        <p className="text-red-300 text-lg">This will permanently delete your account and all data.</p>
-                        <button onClick={doDeleteAccount} className="w-full py-4 bg-red-700 text-white rounded-xl font-bold text-lg">Yes, Permanently Delete My Account</button>
-                        <button onClick={() => { setShowDeleteConfirm(false); setShowDangerZone(false); }} className="w-full py-4 bg-gray-800 border border-gray-600 text-gray-300 rounded-xl font-medium text-lg">Cancel</button>
+                        <h3 className="font-bold text-red-400 text-xl">Are you sure?</h3>
+                        <p className="text-red-300 text-xl">This will permanently delete your account and all data.</p>
+                        <button onClick={doDeleteAccount} className="w-full py-4 bg-red-700 text-white rounded-xl font-bold text-xl">Yes, Permanently Delete My Account</button>
+                        <button onClick={() => { setShowDeleteConfirm(false); setShowDangerZone(false); }} className="w-full py-4 bg-gray-800 border border-gray-600 text-gray-300 rounded-xl font-medium text-xl">Cancel</button>
                       </div>
                   }
                 </div>
@@ -1759,4 +1759,4 @@ function App() {
 ReactDOM.render(React.createElement(App), document.getElementById('root'));
 </script>
 </body>
-</html>
+</html>a
