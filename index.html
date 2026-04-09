@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.4.40';
+const APP_VERSION = '1.4.41';
 const DECEASED_BIRTH_YEAR_THRESHOLD = new Date().getFullYear() - 100;
 const SSDI_CACHE_KEY = 'doa_ssdi_cache';
 
@@ -790,7 +790,7 @@ function App() {
       const wikiResult = await fetchWikiProfile(name).catch(() => ({ isDisambiguation: false, notFound: true }));
       const profile = wikiResult || { isDisambiguation: false, notFound: true };
       const isWikiDeceased = !!(profile && profile.deathDate);
-      if (!isWikiDeceased && (hasMi || hasDob)) {
+      if (!isWikiDeceased) {
         try {
           const ssdiResp = await fetch(API_BASE + '/ssdi/search?' + params.toString(), { headers: { 'Authorization': 'Bearer ' + token } })
             .then(r => r.ok ? r.json() : { results: [], has_more: false })
@@ -1273,7 +1273,7 @@ function App() {
           )}
           {!notFound && !wikiMatchConfident && !isWikiDeceased && !nw.middle && <div className="mb-3 p-2 bg-yellow-900/20 border border-yellow-700/30 rounded-lg"><p className="text-yellow-300 text-xs">Wikipedia found a "{profile.title}" but details don't fully match your search. SSDI records may be a better fit.</p></div>}
           {!isWikiDeceased && noMiMatches && <div className="mb-3 p-2 bg-yellow-900/20 border border-yellow-700/30 rounded-lg"><p className="text-yellow-300 text-xs">No records found in SSDI with middle initial "{nw.middle}". This person may not be in SSDI, or their middle initial wasn't recorded.</p></div>}
-          {!isWikiDeceased && <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} />}
+          {!isWikiDeceased && !wikiMatchConfident && <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} />}
           {ssdiDeceased && !isWikiDeceased && (
             <div className="space-y-2 mt-2 border-t border-white/10 pt-2">
               {fullNameStatus
