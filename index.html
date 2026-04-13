@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.4.41';
+const APP_VERSION = '1.4.42';
 const DECEASED_BIRTH_YEAR_THRESHOLD = new Date().getFullYear() - 100;
 const SSDI_CACHE_KEY = 'doa_ssdi_cache';
 
@@ -312,19 +312,18 @@ const PageWrapper = ({ children, bgStyle }) => {
   );
 };
 
+// ── CHANGE 1: hasBornOnly expanded, isPastTense tightened, return simplified ──
 function isDeceasedCheck(extract, description, deathDate, type) {
   if (type === 'disambiguation') return false;
   if (deathDate) return true;
   const firstSentence = extract ? extract.split('.')[0] : '';
   const hasDeathInBrackets = /\(\d{4}\s*[-\u2013\u2014]+\s*\d{4}\)/.test(firstSentence);
-  const hasYearsInDescription = /\(\d{4}\s*[-\u2013\u2014]+\s*\d{4}\)/.test(description);
-  const hasBornOnly = /\([^)]*born\s+\w+\s+\d+,\s+\d{4}\)/.test(firstSentence);
-  if (hasBornOnly && !hasDeathInBrackets && !hasYearsInDescription) return false;
-  const isPastTense = /^[^.]*\bwas (an?|the)\b[^.]*\./.test(extract) && !/\([^)]*born/.test(firstSentence) && !/born\s+\d{4}/.test(description);
-  const diedInExtract = /\b(died|death|passed away|deceased|d\.)\b/i.test(extract);
-  const diedInDescription = /\b(died|death|deceased)\b/i.test(description);
-  const yearRangeInDesc = /\(\d{4}[-\u2013\u2014]+\d{4}\)/.test(description);
-  return hasDeathInBrackets || hasYearsInDescription || yearRangeInDesc || isPastTense || diedInExtract || diedInDescription;
+  const hasBornOnly = /\([^)]*born\s+\w+\s+\d+,\s+\d{4}\)/.test(firstSentence) || /\([^)]*born\s+\d{4}\)/.test(firstSentence);
+  if (hasBornOnly) return false;
+  const isPastTense = /^[^.]*\bwas (an?|the)\b[^.]*\./.test(extract) && !/\([^)]*born/.test(firstSentence) && !/born\s+\d{4}/.test(description) && !/\b(serves|serving|since|has served|has been|retired)\b/i.test(extract);
+  const diedInFirstSentence = /\b(died|passed away|deceased)\b/i.test(firstSentence);
+  const diedInDescription = /\b(died|passed away|deceased)\b/i.test(description);
+  return hasDeathInBrackets || isPastTense || diedInFirstSentence || diedInDescription;
 }
 
 const SsdiRecordBlock = ({ r }) => {
@@ -380,6 +379,8 @@ function App() {
   const [apiVersion, setApiVersion] = useState('...');
   const [ssdiDrawer, setSsdiDrawer] = useState(null);
   const [ssdiPage, setSsdiPage] = useState(1);
+  // CHANGE 4: showMoreFields state
+  const [showMoreFields, setShowMoreFields] = useState(false);
 
   useEffect(() => {
     fetch(API_BASE + '/health').then(r => r.json()).then(d => setApiVersion(d.version || '?')).catch(() => setApiVersion('?'));
@@ -528,6 +529,7 @@ function App() {
 
   const clearSearch = () => { setSName(''); setSLoc(''); setSBirthYear(''); setWikiProfile(null); setResults([]); setSearched(false); setSelectedDisambig(null); };
 
+  // CHANGE 5: clearWatchlistCheck resets showMoreFields
   const clearWatchlistCheck = () => {
     setWatchlistCheck(null);
     setWatchlistChecked(false);
@@ -535,6 +537,7 @@ function App() {
     setSelectedDisambig(null);
     setSsdiPage(1);
     setSsdiDrawer(null);
+    setShowMoreFields(false);
   };
 
   const fetchWikiAction = async (name) => {
@@ -560,6 +563,9 @@ function App() {
         birthDate = sum.birth_date || null;
         deathDate = sum.death_date || null;
         description = sum.description || '';
+        // CHANGE 2: isNotPerson check
+        const isNotPerson = /\b(film|movie|album|song|television|TV series|video game|book|novel)\b/i.test(description) && !birthDate;
+        if (isNotPerson) return null;
       } catch(e) {}
       if (!deathDate || deathDate.length <= 4) {
         const months = 'January|February|March|April|May|June|July|August|September|October|November|December';
@@ -571,7 +577,10 @@ function App() {
         const yr = parseInt(extractYear(deathDate) || '0');
         if (!yr || yr < 1900 || yr > 2030) deathDate = null;
       }
-      const deceased = deathFromCategory || !!deathDate || isDeceasedCheck(extract, description, deathDate, 'standard');
+      // CHANGE 3: isLikelyAlive block + updated deceased line
+      const isLikelyAlive = /\b(serving|serves|since|current|retired)\b/i.test(description) || /\bretired\b/i.test(extract) || /chief justice|associate justice/i.test(description) || /\bborn\b/i.test(extract.split('.')[0]);
+      if (isLikelyAlive) deathDate = null;
+      const deceased = deathFromCategory || (!!deathDate && !isLikelyAlive) || isDeceasedCheck(extract, description, deathDate, 'standard');
       return { title, extract, thumbnail, birthDate, deathDate: deceased ? (deathDate || 'deceased') : null, description, isDisambiguation: false, deathFromCategory };
     } catch(e) { return null; }
   };
@@ -1082,11 +1091,12 @@ function App() {
     );
   };
 
+  // CHANGE 6: SSDI cap at 20 results client-side
   const SSIDResultsBlock = ({ ssdiResults, searchFirst, searchMiddle, searchLast, searchBirthYear, searchSuffix, apiHasMore, onLoadMore, birthYearFallback }) => {
     if (!ssdiResults || ssdiResults.length === 0) return null;
     const tooMany = ssdiResults.length >= 10 && !searchMiddle && !searchBirthYear;
-    const visibleResults = ssdiResults.slice(0, ssdiPage * 10);
-    const clientHasMore = ssdiResults.length > visibleResults.length;
+    const visibleResults = ssdiResults.slice(0, ssdiPage * 10, 20);
+    const clientHasMore = ssdiResults.length > visibleResults.length && visibleResults.length < 20;
     const showMoreBtn = () => (clientHasMore || apiHasMore) ? (
       <button onClick={() => { if (clientHasMore) setSsdiPage(p => p + 1); else if (onLoadMore) onLoadMore(); }} disabled={ssdiLoadingMore} className="w-full py-2.5 bg-gray-700 border border-red-800/50 text-white rounded-xl text-xl font-bold mt-1 mb-1">
         {ssdiLoadingMore ? 'Loading...' : 'Show 10 more \u2193'}
@@ -1158,7 +1168,8 @@ function App() {
     const ssdiDeceased = !!(topSsdiResult && topSsdiResult.death_date) ||
       !!(topSsdiResult && topSsdiResult.birth_date && parseInt(extractYear(topSsdiResult.birth_date)||'0') > 0 && parseInt(extractYear(topSsdiResult.birth_date)||'0') < DECEASED_BIRTH_YEAR_THRESHOLD);
     const isWikiDeceased = !!(profile && profile.deathDate);
-    const isDeceased = isWikiDeceased || ssdiDeceased;
+    // CHANGE 5: isDeceased respects wikiMatchConfident to prevent false SSDI deceased flag
+    const isDeceased = (profile && profile.deathDate) || (ssdiDeceased && !wikiMatchConfident);
     const notFound = !profile || profile.notFound === true || (!profile.title && !profile.extract);
     const hasSSdi = ssdiResults && ssdiResults.length > 0;
     const showWikiBio = (!notFound) && (wikiMatchConfident || isWikiDeceased);
@@ -1274,7 +1285,8 @@ function App() {
           {!notFound && !wikiMatchConfident && !isWikiDeceased && !nw.middle && <div className="mb-3 p-2 bg-yellow-900/20 border border-yellow-700/30 rounded-lg"><p className="text-yellow-300 text-xs">Wikipedia found a "{profile.title}" but details don't fully match your search. SSDI records may be a better fit.</p></div>}
           {!isWikiDeceased && noMiMatches && <div className="mb-3 p-2 bg-yellow-900/20 border border-yellow-700/30 rounded-lg"><p className="text-yellow-300 text-xs">No records found in SSDI with middle initial "{nw.middle}". This person may not be in SSDI, or their middle initial wasn't recorded.</p></div>}
           {!isWikiDeceased && !wikiMatchConfident && <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} />}
-          {ssdiDeceased && !isWikiDeceased && (
+          {/* CHANGE 5b: added !wikiMatchConfident guard to prevent alive-confirmed SSDI false positive */}
+          {ssdiDeceased && !isWikiDeceased && !wikiMatchConfident && (
             <div className="space-y-2 mt-2 border-t border-white/10 pt-2">
               {fullNameStatus
                 ? <p className="w-full py-2.5 text-center text-green-400 text-xl font-bold">Already in your {fullNameStatus}</p>
@@ -1581,13 +1593,21 @@ function App() {
               </div>
               {watchlistChecking && <p className="text-white text-center py-4 animate-pulse">Searching...</p>}
               {!watchlistChecked ? (
+                // CHANGE 7: Search button moved above optional fields
                 <div className="space-y-3">
                   <ClearableInput value={nw.name} onChange={(e) => setNw(Object.assign({}, nw, { name: e.target.value }))} onBlur={(e) => setNw(Object.assign({}, nw, { name: toTitleCase(e.target.value.trim()) }))} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="First and Last Name *" inputClass={iClass} noAutoCorrect={true} />
-                  <ClearableInput value={nw.middle} onChange={(e) => setNw(Object.assign({}, nw, { middle: e.target.value }))} onBlur={(e) => { var v = e.target.value.trim(); if (v.length === 1) setNw(Object.assign({}, nw, { middle: v.toUpperCase() })); }} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Middle Name or Initial -- Helpful" inputClass={iClass} noAutoCorrect={true} />
-                  <ClearableInput value={nw.suffix} onChange={(e) => setNw(Object.assign({}, nw, { suffix: e.target.value }))} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Suffix: Jr., Sr., MD, III" inputClass={iClass} noAutoCorrect={true} />
-                  <ClearableInput value={nw.birthYear} onChange={(e) => setNw(Object.assign({}, nw, { birthYear: e.target.value.replace(/\D/g, '').slice(0, 4) }))} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Birth Year -- Helpful" maxLength={4} inputClass={iClass} numeric={true} />
-                  <ClearableInput value={nw.location} onChange={(e) => setNw(Object.assign({}, nw, { location: e.target.value }))} onBlur={(e) => setNw(Object.assign({}, nw, { location: toTitleCase(e.target.value.trim()) }))} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Location -- City, State or Country" inputClass={iClass} noAutoCorrect={true} />
                   <button onClick={checkWatch} disabled={watchlistChecking} className="w-full py-3 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 text-xl font-bold"><SearchIcon /> {watchlistChecking ? 'Searching...' : 'Search'}</button>
+                  {!showMoreFields && (
+                    <button onClick={() => setShowMoreFields(true)} className="w-full py-2 bg-gray-800/60 border border-red-900/30 text-red-400 text-xl text-center rounded-lg">Add more details (optional)</button>
+                  )}
+                  {showMoreFields && (
+                    <>
+                      <ClearableInput value={nw.middle} onChange={(e) => setNw(Object.assign({}, nw, { middle: e.target.value }))} onBlur={(e) => { var v = e.target.value.trim(); if (v.length === 1) setNw(Object.assign({}, nw, { middle: v.toUpperCase() })); }} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Middle Name or Initial -- Helpful" inputClass={iClass} noAutoCorrect={true} />
+                      <ClearableInput value={nw.suffix} onChange={(e) => setNw(Object.assign({}, nw, { suffix: e.target.value }))} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Suffix: Jr., Sr., MD, III" inputClass={iClass} noAutoCorrect={true} />
+                      <ClearableInput value={nw.birthYear} onChange={(e) => setNw(Object.assign({}, nw, { birthYear: e.target.value.replace(/\D/g, '').slice(0, 4) }))} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Birth Year -- Helpful" maxLength={4} inputClass={iClass} numeric={true} />
+                      <ClearableInput value={nw.location} onChange={(e) => setNw(Object.assign({}, nw, { location: e.target.value }))} onBlur={(e) => setNw(Object.assign({}, nw, { location: toTitleCase(e.target.value.trim()) }))} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Location -- City, State or Country" inputClass={iClass} noAutoCorrect={true} />
+                    </>
+                  )}
                   <p className="text-gray-300 text-base text-center pt-1">Search Wikipedia and SSDI records</p>
                 </div>
               ) : (
