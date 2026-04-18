@@ -960,7 +960,7 @@ function App() {
             </div>
           </div>
           {!isDisambig && profile.extract && <p className="text-gray-100 text-lg leading-relaxed mb-3">{profile.extract}</p>}
-          {profile.deathDate && <div className="p-2 bg-gray-700/50 border border-gray-600/30 rounded-xl mb-3"><p className="text-gray-200 text-lg text-center">This person has passed away</p></div>}
+        {profile.deathDate && <div className="p-2 bg-gray-700/50 border border-gray-600/30 rounded-xl mb-3">{!wikiMatchConfident && <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} />}<p className="text-gray-200 text-lg text-center">This person has passed away</p></div>}
           {showAddButton && (
             <div className="space-y-2 mb-2">
               {!profile.deathDate && (alreadyWatching
