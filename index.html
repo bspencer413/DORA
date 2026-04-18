@@ -59,7 +59,7 @@ const SSDI_CACHE_KEY = 'doa_ssdi_cache';
 const isPhone = window.innerWidth < 500;
 const isTablet = window.innerWidth >= 500 && window.innerWidth < 1024;
 const PT = isPhone ? '41vh' : isTablet ? '46vh' : '44vh';
-const SEARCH_PT = isPhone ? '28vh' : isTablet ? '32vh' : '30vh';
+const SEARCH_PT = isPhone ? '34vh' : isTablet ? '32vh' : '30vh';
 
 const extractYear = (dateStr) => {
   if (!dateStr) return null;
@@ -578,8 +578,7 @@ function App() {
         if (!yr || yr < 1900 || yr > 2030) deathDate = null;
       }
       // CHANGE 3: isLikelyAlive block + updated deceased line
-      const isLikelyAlive = /\b(serving|serves|since|current|retired)\b/i.test(description) || /\bretired\b/i.test(extract) || /chief justice|associate justice/i.test(description) || /\bborn\b/i.test(extract.split('.')[0]);
-      if (isLikelyAlive) deathDate = null;
+      const isLikelyAlive = /\b(serving|serves|since|current|retired)\b/i.test(description) || /\bretired\b/i.test(extract) || /chief justice|associate justice/i.test(description) || (/\bborn\b/i.test(extract.split('.')[0]) && !/\(\d{4}[-\u2013\u2014]+\d{4}\)/.test(description));
       const deceased = (deathFromCategory && !isLikelyAlive) || (!!deathDate && !isLikelyAlive) || (!isLikelyAlive && isDeceasedCheck(extract, description, deathDate, 'standard'));
       return { title, extract, thumbnail, birthDate, deathDate: deceased ? (deathDate || 'deceased') : null, description, isDisambiguation: false, deathFromCategory };
     } catch(e) { return null; }
@@ -625,10 +624,14 @@ function App() {
         try { matches = await fetchDisambigMatches(result.title); } catch(e) {}
         return { isDisambiguation: true, title: result.title || name, matches: matches || [] };
       }
+      const searchWords = toTitleCase(name).toLowerCase().split(/\s+/);
+      const titleWords = (result.title || '').toLowerCase().replace(/\(.*\)/g, '').trim().split(/\s+/);
+      const searchLast = searchWords[searchWords.length - 1];
+      const titleLast = titleWords[titleWords.length - 1];
+      if (!fuzzyMatch(searchLast, titleLast)) return { isDisambiguation: false, notFound: true };
       return result;
     } catch(e) { return { isDisambiguation: false, notFound: true }; }
   };
-
   // ── openWatchlistDrawer: Wiki fires always; SSDI only if watchItem.dob exists ──
   const openWatchlistDrawer = async (watchItem) => {
     const isMemory = watchItem.is_deceased === true || watchItem.is_deceased === 1;
@@ -799,7 +802,8 @@ function App() {
       const wikiResult = await fetchWikiProfile(name).catch(() => ({ isDisambiguation: false, notFound: true }));
       const profile = wikiResult || { isDisambiguation: false, notFound: true };
       const isWikiDeceased = !!(profile && profile.deathDate);
-      if (!isWikiDeceased) {
+      const titleHasQualifier = profile && profile.title && /\(.*\)/.test(profile.title);
+      if (!isWikiDeceased || titleHasQualifier) {
         try {
           const ssdiResp = await fetch(API_BASE + '/ssdi/search?' + params.toString(), { headers: { 'Authorization': 'Bearer ' + token } })
             .then(r => r.ok ? r.json() : { results: [], has_more: false })
@@ -1150,10 +1154,12 @@ function App() {
 
     const wikiMatchConfident = (() => {
       if (!profile || profile.notFound || profile.isDisambiguation || !profile.title) return false;
+      if (/\(.*\)/.test(profile.title)) return false;
       const titleWords = profile.title.toLowerCase().split(/\s+/);
       const titleFirst = titleWords[0] || '';
       const titleLast = titleWords[titleWords.length - 1] || '';
-      if (!fuzzyMatch(searchFirst, titleFirst)) return false;
+      const firstMatch = searchFirst.toLowerCase() === titleFirst.toLowerCase() || (searchFirst.length >= 5 && titleFirst.toLowerCase().startsWith(searchFirst.toLowerCase()));
+      if (!firstMatch) return false;
       if (!fuzzyMatch(searchLast, titleLast)) return false;
       if (nw.middle) {
         const mid = nw.middle.trim().toLowerCase().replace(/\./g, '');
@@ -1284,7 +1290,7 @@ function App() {
           )}
           {!notFound && !wikiMatchConfident && !isWikiDeceased && !nw.middle && <div className="mb-3 p-2 bg-yellow-900/20 border border-yellow-700/30 rounded-lg"><p className="text-yellow-300 text-xs">Wikipedia found a "{profile.title}" but details don't fully match your search. SSDI records may be a better fit.</p></div>}
           {!isWikiDeceased && noMiMatches && <div className="mb-3 p-2 bg-yellow-900/20 border border-yellow-700/30 rounded-lg"><p className="text-yellow-300 text-xs">No records found in SSDI with middle initial "{nw.middle}". This person may not be in SSDI, or their middle initial wasn't recorded.</p></div>}
-          {!isWikiDeceased && !wikiMatchConfident && <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} />}
+          {!isWikiDeceased || !wikiMatchConfident && <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} />}
           {/* CHANGE 5b: added !wikiMatchConfident guard to prevent alive-confirmed SSDI false positive */}
           {ssdiDeceased && !isWikiDeceased && !wikiMatchConfident && (
             <div className="space-y-2 mt-2 border-t border-white/10 pt-2">
@@ -1307,8 +1313,9 @@ function App() {
           )}
           {isWikiDeceased && (
             <>
-              <div className="p-2 bg-gray-700/50 border border-gray-600/30 rounded-xl mb-3">
-                <p className="text-gray-200 text-lg text-center">This person has passed away.{profile.deathDate && profile.deathDate !== 'deceased' ? ' DOD: ' + profile.deathDate : ''}</p>
+             <div className="p-2 bg-gray-700/50 border border-gray-600/30 rounded-xl mb-3">
+                {!wikiMatchConfident && <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} />}
+                <p className="text-gray-200 text-lg text-center">This person has passed away.
               </div>
               <div className="space-y-2 mt-2">
                 {profile && profile.title && (() => {
