@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = ‘https://memorial-watch-backend-2.onrender.com’;
 const WANTED_BG = ‘https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png’;
 const BILL_PHOTO = ‘https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg’;
-const APP_VERSION = ‘1.4.49’;
+const APP_VERSION = ‘1.4.48’;
 const DECEASED_BIRTH_YEAR_THRESHOLD = new Date().getFullYear() - 100;
 const SSDI_CACHE_KEY = ‘doa_ssdi_cache’;
 
@@ -1217,9 +1217,6 @@ if (profile && profile.isDisambiguation === true) {
                   <PlusIcon /> {loadingMem ? 'Saving...' : 'Save "' + selectedDisambig.title + '" to Memories'}
                 </button>
               )}
-              <button onClick={() => { setWatchlistChecked(false); setWatchlistCheck(null); setSelectedDisambig(null); setSsdiPage(1); window.scrollTo(0,0); }} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-lg text-center flex items-center justify-center gap-2">
-            <EditIcon /> Edit Name
-          </button>
               <button onClick={clearWatchlistCheck} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-lg text-center">Search for another name</button>
             </div>
           ) : (
@@ -1260,9 +1257,6 @@ if (profile && profile.isDisambiguation === true) {
             <PlusIcon /> {loadingWl ? 'Adding...' : 'Add "' + buildFullName() + '" to Watchlist'}
           </button>
         )}
-        <button onClick={() => { setWatchlistChecked(false); setWatchlistCheck(null); setSelectedDisambig(null); setSsdiPage(1); window.scrollTo(0,0); }} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-lg text-center flex items-center justify-center gap-2">
-            <EditIcon /> Edit Name
-          </button>
         <button onClick={clearWatchlistCheck} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-lg text-center mt-2">Search for another name</button>
       </div>
     </div>
@@ -1337,9 +1331,6 @@ return (
                 </button>
               );
             })()}
-            <button onClick={() => { setWatchlistChecked(false); setWatchlistCheck(null); setSelectedDisambig(null); setSsdiPage(1); window.scrollTo(0,0); }} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-lg text-center flex items-center justify-center gap-2">
-            <EditIcon /> Edit Name
-          </button>
             <button onClick={clearWatchlistCheck} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-lg text-center">Search for another name</button>
           </div>
         </>
