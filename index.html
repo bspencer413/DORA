@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.4.49';
+const APP_VERSION = '1.4.50';
 const DECEASED_BIRTH_YEAR_THRESHOLD = new Date().getFullYear() - 100;
 const SSDI_CACHE_KEY = 'doa_ssdi_cache';
 
@@ -378,6 +378,7 @@ function App() {
   const [apiVersion, setApiVersion] = useState('...');
   const [ssdiDrawer, setSsdiDrawer] = useState(null);
   const [ssdiPage, setSsdiPage] = useState(1);
+  const [selectedPerson, setSelectedPerson] = useState(null);
 
   useEffect(() => {
     fetch(API_BASE + '/health').then(r => r.json()).then(d => setApiVersion(d.version || '?')).catch(() => setApiVersion('?'));
@@ -534,6 +535,7 @@ function App() {
     setSsdiPage(1);
     setSsdiDrawer(null);
     setShowMoreFields(false);
+    setSelectedPerson(null);
   };
 
   const fetchWikiAction = async (name) => {
@@ -1178,12 +1180,12 @@ function App() {
     if (profile && profile.isDisambiguation === true) {
       if (selectedDisambig) {
         const selDeceased = selectedDisambig.deathDate;
+        const selStatus = isOnWatchlist(selectedDisambig.title);
         return (
           <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
             <div className={'px-5 py-3 text-center ' + (selDeceased ? 'bg-gray-800' : 'bg-green-700')}>
               <p className="text-white font-black text-xl">{selectedDisambig.title}</p>
               <p className="text-white/80 text-lg">{selDeceased ? 'Passed Away' : 'Likely Alive'}</p>
-              <button onClick={() => setSelectedDisambig(null)} className="text-white/60 text-sm underline mt-1">Back</button>
             </div>
             <div className="bg-gray-900/70 p-4">
               <div className="flex gap-3 items-start mb-3">
@@ -1196,36 +1198,40 @@ function App() {
                 </div>
               </div>
               {selectedDisambig.extract && <p className="text-gray-100 text-lg leading-relaxed mb-3">{selectedDisambig.extract}</p>}
-              <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} />
-              {selDeceased ? (
-                <div className="space-y-2 mt-2">
-                  {!isOnWatchlist(selectedDisambig.title) && (
-                    <button onClick={async () => {
-                      setLoadingMem(true);
-                      try {
-                        const token = localStorage.getItem('doa_token');
-                        const r = await fetch(API_BASE + '/watchlist', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ name: selectedDisambig.title, location: '', dob: '', is_deceased: true, death_year: extractYear(selectedDisambig.deathDate) }) });
-                        if (!r.ok) throw new Error('Failed');
-                        await loadWatchlist(); clearWatchlistCheck(); setPage('memories');
-                      } catch(e) { alert('Error: ' + e.message); }
-                      finally { setLoadingMem(false); }
-                    }} disabled={loadingMem} className="w-full py-4 bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white rounded-xl font-bold text-xl flex items-center justify-center gap-2 disabled:opacity-50">
-                      <PlusIcon /> {loadingMem ? 'Saving...' : 'Save "' + selectedDisambig.title + '" to Memories'}
-                    </button>
-                  )}
-                  <button onClick={() => { setWatchlistChecked(false); setWatchlistCheck(null); setSelectedDisambig(null); setSsdiPage(1); window.scrollTo(0,0); }} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-lg text-center flex items-center justify-center gap-2">
-                <EditIcon /> Edit Name
-              </button>
-                  <button onClick={clearWatchlistCheck} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-lg text-center">Search for another name</button>
-                </div>
-              ) : (
-                <div className="space-y-2 mt-2">
-                  <button onClick={() => { setWatchlistCheck(Object.assign({}, watchlistCheck, { name: selectedDisambig.title })); confirmAddWatch(); }} disabled={loadingWl} className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xl flex items-center justify-center gap-2 disabled:opacity-50">
+              <div className="space-y-2 mt-2">
+                {selStatus ? (
+                  <p className="text-green-400 text-lg text-center font-bold">Already in your {selStatus}</p>
+                ) : selDeceased ? (
+                  <button onClick={async () => {
+                    setLoadingMem(true);
+                    try {
+                      const token = localStorage.getItem('doa_token');
+                      const r = await fetch(API_BASE + '/watchlist', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ name: selectedDisambig.title, location: '', dob: selectedDisambig.birthDate ? extractYear(selectedDisambig.birthDate) : '', is_deceased: true, death_year: extractYear(selectedDisambig.deathDate) }) });
+                      if (!r.ok) throw new Error('Failed');
+                      await loadWatchlist(); clearWatchlistCheck(); setPage('memories');
+                    } catch(e) { alert('Error: ' + e.message); }
+                    finally { setLoadingMem(false); }
+                  }} disabled={loadingMem} className="w-full py-4 bg-gray-700 hover:bg-gray-600 border border-gray-500 text-white rounded-xl font-bold text-xl flex items-center justify-center gap-2 disabled:opacity-50">
+                    <PlusIcon /> {loadingMem ? 'Saving...' : 'Save "' + selectedDisambig.title + '" to Memories'}
+                  </button>
+                ) : (
+                  <button onClick={async () => {
+                    setLoadingWl(true);
+                    try {
+                      const token = localStorage.getItem('doa_token');
+                      const r = await fetch(API_BASE + '/watchlist', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ name: selectedDisambig.title, location: '', dob: selectedDisambig.birthDate ? extractYear(selectedDisambig.birthDate) : '', is_deceased: false, death_year: null }) });
+                      if (!r.ok) throw new Error('Failed');
+                      await loadWatchlist(); clearWatchlistCheck(); setPage('watchlist');
+                    } catch(e) { alert('Error: ' + e.message); }
+                    finally { setLoadingWl(false); }
+                  }} disabled={loadingWl} className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xl flex items-center justify-center gap-2 disabled:opacity-50">
                     <PlusIcon /> {loadingWl ? 'Adding...' : 'Add "' + selectedDisambig.title + '" to Watchlist'}
                   </button>
-                  <button onClick={() => setSelectedDisambig(null)} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-lg text-center">Back to list</button>
-                </div>
-              )}
+                )}
+                <button onClick={() => setSelectedDisambig(null)} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-lg text-center flex items-center justify-center gap-2"><EditIcon /> Back to list</button>
+                <button onClick={() => { setWatchlistChecked(false); setWatchlistCheck(null); setSelectedDisambig(null); setSsdiPage(1); window.scrollTo(0,0); }} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-lg text-center flex items-center justify-center gap-2"><EditIcon /> Edit Name</button>
+                <button onClick={clearWatchlistCheck} className="w-full py-1.5 text-white/40 text-lg text-center">Search for another name</button>
+              </div>
             </div>
           </div>
         );
@@ -1234,7 +1240,7 @@ function App() {
         <div className="rounded-2xl overflow-hidden border border-red-800 shadow-lg">
           <div className="px-5 py-2 bg-yellow-600"><span className="text-white font-black tracking-widest text-lg">MULTIPLE MATCHES</span></div>
           <div className="bg-gray-900/70 p-4">
-            <p className="text-gray-300 text-lg mb-1">Several people share this name.</p>
+            <p className="text-gray-300 text-lg mb-1">Tap a name to select them, or refine your search below.</p>
             <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} />
             <div className="space-y-2">
               {(profile.matches || []).map((m, i) => (
@@ -1251,15 +1257,10 @@ function App() {
               ))}
               {(profile.matches || []).length === 0 && <p className="text-gray-400 text-lg text-center py-3">No matches found. Try adding a middle name or initial.</p>}
             </div>
-            {!fullNameStatus && (
-              <button onClick={addSearchedNameToWatchlist} disabled={loadingWl} className="w-full py-2.5 bg-red-600/80 hover:bg-red-700 text-white rounded-xl font-bold text-lg flex items-center justify-center gap-2 mt-3 disabled:opacity-50">
-                <PlusIcon /> {loadingWl ? 'Adding...' : 'Add "' + buildFullName() + '" to Watchlist'}
-              </button>
-            )}
-            <button onClick={() => { setWatchlistChecked(false); setWatchlistCheck(null); setSelectedDisambig(null); setSsdiPage(1); window.scrollTo(0,0); }} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-lg text-center flex items-center justify-center gap-2">
-                <EditIcon /> Edit Name
-              </button>
-            <button onClick={clearWatchlistCheck} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-lg text-center mt-2">Search for another name</button>
+            <div className="space-y-2 mt-3">
+              <button onClick={() => { setWatchlistChecked(false); setWatchlistCheck(null); setSelectedDisambig(null); setSsdiPage(1); window.scrollTo(0,0); }} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-lg text-center flex items-center justify-center gap-2"><EditIcon /> Edit Name</button>
+              <button onClick={clearWatchlistCheck} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-lg text-center mt-2">Search for another name</button>
+            </div>
           </div>
         </div>
       );
@@ -1342,19 +1343,23 @@ function App() {
           )}
           {!isDeceased && (
             <div className="space-y-2 mt-2 border-t border-white/10 pt-2">
-              {hasSSdi && <p className="text-gray-400 text-lg text-center">Tap a name above to add to your list, or:</p>}
-              {fullNameStatus
-                ? <p className="w-full py-2.5 text-center text-green-400 text-xl font-bold">Already in your {fullNameStatus}</p>
-                : <>
-                    <button onClick={addSearchedNameToWatchlist} disabled={loadingWl} className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xl flex items-center justify-center gap-2 disabled:opacity-50">
-                      <PlusIcon /> {loadingWl ? 'Adding...' : 'Add "' + buildFullName() + '" to Watchlist'}
-                    </button>
-                    <button onClick={saveSearchedNameToMemories} disabled={loadingMem} className="w-full py-2 bg-gray-700/60 border border-gray-500/40 text-gray-200 rounded-xl text-lg flex items-center justify-center gap-2 disabled:opacity-50">
-                      <PlusIcon /> {loadingMem ? 'Saving...' : 'Save to Memories instead'}
-                    </button>
-                  </>
-              }
-              {!hasSSdi && notFound && <p className="text-gray-300 text-lg leading-relaxed text-center">We found nothing on {buildFullName()} at this time. Try adding a middle initial, suffix, or birth year.</p>}
+              {hasSSdi && <p className="text-gray-400 text-lg text-center font-bold">Tap a name above to select them.</p>}
+              {!hasSSdi && notFound && (
+                <>
+                  <p className="text-gray-300 text-lg leading-relaxed text-center">We found nothing on {buildFullName()} at this time. Try adding a middle initial, suffix, or birth year.</p>
+                  {fullNameStatus
+                    ? <p className="w-full py-2.5 text-center text-green-400 text-xl font-bold">Already in your {fullNameStatus}</p>
+                    : <>
+                        <button onClick={addSearchedNameToWatchlist} disabled={loadingWl} className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xl flex items-center justify-center gap-2 disabled:opacity-50">
+                          <PlusIcon /> {loadingWl ? 'Adding...' : 'Add "' + buildFullName() + '" to Watchlist anyway'}
+                        </button>
+                        <button onClick={saveSearchedNameToMemories} disabled={loadingMem} className="w-full py-2 bg-gray-700/60 border border-gray-500/40 text-gray-200 rounded-xl text-lg flex items-center justify-center gap-2 disabled:opacity-50">
+                          <PlusIcon /> {loadingMem ? 'Saving...' : 'Save to Memories instead'}
+                        </button>
+                      </>
+                  }
+                </>
+              )}
               <button onClick={() => { setWatchlistChecked(false); setWatchlistCheck(null); setSelectedDisambig(null); setSsdiPage(1); window.scrollTo(0,0); document.documentElement.scrollTop = 0; document.body.scrollTop = 0; }} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-lg text-center flex items-center justify-center gap-2">
                 <EditIcon /> Edit Name
               </button>
@@ -1601,8 +1606,8 @@ function App() {
               {watchlistChecking && <p className="text-white text-center py-4 animate-pulse">Searching...</p>}
               {!watchlistChecked ? (
                 <div className="space-y-3">
-                  <ClearableInput value={nw.name} onChange={(e) => setNw(Object.assign({}, nw, { name: e.target.value }))} onBlur={(e) => setNw(Object.assign({}, nw, { name: toTitleCase(e.target.value.trim()) }))} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="First and Last Name *" inputClass={iClass} noAutoCorrect={true} />
-                  <button onClick={checkWatch} disabled={watchlistChecking} className="w-full py-3 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 text-xl font-bold"><SearchIcon /> {watchlistChecking ? 'Searching...' : 'Search'}</button>
+                  <ClearableInput value={nw.name} onChange={(e) => setNw(Object.assign({}, nw, { name: e.target.value }))} onBlur={(e) => setNw(Object.assign({}, nw, { name: toTitleCase(e.target.value.trim()) }))} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="First and Last Name" inputClass={iClass} noAutoCorrect={true} />
+                  <button onClick={checkWatch} disabled={watchlistChecking} className="w-full py-3 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 text-xl font-bold"><SearchIcon /> {watchlistChecking ? 'Searching...' : 'Find Out'}</button>
                   {!showMoreFields && (
                     <button onClick={() => setShowMoreFields(true)} className="w-full py-2 bg-gray-800/60 border border-red-900/30 text-red-400 text-xl text-center rounded-lg">Add more details (optional)</button>
                   )}
