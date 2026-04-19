@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.4.51';
+const APP_VERSION = '1.4.52';
 const DECEASED_BIRTH_YEAR_THRESHOLD = new Date().getFullYear() - 100;
 const SSDI_CACHE_KEY = 'doa_ssdi_cache';
 
@@ -783,8 +783,8 @@ function App() {
     setWatchlistChecking(true); setWatchlistCheck(null); setWatchlistChecked(false);
     try {
       const token = localStorage.getItem('doa_token');
-      const firstName = nw.name.trim().split(/\s+/)[0];
-      const lastName = nw.name.trim().split(/\s+/).slice(-1)[0];
+      const firstName = toTitleCase(nw.name.trim().split(/\s+/)[0]);
+      const lastName = toTitleCase(nw.name.trim().split(/\s+/).slice(-1)[0]);
       const ssdiName = firstName === lastName ? firstName : (firstName + ' ' + lastName).trim();
       const params = new URLSearchParams({ name: ssdiName });
       if (nw.birthYear) params.append('birth_year', nw.birthYear);
@@ -1226,7 +1226,7 @@ function App() {
                     setLoadingWl(true);
                     try {
                       const token = localStorage.getItem('doa_token');
-                      const r = await fetch(API_BASE + '/watchlist', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ name: selectedDisambig.title, location: '', dob: selectedDisambig.birthDate ? extractYear(selectedDisambig.birthDate) : '', is_deceased: false, death_year: null }) });
+                      const r = await fetch(API_BASE + '/watchlist', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ name: selectedDisambig.title, location: '', dob: selectedDisambig.birthDate ? extractYear(selectedDisambig.birthDate) : '' }) });
                       if (!r.ok) throw new Error('Failed');
                       await loadWatchlist(); clearWatchlistCheck(); setPage('watchlist');
                     } catch(e) { alert('Error: ' + e.message); }
@@ -1621,7 +1621,12 @@ function App() {
               {watchlistChecking && <p className="text-white text-center py-4 animate-pulse">Searching...</p>}
               {!watchlistChecked ? (
                 <div className="space-y-3">
-                  <ClearableInput value={nw.name} onChange={(e) => setNw(Object.assign({}, nw, { name: e.target.value }))} onBlur={(e) => setNw(Object.assign({}, nw, { name: toTitleCase(e.target.value.trim()) }))} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="First and Last Name" inputClass={iClass} noAutoCorrect={true} />
+                  <ClearableInput value={nw.name} onChange={(e) => {
+                    const val = e.target.value;
+                    const words = val.split(' ');
+                    const capped = words.map((w, i) => i < words.length - 1 ? toTitleCase(w) : w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                    setNw(Object.assign({}, nw, { name: capped }));
+                  }} onBlur={(e) => setNw(Object.assign({}, nw, { name: toTitleCase(e.target.value.trim()) }))} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="First and Last Name" inputClass={iClass} noAutoCorrect={true} />
                   <button onClick={checkWatch} disabled={watchlistChecking} className="w-full py-3 bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 text-xl font-bold"><SearchIcon /> {watchlistChecking ? 'Searching...' : 'Find Out'}</button>
                   {!showMoreFields && (
                     <button onClick={() => setShowMoreFields(true)} className="w-full py-2 bg-gray-800/60 border border-red-900/30 text-red-400 text-xl text-center rounded-lg">Add more details (optional)</button>
