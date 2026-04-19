@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.4.50';
+const APP_VERSION = '1.4.51';
 const DECEASED_BIRTH_YEAR_THRESHOLD = new Date().getFullYear() - 100;
 const SSDI_CACHE_KEY = 'doa_ssdi_cache';
 
@@ -808,6 +808,12 @@ function App() {
           ssdiApiHasMore = ssdiResp.has_more || false;
         } catch(e) {}
         if (ssdiRaw.length === 0) {
+          if (hasMi || hasDob) {
+            // Exact match mode -- no fallback when user provided MI or birth year
+            // noMiMatches flag still set for UI guidance
+            if (hasMi && !hasDob) { noMiMatches = true; }
+          }
+          /* FALLBACK COMMENTED OUT -- restore if needed
           if (hasMi && hasDob) {
             try {
               const fb = new URLSearchParams({ name: ssdiName });
@@ -822,6 +828,7 @@ function App() {
               if (fbResp.ok) { const fbData = await fbResp.json(); if ((fbData.results || []).length > 0) { ssdiRaw = fbData.results || []; ssdiApiHasMore = fbData.has_more || false; birthYearFallback = true; } }
             } catch(e) {}
           } else if (hasMi && !hasDob) { noMiMatches = true; }
+          END FALLBACK */
         }
       }
       const ssdiResults = ssdiRaw.map(r => Object.assign({}, r, { _score: scoreResult(r, firstName, nw.middle, lastName, nw.birthYear, nw.suffix) })).sort((a, b) => {
@@ -1105,7 +1112,7 @@ function App() {
       <div className="mb-3 p-3 bg-gray-800/60 rounded-xl border border-red-900/30">
         <p className="text-red-300 text-xl font-bold mb-2">Possible matches in SSDI (thru 2014) -- tap a name to view</p>
         {birthYearFallback && searchBirthYear && <div className="mb-2 p-2 bg-yellow-900/30 border border-yellow-700/40 rounded-lg"><p className="text-yellow-300 text-xs">No exact birth year match found -- showing all results. Tap the closest match.</p></div>}
-        {tooMany && <div className="mb-2 p-2 bg-yellow-900/30 border border-yellow-700/40 rounded-lg"><p className="text-yellow-300 text-xs">Many matches found. Add a middle name, initial or birth year to narrow results.</p></div>}
+        {tooMany && <div className="mb-2 p-2 bg-yellow-900/30 border border-yellow-700/40 rounded-lg"><p className="text-yellow-300 text-xs">Many matches found. Tap "Edit Name" below to add a middle name, initial or birth year for exact matches.</p></div>}
         {showMoreBtn()}
         {visibleResults.map((r, i) => {
           const score = r._score !== undefined ? r._score : 50;
@@ -1287,8 +1294,9 @@ function App() {
               {profile.extract && <p className="text-gray-100 text-lg leading-relaxed mb-3">{profile.extract}</p>}
             </>
           )}
-          {!notFound && !wikiMatchConfident && !isWikiDeceased && !nw.middle && <div className="mb-3 p-2 bg-yellow-900/20 border border-yellow-700/30 rounded-lg"><p className="text-yellow-300 text-xs">Wikipedia found a "{profile.title}" but details don't fully match your search. SSDI records may be a better fit.</p></div>}
-          {!isWikiDeceased && noMiMatches && <div className="mb-3 p-2 bg-yellow-900/20 border border-yellow-700/30 rounded-lg"><p className="text-yellow-300 text-xs">No records found in SSDI with middle initial "{nw.middle}". This person may not be in SSDI, or their middle initial wasn't recorded.</p></div>}
+          {!notFound && !wikiMatchConfident && !isWikiDeceased && !nw.middle && !nw.birthYear && <div className="mb-3 p-2 bg-yellow-900/20 border border-yellow-700/30 rounded-lg"><p className="text-yellow-300 text-xs">Wikipedia found a "{profile.title}" but details don't fully match your search. SSDI records may be a better fit.</p></div>}
+          {!notFound && !wikiMatchConfident && !isWikiDeceased && (nw.middle || nw.birthYear) && !hasSSdi && <div className="mb-3 p-3 bg-yellow-900/20 border border-yellow-700/30 rounded-lg"><p className="text-yellow-300 text-sm font-bold">No exact SSDI matches for those details.</p><p className="text-yellow-200 text-xs mt-1">They may have passed after 2014, or try different details.</p></div>}
+          {!isWikiDeceased && noMiMatches && <div className="mb-3 p-3 bg-yellow-900/20 border border-yellow-700/30 rounded-lg"><p className="text-yellow-300 text-sm font-bold">No exact matches found in SSDI.</p><p className="text-yellow-200 text-xs mt-1">They may have passed after 2014, or try different details. You can still add them to your Watchlist.</p></div>}
           {(!isWikiDeceased || !wikiMatchConfident) && <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} />}
           {ssdiDeceased && !isWikiDeceased && !wikiMatchConfident && (
             <div className="space-y-2 mt-2 border-t border-white/10 pt-2">
@@ -1346,7 +1354,14 @@ function App() {
               {hasSSdi && <p className="text-gray-400 text-lg text-center font-bold">Tap a name above to select them.</p>}
               {!hasSSdi && notFound && (
                 <>
-                  <p className="text-gray-300 text-lg leading-relaxed text-center">We found nothing on {buildFullName()} at this time. Try adding a middle initial, suffix, or birth year.</p>
+                  {(nw.middle || nw.birthYear) ? (
+                    <div className="mb-3 p-3 bg-yellow-900/20 border border-yellow-700/30 rounded-lg">
+                      <p className="text-yellow-300 text-sm font-bold">No exact matches found for {buildFullName()}.</p>
+                      <p className="text-yellow-200 text-xs mt-1">They may have passed after 2014, or try different details.</p>
+                    </div>
+                  ) : (
+                    <p className="text-gray-300 text-lg leading-relaxed text-center">No records found for {buildFullName()} at this time. Try adding a middle initial or birth year.</p>
+                  )}
                   {fullNameStatus
                     ? <p className="w-full py-2.5 text-center text-green-400 text-xl font-bold">Already in your {fullNameStatus}</p>
                     : <>
