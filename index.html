@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.4.53';
+const APP_VERSION = '1.4.54';
 const DECEASED_BIRTH_YEAR_THRESHOLD = new Date().getFullYear() - 100;
 const SSDI_CACHE_KEY = 'doa_ssdi_cache';
 
@@ -754,11 +754,21 @@ function App() {
   const isOnWatchlist = (name) => {
     if (!name) return false;
     try {
+      const nameLower = name.trim().toLowerCase();
+      // First try exact full name match
+      const exactMatch = watchlist.find(w => w && w.name && w.name.trim().toLowerCase() === nameLower);
+      if (exactMatch) return (exactMatch.is_deceased === true || exactMatch.is_deceased === 1) ? 'memories' : 'watchlist';
+      // Only fall back to first+last match if NEITHER name has a middle name/initial
+      const nameParts = nameLower.split(/\s+/);
+      const hasMiddle = nameParts.length > 2;
+      if (hasMiddle) return false; // If searched name has middle, require exact match
       const normalized = normalizeForWiki(name).toLowerCase();
       const found = watchlist.find(w => {
         if (!w || !w.name) return false;
+        const storedParts = w.name.trim().toLowerCase().split(/\s+/);
+        if (storedParts.length > 2) return false; // Stored name has middle — require exact
         const stored = normalizeForWiki(w.name).toLowerCase();
-        return stored === normalized || w.name.toLowerCase() === name.toLowerCase();
+        return stored === normalized;
       });
       if (!found) return false;
       return (found.is_deceased === true || found.is_deceased === 1) ? 'memories' : 'watchlist';
