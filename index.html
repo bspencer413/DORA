@@ -1,4 +1,3 @@
-Go
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1280,6 +1279,7 @@ function App() {
               );
             })()}
             <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} />
+            {ssdiResults.length === 0 && (nw.middle || nw.birthYear) && <div className="mb-3 p-3 bg-yellow-900/20 border border-yellow-700/30 rounded-lg"><p className="text-yellow-300 text-sm font-bold">No exact SSDI matches found.</p><p className="text-yellow-200 text-xs mt-1">They may have passed after 2014, or try different details.</p></div>}
             {nw.birthYear && <div className="mb-2 p-2 bg-gray-800/40 border border-gray-700/30 rounded-lg"><p className="text-gray-400 text-xs">Birth year filters SSDI records only -- Wikipedia results are not filtered by birth year.</p></div>}
             <div className="space-y-2 mt-3">
               <button onClick={() => { setWatchlistChecked(false); setWatchlistCheck(null); setSelectedDisambig(null); setSsdiPage(1); window.scrollTo(0,0); }} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-lg text-center flex items-center justify-center gap-2"><EditIcon /> Edit Name</button>
