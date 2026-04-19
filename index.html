@@ -1,3 +1,4 @@
+Go
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -52,7 +53,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.4.52';
+const APP_VERSION = '1.4.53';
 const DECEASED_BIRTH_YEAR_THRESHOLD = new Date().getFullYear() - 100;
 const SSDI_CACHE_KEY = 'doa_ssdi_cache';
 
@@ -1248,9 +1249,14 @@ function App() {
           <div className="px-5 py-2 bg-yellow-600"><span className="text-white font-black tracking-widest text-lg">MULTIPLE MATCHES</span></div>
           <div className="bg-gray-900/70 p-4">
             <p className="text-gray-300 text-lg mb-1">Tap a name to select them, or refine your search below.</p>
-            <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} />
-            <div className="space-y-2">
-              {(profile.matches || []).map((m, i) => (
+            {(() => {
+              const miFilter = (nw.middle || '').trim().toLowerCase().replace(/\./g, '');
+              const filteredMatches = miFilter
+                ? (profile.matches || []).filter(m => m.title && m.title.toLowerCase().includes(' ' + miFilter.charAt(0)))
+                : (profile.matches || []);
+              return filteredMatches.length > 0 ? (
+                <div className="space-y-2 mb-3">
+                  {filteredMatches.map((m, i) => (
                 <button key={i} onClick={() => setSelectedDisambig(m)} className="w-full p-3 bg-gray-800/60 border border-red-900/30 rounded-xl text-left">
                   <div className="flex items-center gap-3">
                     {m.thumbnail ? <img src={m.thumbnail} alt={m.title} className="w-10 h-10 rounded-full object-cover border border-red-600/40 shrink-0" /> : <div className="w-10 h-10 rounded-full bg-red-900/40 flex items-center justify-center shrink-0 text-lg">?</div>}
@@ -1262,8 +1268,19 @@ function App() {
                   </div>
                 </button>
               ))}
-              {(profile.matches || []).length === 0 && <p className="text-gray-400 text-lg text-center py-3">No matches found. Try adding a middle name or initial.</p>}
-            </div>
+                  ))}
+                </div>
+              ) : miFilter ? (
+                <div className="mb-3 p-3 bg-yellow-900/20 border border-yellow-700/30 rounded-lg">
+                  <p className="text-yellow-300 text-sm font-bold">No Wikipedia matches with that initial.</p>
+                  <p className="text-yellow-200 text-xs mt-1">Showing SSDI records below.</p>
+                </div>
+              ) : (
+                <p className="text-gray-400 text-lg text-center py-3">No Wikipedia matches found. Try adding a middle name or initial.</p>
+              );
+            })()}
+            <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} />
+            {nw.birthYear && <div className="mb-2 p-2 bg-gray-800/40 border border-gray-700/30 rounded-lg"><p className="text-gray-400 text-xs">Birth year filters SSDI records only -- Wikipedia results are not filtered by birth year.</p></div>}
             <div className="space-y-2 mt-3">
               <button onClick={() => { setWatchlistChecked(false); setWatchlistCheck(null); setSelectedDisambig(null); setSsdiPage(1); window.scrollTo(0,0); }} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-lg text-center flex items-center justify-center gap-2"><EditIcon /> Edit Name</button>
               <button onClick={clearWatchlistCheck} className="w-full py-2 bg-white/10 border border-white/20 text-white/80 rounded-xl text-lg text-center mt-2">Search for another name</button>
@@ -1633,7 +1650,7 @@ function App() {
                   )}
                   {showMoreFields && (
                     <>
-                      <ClearableInput value={nw.middle} onChange={(e) => setNw(Object.assign({}, nw, { middle: e.target.value }))} onBlur={(e) => { var v = e.target.value.trim(); if (v.length === 1) setNw(Object.assign({}, nw, { middle: v.toUpperCase() })); }} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Middle Name or Initial -- Helpful" inputClass={iClass} noAutoCorrect={true} />
+                      <ClearableInput value={nw.middle} onChange={(e) => { var v = e.target.value; if (v.length >= 1) v = v.charAt(0).toUpperCase() + v.slice(1); setNw(Object.assign({}, nw, { middle: v })); }} onBlur={(e) => { var v = e.target.value.trim(); setNw(Object.assign({}, nw, { middle: v.toUpperCase() })); }} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Middle Name or Initial -- Helpful" inputClass={iClass} noAutoCorrect={true} />
                       <ClearableInput value={nw.suffix} onChange={(e) => setNw(Object.assign({}, nw, { suffix: e.target.value }))} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Suffix: Jr., Sr., MD, III" inputClass={iClass} noAutoCorrect={true} />
                       <ClearableInput value={nw.birthYear} onChange={(e) => setNw(Object.assign({}, nw, { birthYear: e.target.value.replace(/\D/g, '').slice(0, 4) }))} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Birth Year -- Helpful" maxLength={4} inputClass={iClass} numeric={true} />
                       <ClearableInput value={nw.location} onChange={(e) => setNw(Object.assign({}, nw, { location: e.target.value }))} onBlur={(e) => setNw(Object.assign({}, nw, { location: toTitleCase(e.target.value.trim()) }))} onKeyPress={(e) => e.key === 'Enter' && checkWatch()} placeholder="Location -- City, State or Country" inputClass={iClass} noAutoCorrect={true} />
