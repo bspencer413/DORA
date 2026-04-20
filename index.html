@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.4.55';
+const APP_VERSION = '1.4.56';
 const DECEASED_BIRTH_YEAR_THRESHOLD = new Date().getFullYear() - 100;
 const SSDI_CACHE_KEY = 'doa_ssdi_cache';
 
@@ -384,7 +384,7 @@ function App() {
     fetch(API_BASE + '/health').then(r => r.json()).then(d => setApiVersion(d.version || '?')).catch(() => setApiVersion('?'));
     const t = localStorage.getItem('doa_token');
     const u = localStorage.getItem('doa_user');
-    if (t && u) { setUser(JSON.parse(u)); setAuth(true); setPage('search'); loadWatchlist(); loadNotifications(); }
+    if (t && u) { setUser(JSON.parse(u)); setAuth(true); setPage('search'); loadWatchlist(); loadNotifications(); refreshWatchlistInBackground(); }
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         setTimeout(() => { document.querySelectorAll('input').forEach(i => i.blur()); }, 100);
@@ -410,6 +410,28 @@ function App() {
       if (!r.ok) throw new Error('Failed');
       setNotifications(await r.json());
     } catch (e) { console.error(e); }
+  };
+
+  const refreshWatchlistInBackground = async () => {
+    try {
+      const token = localStorage.getItem('doa_token');
+      if (!token) return;
+      const r = await fetch(API_BASE + '/watchlist', { headers: { 'Authorization': 'Bearer ' + token } });
+      if (!r.ok) return;
+      const list = await r.json();
+      const following = (list || []).filter(w => !(w.is_deceased === true || w.is_deceased === 1));
+      if (following.length === 0) return;
+      for (var i = 0; i < following.length; i++) {
+        if (!localStorage.getItem('doa_token')) return;
+        try {
+          await fetch(API_BASE + '/watchlist/' + following[i].id + '/refresh', { headers: { 'Authorization': 'Bearer ' + token } });
+        } catch (e) {}
+        await new Promise(function(res) { setTimeout(res, 500); });
+      }
+      if (!localStorage.getItem('doa_token')) return;
+      try { await loadWatchlist(); } catch (e) {}
+      try { await loadNotifications(); } catch (e) {}
+    } catch (e) {}
   };
 
   const dismissAlert = async (notifId, watchlistId) => {
@@ -505,6 +527,7 @@ function App() {
       localStorage.setItem('doa_user', JSON.stringify(u));
       setUser(u); setAuth(true); setPage('search');
       loadWatchlist(); loadNotifications();
+      refreshWatchlistInBackground();
     } catch (error) { clearTimeout(wakeTimer); setBackendWaking(false); alert('Error: ' + error.message); }
     finally { setLoading(false); }
   };
