@@ -52,7 +52,7 @@ const { useState, useEffect } = React;
 const API_BASE = 'https://memorial-watch-backend-2.onrender.com';
 const WANTED_BG = 'https://raw.githubusercontent.com/bspencer413/DORA/main/wanted.png';
 const BILL_PHOTO = 'https://raw.githubusercontent.com/Bspencer413/Memorial-watch/main/Bill.jpeg';
-const APP_VERSION = '1.4.54';
+const APP_VERSION = '1.4.55';
 const DECEASED_BIRTH_YEAR_THRESHOLD = new Date().getFullYear() - 100;
 const SSDI_CACHE_KEY = 'doa_ssdi_cache';
 
@@ -1324,7 +1324,7 @@ function App() {
           {!notFound && !wikiMatchConfident && !isWikiDeceased && !nw.middle && !nw.birthYear && <div className="mb-3 p-2 bg-yellow-900/20 border border-yellow-700/30 rounded-lg"><p className="text-yellow-300 text-xs">Wikipedia found a "{profile.title}" but details don't fully match your search. SSDI records may be a better fit.</p></div>}
           {!notFound && !wikiMatchConfident && !isWikiDeceased && (nw.middle || nw.birthYear) && !hasSSdi && <div className="mb-3 p-3 bg-yellow-900/20 border border-yellow-700/30 rounded-lg"><p className="text-yellow-300 text-sm font-bold">No exact SSDI matches for those details.</p><p className="text-yellow-200 text-xs mt-1">They may have passed after 2014, or try different details.</p></div>}
           {!isWikiDeceased && noMiMatches && <div className="mb-3 p-3 bg-yellow-900/20 border border-yellow-700/30 rounded-lg"><p className="text-yellow-300 text-sm font-bold">No exact matches found in SSDI.</p><p className="text-yellow-200 text-xs mt-1">They may have passed after 2014, or try different details. You can still add them to your Watchlist.</p></div>}
-          {(!isWikiDeceased || !wikiMatchConfident) && <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} />}
+          {(!wikiMatchConfident || isWikiDeceased) && <SSIDResultsBlock ssdiResults={ssdiResults} searchFirst={searchFirst} searchMiddle={nw.middle} searchLast={searchLast} searchBirthYear={nw.birthYear} searchSuffix={nw.suffix} apiHasMore={watchlistCheck && watchlistCheck.ssdiHasMore} onLoadMore={loadMoreSsdiSearch} birthYearFallback={watchlistCheck && watchlistCheck.birthYearFallback} />}
           {ssdiDeceased && !isWikiDeceased && !wikiMatchConfident && (
             <div className="space-y-2 mt-2 border-t border-white/10 pt-2">
               {fullNameStatus
@@ -1379,6 +1379,11 @@ function App() {
           {!isDeceased && (
             <div className="space-y-2 mt-2 border-t border-white/10 pt-2">
               {hasSSdi && <p className="text-gray-400 text-lg text-center font-bold">Tap a name above to select them.</p>}
+              {wikiMatchConfident && !notFound && !isWikiDeceased && (
+                fullNameStatus
+                  ? <p className="w-full py-2.5 text-center text-green-400 text-xl font-bold">Already in your {fullNameStatus}</p>
+                  : <button onClick={addSearchedNameToWatchlist} disabled={loadingWl} className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xl flex items-center justify-center gap-2 disabled:opacity-50"><PlusIcon /> {loadingWl ? 'Adding...' : 'Add "' + buildFullName() + '" to Watchlist'}</button>
+              )}
               {!hasSSdi && notFound && (
                 <>
                   {(nw.middle || nw.birthYear) ? (
