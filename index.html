@@ -115,7 +115,7 @@
 <div id="root"></div>
 <script type="text/babel">
 'use strict';
-var APP_VERSION = '3.3.0';
+var APP_VERSION = '3.3.1';
 var useState = React.useState, useEffect = React.useEffect, useRef = React.useRef;
 
 // NAME POOL — [name, decade, aliveFallback, wikiTitle?]. Wikipedia is truth at play time. Expand by adding lines.
@@ -308,20 +308,20 @@ function Splash(props){
     <div className="w-full px-4" style={{minHeight:'100dvh', paddingTop:'max(1rem, env(safe-area-inset-top))', paddingBottom:'max(1rem, env(safe-area-inset-bottom))'}}>
       <div className="neon-frame rise flex flex-col px-5" style={{minHeight:'calc(100dvh - 2rem)'}}>
         {/* brand tag */}
-        <div className="flex items-center justify-center gap-2 pt-5">
-          <span className="display text-2xl neon-teal">DORA</span>
-          <span className="t2 text-sm tracking-[0.28em]">THE PARTY GAME</span>
+        <div className="flex items-center justify-center gap-3 pt-7">
+          <span className="display text-4xl neon-teal">DORA</span>
+          <span className="t2 text-lg tracking-[0.28em]">THE PARTY GAME</span>
         </div>
 
         {/* HERO — fills the middle */}
         <div className="flex-1 flex flex-col items-center justify-center text-center">
-          <div className="t2 text-sm tracking-[0.42em] mb-4 flick2">&#9733;&nbsp; REWARD : BRAGGING RIGHTS &nbsp;&#9733;</div>
+          <div className="t2 text-lg tracking-[0.4em] mb-5 flick2">&#9733;&nbsp; REWARD : BRAGGING RIGHTS &nbsp;&#9733;</div>
 
           <div className="display flick neon-pink leading-[0.9]" style={{fontSize:'clamp(80px, 27vw, 210px)'}}>Wanted</div>
 
           <div className="my-5 w-full flex items-center justify-center gap-3 max-w-xs mx-auto">
             <span className="h-px flex-1" style={{background:'linear-gradient(90deg,transparent,var(--line-2))'}}></span>
-            <span className="t2 text-sm tracking-[0.32em]">DEAD OR ALIVE</span>
+            <span className="t2 text-lg tracking-[0.32em]">DEAD OR ALIVE</span>
             <span className="h-px flex-1" style={{background:'linear-gradient(90deg,var(--line-2),transparent)'}}></span>
           </div>
 
@@ -331,7 +331,7 @@ function Splash(props){
             <span className="neon-dead" style={{fontSize:'clamp(52px, 17vw, 128px)'}}>Alive</span>
           </div>
 
-          <p className="t2 text-sm mt-8 max-w-xs">A legend drops. You call it &mdash; still standing, or long gone.<br/><span className="t3">First to {WIN_SCORE} wins.</span></p>
+          <p className="t2 text-xl mt-9 max-w-sm leading-relaxed">A legend drops. You call it &mdash; still standing, or long gone.<br/><span className="t3">First to {WIN_SCORE} wins.</span></p>
         </div>
 
         {/* bottom action — neon outline */}
