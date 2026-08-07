@@ -115,7 +115,7 @@
 <div id="root"></div>
 <script type="text/babel">
 'use strict';
-var APP_VERSION = '3.3.2';
+var APP_VERSION = '3.4.0';
 var useState = React.useState, useEffect = React.useEffect, useRef = React.useRef;
 
 // NAME POOL — [name, decade, aliveFallback, wikiTitle?]. Wikipedia is truth at play time. Expand by adding lines.
@@ -350,7 +350,7 @@ function Setup(props){
       <div className="text-center mb-6 rise">
         <span className="display text-3xl neon-teal">DORA</span>
       </div>
-      <Section label="Players">
+      <Section label="Players" hint="add up to 6">
         <div className="space-y-2">
           {props.players.map(function(p,i){ return (
             <div key={i} className="flex items-center gap-2">
@@ -363,21 +363,21 @@ function Setup(props){
         </div>
         {props.players.length<6 && <button onClick={props.addPlayer} className="chip rounded-xl w-full py-2.5 mt-2 text-sm" style={{color:'var(--teal)'}}>+ Add player</button>}
       </Section>
-      <Section label="Categories">
+      <Section label="Categories" hint="pick one or more">
         <div className="grid grid-cols-2 gap-2">
           {CATEGORIES.map(function(c){ var on=props.cats.indexOf(c.id)!==-1; return (
             <button key={c.id} onClick={function(){props.toggleCat(c.id);}} className={'chip rounded-xl py-3 text-sm font-semibold '+(on?'chip-on':'')}>{c.label}</button>
           );})}
         </div>
       </Section>
-      <Section label="Era">
+      <Section label="Era" hint="pick one">
         <div className="flex flex-wrap gap-2">
           {DECADES.map(function(d){ var on=props.decade===d; return (
             <button key={d} onClick={function(){props.setDecade(d);}} className={'chip rounded-full px-4 py-2 text-sm font-semibold '+(on?'chip-on':'')}>{d}</button>
           );})}
         </div>
       </Section>
-      <Section label="Answer timer">
+      <Section label="Answer timer" hint="optional">
         <div className="flex gap-2">
           {[[0,'Off'],[15,'15s'],[30,'30s']].map(function(t){ var on=props.timerSec===t[0]; return (
             <button key={t[0]} onClick={function(){props.setTimerSec(t[0]);}} className={'chip rounded-xl flex-1 py-2.5 text-sm font-semibold '+(on?'chip-on':'')}>{t[1]}</button>
@@ -392,7 +392,9 @@ function Setup(props){
 }
 function Section(props){ return (
   <div className="mb-6">
-    <div className="text-xs uppercase tracking-[0.2em] t3 mb-2 font-semibold">{props.label}</div>
+    <div className="text-xs uppercase tracking-[0.2em] t3 mb-2 font-semibold">
+      {props.label}{props.hint && <span className="t3 opacity-70"> &mdash; {props.hint}</span>}
+    </div>
     {props.children}
   </div>
 ); }
@@ -402,20 +404,19 @@ function Play(props){
   var me=s[props.turn]?s[props.turn].name:'';
   return (
     <div className="max-w-md mx-auto px-5 py-6 flex flex-col" style={{minHeight:'100dvh', paddingTop:'max(1.5rem, env(safe-area-inset-top))'}}>
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 mb-2">
+      <div className="flex items-center gap-2.5 overflow-x-auto pb-1 mb-2">
         {s.map(function(p,i){ var active=i===props.turn; return (
-          <div key={i} className={'panel rounded-xl px-3 py-2 shrink-0 '+(active?'glow-teal':'opacity-60')} style={active?{borderColor:'var(--teal)'}:{}}>
-            <div className="text-xs t2 max-w-[92px] truncate">{p.name}</div>
-            <div className="display text-2xl tnum leading-none" style={{color:active?'var(--teal)':'#c3cede'}}>{p.score}<span className="t3 text-sm">/{WIN_SCORE}</span></div>
+          <div key={i} className={'panel rounded-xl px-4 py-3 shrink-0 '+(active?'glow-teal':'opacity-60')} style={active?{borderColor:'var(--teal)'}:{}}>
+            <div className="text-sm t2 max-w-[104px] truncate">{p.name}</div>
+            <div className="display text-3xl tnum leading-none" style={{color:active?'var(--teal)':'#c3cede'}}>{p.score}<span className="t3 text-base">/{WIN_SCORE}</span></div>
           </div>
         );})}
-        <button onClick={props.onQuit} className="chip rounded-xl px-3 py-2 shrink-0 text-xs">Quit</button>
       </div>
       <div className="flex-1 flex flex-col justify-center">
         {!rev && cur &&
           <div className="text-center">
-            <div className="t2 text-sm mb-1 rise">{me}, your call</div>
-            <div className="text-xs uppercase tracking-[0.25em] mb-7 rise neon-teal">{catLabel(cur.cat)}{cur.decade==='Any'?'':' \u00b7 '+cur.decade}</div>
+            <div className="t2 text-xl mb-2 rise">{me}, your call</div>
+            <div className="text-sm uppercase tracking-[0.25em] mb-8 rise neon-teal">{catLabel(cur.cat)}{cur.decade==='Any'?'':' \u00b7 '+cur.decade}</div>
             <div className="pop panel rounded-3xl px-6 py-14 mb-3" style={{background:'linear-gradient(180deg, #161d2c, #0b1018)'}}>
               <div className="display text-6xl leading-tight text-white">{cur.name}</div>
             </div>
@@ -429,6 +430,9 @@ function Play(props){
                 </div>}
           </div>}
         {rev && cur && <Reveal name={cur.name} rev={rev} playerName={me} onNext={props.onNext} />}
+      </div>
+      <div className="text-center pt-4 pb-2">
+        <button onClick={props.onQuit} className="chip rounded-xl px-4 py-2 text-xs">Quit</button>
       </div>
     </div>
   );
