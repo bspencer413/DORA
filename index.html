@@ -115,7 +115,7 @@
 <div id="root"></div>
 <script type="text/babel">
 'use strict';
-var APP_VERSION = '3.4.3';
+var APP_VERSION = '3.4.4';
 var useState = React.useState, useEffect = React.useEffect, useRef = React.useRef;
 
 // NAME POOL — [name, decade, aliveFallback, wikiTitle?]. Wikipedia is truth at play time. Expand by adding lines.
@@ -314,13 +314,13 @@ function Splash(props){
         </div>
 
         {/* HERO — fills the middle */}
-        <div className="flex-1 flex flex-col items-center justify-center text-center">
-          <div className="mb-6 flick2">
+        <div className="flex-1 flex flex-col items-center justify-start text-center pt-8">
+          <div className="mb-8 flick2">
             <div className="t2 text-3xl tracking-[0.35em] display">&#9733;&nbsp; REWARD &nbsp;&#9733;</div>
             <div className="t2 text-lg tracking-[0.3em] mt-1">BRAGGING RIGHTS</div>
           </div>
 
-          <div className="display flick neon-pink leading-[0.9]" style={{fontSize:'clamp(80px, 27vw, 210px)'}}>Wanted</div>
+          <div className="display flick neon-pink leading-[0.9] mb-10" style={{fontSize:'clamp(80px, 27vw, 210px)'}}>Wanted</div>
 
           <div className="display blink leading-[0.85]">
             <span className="neon-alive" style={{fontSize:'clamp(52px, 17vw, 128px)'}}>Dead</span>
