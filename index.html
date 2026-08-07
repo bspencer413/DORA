@@ -115,7 +115,7 @@
 <div id="root"></div>
 <script type="text/babel">
 'use strict';
-var APP_VERSION = '3.3.1';
+var APP_VERSION = '3.3.2';
 var useState = React.useState, useEffect = React.useEffect, useRef = React.useRef;
 
 // NAME POOL — [name, decade, aliveFallback, wikiTitle?]. Wikipedia is truth at play time. Expand by adding lines.
@@ -347,10 +347,8 @@ function Splash(props){
 function Setup(props){
   return (
     <div className="max-w-md mx-auto px-5 py-6" style={{paddingTop:'max(1.5rem, env(safe-area-inset-top))'}}>
-      <div className="flex items-center justify-between mb-6 rise">
-        <button onClick={props.onBack} className="chip rounded-xl px-3 py-2 text-sm">&#8592; Back</button>
-        <span className="display text-2xl neon-teal">DORA</span>
-        <span className="w-16"></span>
+      <div className="text-center mb-6 rise">
+        <span className="display text-3xl neon-teal">DORA</span>
       </div>
       <Section label="Players">
         <div className="space-y-2">
