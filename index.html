@@ -1,12 +1,12 @@
-<!-- DORA v3.1.0 | 2026-08-05 | Neon redesign + wanted-poster splash. Actors/Performers/Athletes/Politicians/Authors/Random. Wikipedia-verified. First to 7. -->
+<!-- DORA v3.2.0 | 2026-08-05 | Neon-sign splash (WANTED hero, full-screen). Actors/Performers/Athletes/Politicians/Authors/Random. Wikipedia-verified. First to 7. -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>DORA — Dead or Alive</title>
-<meta name="description" content="Dead or Alive: the party game. Name a star, call it — alive or gone. First to 7 wins. Verified live from Wikipedia.">
-<meta name="theme-color" content="#090d15">
+<meta name="description" content="Wanted: Dead or Alive — the party game. Name a star, call it, first to 7 wins. Verified live from Wikipedia.">
+<meta name="theme-color" content="#080b12">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -15,7 +15,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --void: #0a0e17;
+    --void: #080b12;
     --panel: #141b2a;
     --panel-2: #1b2437;
     --line: #2e3a50;
@@ -33,17 +33,37 @@
   body {
     font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
     background:
-      radial-gradient(1000px 560px at 50% -8%, rgba(47,243,214,0.08), transparent 60%),
-      radial-gradient(900px 620px at 100% 108%, rgba(255,46,154,0.09), transparent 58%),
+      radial-gradient(1100px 620px at 50% -6%, rgba(255,46,154,0.10), transparent 60%),
+      radial-gradient(1000px 680px at 50% 112%, rgba(47,243,214,0.10), transparent 60%),
       var(--void);
     color: var(--txt);
     min-height: 100vh; min-height: 100dvh;
     -webkit-font-smoothing: antialiased; overflow-x: hidden;
   }
-  .display { font-family: 'Anton', sans-serif; text-transform: uppercase; letter-spacing: 0.004em; }
+  .display { font-family: 'Anton', sans-serif; text-transform: uppercase; letter-spacing: 0.01em; }
   .tnum { font-variant-numeric: tabular-nums; }
   .panel { background: var(--panel); border: 1px solid var(--line); }
   .t2 { color: var(--txt-2); } .t3 { color: var(--txt-3); }
+
+  /* ---- real neon-tube text ---- */
+  .neon-pink  { color:#fff; text-shadow:0 0 4px #fff,0 0 11px #ff5fb4,0 0 24px #ff2e9a,0 0 46px #ff2e9a,0 0 88px #ff2e9a; }
+  .neon-teal  { color:#f2fffd; text-shadow:0 0 4px #fff,0 0 11px #86f7ea,0 0 24px #2ff3d6,0 0 46px #2ff3d6,0 0 86px #2ff3d6; }
+  .neon-alive { color:#f1fff8; text-shadow:0 0 4px #fff,0 0 11px #7dffc6,0 0 24px #2af5a0,0 0 46px #2af5a0,0 0 88px #2af5a0; }
+  .neon-dead  { color:#fff3f6; text-shadow:0 0 4px #fff,0 0 11px #ff7d97,0 0 24px #ff3b6b,0 0 46px #ff3b6b,0 0 88px #ff3b6b; }
+  .tube-pink  { border:2px solid rgba(255,46,154,0.65); box-shadow:0 0 14px rgba(255,46,154,0.5), inset 0 0 16px rgba(255,46,154,0.22); }
+  .tube-teal  { border:2px solid rgba(47,243,214,0.6); box-shadow:0 0 14px rgba(47,243,214,0.45), inset 0 0 16px rgba(47,243,214,0.2); }
+
+  .flick { animation: flick 5.5s infinite; }
+  @keyframes flick {
+    0%,17%,21%,23%,55%,58%,100% { opacity:1; }
+    19%,22%,56% { opacity:0.35; }
+  }
+  .flick2 { animation: flick2 7s infinite; }
+  @keyframes flick2 {
+    0%,40%,43%,80%,100% { opacity:1; }
+    41%,82% { opacity:0.5; }
+  }
+
   .chip {
     border: 1px solid var(--line-2); background: var(--panel-2); color: var(--txt-2);
     transition: transform .08s ease, border-color .14s ease, color .14s ease, box-shadow .14s ease;
@@ -52,16 +72,10 @@
   .chip-on { color: #061a15; background: var(--teal); border-color: var(--teal); box-shadow: 0 0 22px rgba(47,243,214,0.4); }
   .btn { transition: transform .06s ease, box-shadow .16s ease, filter .16s ease; }
   .btn:active { transform: scale(0.985); }
-  .glow-teal { box-shadow: 0 0 30px rgba(47,243,214,0.38); }
-  .glow-pink { box-shadow: 0 0 30px rgba(255,46,154,0.40); }
+  .glow-teal { box-shadow: 0 0 30px rgba(47,243,214,0.4); }
   .glow-alive { box-shadow: 0 0 36px rgba(42,245,160,0.5); }
   .glow-dead  { box-shadow: 0 0 36px rgba(255,59,107,0.48); }
-  .neon-teal { color: var(--teal); text-shadow: 0 0 8px rgba(47,243,214,0.7), 0 0 26px rgba(47,243,214,0.45); }
-  .neon-pink { color: var(--pink); text-shadow: 0 0 8px rgba(255,46,154,0.7), 0 0 26px rgba(255,46,154,0.45); }
-  .neon-alive { color: var(--alive); text-shadow: 0 0 10px rgba(42,245,160,0.8), 0 0 34px rgba(42,245,160,0.5); }
-  .neon-dead { color: var(--dead); text-shadow: 0 0 10px rgba(255,59,107,0.8), 0 0 34px rgba(255,59,107,0.5); }
 
-  /* punchier reveal */
   .slam { animation: slam .44s cubic-bezier(.15,1.2,.28,1) both; }
   @keyframes slam {
     0%   { opacity: 0; transform: scale(2.2) rotate(-7deg); filter: blur(8px); }
@@ -76,11 +90,9 @@
   @keyframes rise { 0% { opacity: 0; transform: translateY(12px); } 100% { opacity: 1; transform: translateY(0); } }
   .pop { animation: pop .32s ease both; }
   @keyframes pop { 0% { opacity: 0; transform: scale(.95); } 100% { opacity: 1; transform: scale(1); } }
-  .flicker { animation: flicker 3.5s infinite steps(1); }
-  @keyframes flicker { 0%,96%,100%{opacity:1} 97%{opacity:.72} 98%{opacity:1} 99%{opacity:.85} }
   .ringwrap { position: relative; width: 46px; height: 46px; }
   .ringwrap svg { transform: rotate(-90deg); }
-  @media (prefers-reduced-motion: reduce) { .slam,.rise,.flash,.pop,.flicker { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .slam,.rise,.flash,.pop,.flick,.flick2 { animation: none; } }
   input { font-family: inherit; }
   ::-webkit-scrollbar { height: 0; width: 0; }
 </style>
@@ -89,7 +101,7 @@
 <div id="root"></div>
 <script type="text/babel">
 'use strict';
-var APP_VERSION = '3.1.0';
+var APP_VERSION = '3.2.0';
 var useState = React.useState, useEffect = React.useEffect, useRef = React.useRef;
 
 // NAME POOL — [name, decade, aliveFallback, wikiTitle?]. Wikipedia is truth at play time. Expand by adding lines.
@@ -270,60 +282,59 @@ function App(){
 
   if(screen==='splash') return <Splash onPlay={function(){ setScreen('setup'); }} />;
   if(screen==='setup') return <Setup players={players} setPlayerName={setPlayerName} addPlayer={addPlayer} removePlayer={removePlayer}
-    cats={cats} toggleCat={toggleCat} decade={decade} setDecade={setDecade} timerSec={timerSec} setTimerSec={setTimerSec} canStart={canStart} onStart={startGame} />;
+    cats={cats} toggleCat={toggleCat} decade={decade} setDecade={setDecade} timerSec={timerSec} setTimerSec={setTimerSec} canStart={canStart} onStart={startGame} onBack={function(){setScreen('splash');}} />;
   if(screen==='win') return <Win winnerName={scores[winner]?scores[winner].name:''} scores={scores} onAgain={playAgain} onNew={newGame} />;
   return <Play scores={scores} turn={turn} current={current} reveal={reveal} busy={busy} timerSec={timerSec} left={left}
     onGuess={submitGuess} onNext={scoreAndAdvance} onQuit={newGame} />;
 }
 
-// ---- Splash: modern wanted poster ----
+// ---- Splash: full-screen neon-sign wanted poster (WANTED is the hero) ----
 function Splash(props){
   return (
-    <div className="max-w-md mx-auto px-5 flex flex-col justify-center" style={{minHeight:'100dvh'}}>
-      <div className="rise relative rounded-3xl px-6 py-10"
-        style={{ border:'1px solid var(--line-2)', background:'linear-gradient(180deg, #131a29, #0d1220)', boxShadow:'0 0 60px rgba(47,243,214,0.10), inset 0 0 40px rgba(0,0,0,0.4)' }}>
-        {/* corner ticks */}
-        <span className="absolute top-3 left-3 w-4 h-4 border-l-2 border-t-2 rounded-tl" style={{borderColor:'var(--teal)'}}></span>
-        <span className="absolute top-3 right-3 w-4 h-4 border-r-2 border-t-2 rounded-tr" style={{borderColor:'var(--pink)'}}></span>
-        <span className="absolute bottom-3 left-3 w-4 h-4 border-l-2 border-b-2 rounded-bl" style={{borderColor:'var(--pink)'}}></span>
-        <span className="absolute bottom-3 right-3 w-4 h-4 border-r-2 border-b-2 rounded-br" style={{borderColor:'var(--teal)'}}></span>
-
-        <div className="text-center">
-          <div className="text-xs tracking-[0.45em] t2 mb-3">&#9733; &nbsp;W A N T E D&nbsp; &#9733;</div>
-          <div className="display flicker text-8xl leading-none neon-teal">DORA</div>
-
-          <div className="my-6 flex items-center justify-center gap-3">
-            <span className="h-px flex-1" style={{background:'linear-gradient(90deg,transparent,var(--line-2))'}}></span>
-            <span className="text-xs tracking-[0.3em] t3">THE PARTY GAME</span>
-            <span className="h-px flex-1" style={{background:'linear-gradient(90deg,var(--line-2),transparent)'}}></span>
-          </div>
-
-          <div className="display leading-none">
-            <div className="text-6xl neon-dead">Dead</div>
-            <div className="text-2xl t3 my-1">or</div>
-            <div className="text-6xl neon-alive">Alive</div>
-          </div>
-
-          <p className="t2 text-sm mt-7 mb-8">A name drops. You call it &mdash;<br/>living, or long gone. First to {WIN_SCORE} wins.</p>
-
-          <button onClick={props.onPlay}
-            className="btn display w-full rounded-2xl py-4 text-3xl glow-teal"
-            style={{ background:'var(--teal)', color:'#061a15' }}>Play</button>
-        </div>
+    <div className="w-full flex flex-col px-6" style={{minHeight:'100dvh', paddingTop:'max(1.5rem, env(safe-area-inset-top))', paddingBottom:'max(1.5rem, env(safe-area-inset-bottom))'}}>
+      {/* brand tag — small, this is just what we call it */}
+      <div className="flex items-center justify-center gap-2 pt-2 rise">
+        <span className="display text-lg neon-teal">DORA</span>
+        <span className="t3 text-[11px] tracking-[0.3em]">THE PARTY GAME</span>
       </div>
-      <p className="text-center t3 text-xs mt-6">v{APP_VERSION} &middot; verified live from Wikipedia</p>
+
+      {/* HERO — fills the middle */}
+      <div className="flex-1 flex flex-col items-center justify-center text-center">
+        <div className="t2 text-xs tracking-[0.5em] mb-4 flick2">&#9733;&nbsp;&nbsp;R E W A R D&nbsp;: &nbsp;B R A G G I N G&nbsp; R I G H T S&nbsp;&nbsp;&#9733;</div>
+
+        <div className="display flick neon-pink leading-[0.9]" style={{fontSize:'clamp(76px, 26vw, 200px)'}}>Wanted</div>
+
+        <div className="my-5 w-full flex items-center justify-center gap-3 max-w-xs mx-auto">
+          <span className="h-px flex-1" style={{background:'linear-gradient(90deg,transparent,var(--line-2))'}}></span>
+          <span className="t3 text-xs tracking-[0.35em]">DEAD OR ALIVE</span>
+          <span className="h-px flex-1" style={{background:'linear-gradient(90deg,var(--line-2),transparent)'}}></span>
+        </div>
+
+        <div className="display leading-[0.85]">
+          <span className="neon-alive" style={{fontSize:'clamp(52px, 17vw, 128px)'}}>Dead</span>
+          <span className="t3 mx-3" style={{fontSize:'clamp(24px, 7vw, 56px)'}}>or</span>
+          <span className="neon-dead" style={{fontSize:'clamp(52px, 17vw, 128px)'}}>Alive</span>
+        </div>
+
+        <p className="t2 text-sm mt-8 max-w-xs">A legend drops. You call it &mdash; still standing, or long gone.<br/><span className="t3">First to {WIN_SCORE} wins.</span></p>
+      </div>
+
+      {/* bottom action */}
+      <div className="pb-2">
+        <button onClick={props.onPlay} className="btn display w-full rounded-2xl py-5 text-4xl glow-teal" style={{ background:'var(--teal)', color:'#061a15' }}>Play</button>
+        <p className="text-center t3 text-xs mt-4">v{APP_VERSION} &middot; verified live from Wikipedia</p>
+      </div>
     </div>
   );
 }
 
 function Setup(props){
   return (
-    <div className="max-w-md mx-auto px-5 py-8" style={{paddingTop:'max(2rem, env(safe-area-inset-top))'}}>
-      <div className="text-center mb-8 rise">
-        <div className="display text-6xl leading-none neon-teal">DORA</div>
-        <div className="flex items-center justify-center gap-2 mt-2 display">
-          <span className="text-lg neon-dead">Dead</span><span className="t3 text-sm normal-case">or</span><span className="text-lg neon-alive">Alive</span>
-        </div>
+    <div className="max-w-md mx-auto px-5 py-6" style={{paddingTop:'max(1.5rem, env(safe-area-inset-top))'}}>
+      <div className="flex items-center justify-between mb-6 rise">
+        <button onClick={props.onBack} className="chip rounded-xl px-3 py-2 text-sm">&#8592; Back</button>
+        <span className="display text-2xl neon-teal">DORA</span>
+        <span className="w-16"></span>
       </div>
       <Section label="Players">
         <div className="space-y-2">
@@ -391,7 +402,7 @@ function Play(props){
           <div className="text-center">
             <div className="t2 text-sm mb-1 rise">{me}, your call</div>
             <div className="text-xs uppercase tracking-[0.25em] mb-7 rise neon-teal">{catLabel(cur.cat)}{cur.decade==='Any'?'':' \u00b7 '+cur.decade}</div>
-            <div className="pop panel rounded-3xl px-6 py-12 mb-3" style={{background:'linear-gradient(180deg, #161d2c, #0d1220)'}}>
+            <div className="pop panel rounded-3xl px-6 py-14 mb-3" style={{background:'linear-gradient(180deg, #161d2c, #0b1018)'}}>
               <div className="display text-6xl leading-tight text-white">{cur.name}</div>
             </div>
             <div className="t3 text-sm mb-7">Dead or alive?</div>
@@ -399,8 +410,8 @@ function Play(props){
             {props.busy
               ? <div className="t2 py-5 rise">Checking the record&hellip;</div>
               : <div className="grid grid-cols-2 gap-3">
-                  <button onClick={function(){props.onGuess(false,false);}} className="btn display rounded-2xl py-7 text-4xl glow-dead" style={{background:'var(--dead)', color:'#fff'}}>Dead</button>
-                  <button onClick={function(){props.onGuess(true,false);}} className="btn display rounded-2xl py-7 text-4xl glow-alive" style={{background:'var(--alive)', color:'#03150e'}}>Alive</button>
+                  <button onClick={function(){props.onGuess(false,false);}} className="btn display rounded-2xl py-8 text-4xl glow-dead" style={{background:'var(--dead)', color:'#fff'}}>Dead</button>
+                  <button onClick={function(){props.onGuess(true,false);}} className="btn display rounded-2xl py-8 text-4xl glow-alive" style={{background:'var(--alive)', color:'#03150e'}}>Alive</button>
                 </div>}
           </div>}
         {rev && cur && <Reveal name={cur.name} rev={rev} playerName={me} onNext={props.onNext} />}
@@ -431,11 +442,11 @@ function Reveal(props){
   else { outcome='Missed'; oNeon='neon-dead'; }
   return (
     <div className="text-center">
-      <div className="relative panel rounded-3xl px-6 py-12 mb-5 overflow-hidden">
+      <div className="relative panel rounded-3xl px-6 py-14 mb-5 overflow-hidden">
         <div className="flash absolute inset-0" style={{background:flashCol}}></div>
         <div className="relative">
           <div className="t2 text-sm mb-4">{props.name}</div>
-          <div className={'slam display text-8xl leading-none '+neon}>{verdict}</div>
+          <div className={'slam display leading-none '+neon} style={{fontSize:'clamp(72px, 24vw, 150px)'}}>{verdict}</div>
           <div className="t2 text-lg mt-3">{sub}</div>
           {rev.unknown && <div className="t3 text-xs mt-3">Wikipedia didn&rsquo;t confirm &mdash; using our record.</div>}
         </div>
@@ -451,9 +462,9 @@ function Win(props){
   return (
     <div className="max-w-md mx-auto px-5 py-10 flex flex-col justify-center" style={{minHeight:'100dvh'}}>
       <div className="text-center rise">
-        <div className="text-xs uppercase tracking-[0.3em] t3 mb-3">Winner</div>
-        <div className="slam display text-7xl leading-none mb-1 neon-teal">{props.winnerName}</div>
-        <div className="display text-4xl text-white mb-8">wins!</div>
+        <div className="t3 text-xs uppercase tracking-[0.3em] mb-3">Winner</div>
+        <div className="slam display leading-none mb-1 neon-teal" style={{fontSize:'clamp(56px, 18vw, 120px)'}}>{props.winnerName}</div>
+        <div className="display text-5xl neon-pink mb-8">wins!</div>
         <div className="panel rounded-2xl divide-y" style={{borderColor:'var(--line)'}}>
           {sorted.map(function(p,i){ return (
             <div key={i} className="flex items-center justify-between px-5 py-3" style={{borderColor:'var(--line)'}}>
