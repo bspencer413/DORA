@@ -115,7 +115,7 @@
 <div id="root"></div>
 <script type="text/babel">
 'use strict';
-var APP_VERSION = '3.4.0';
+var APP_VERSION = '3.4.1';
 var useState = React.useState, useEffect = React.useEffect, useRef = React.useRef;
 
 // NAME POOL — [name, decade, aliveFallback, wikiTitle?]. Wikipedia is truth at play time. Expand by adding lines.
@@ -234,7 +234,7 @@ function verifyAlive(title){
 function App(){
   var sc=useState('splash'), screen=sc[0], setScreen=sc[1];
   var pl=useState(['','']), players=pl[0], setPlayers=pl[1];
-  var ct=useState(['actors','performers','athletes','politics','authors']), cats=ct[0], setCats=ct[1];
+  var ct=useState([]), cats=ct[0], setCats=ct[1];
   var dc=useState('Any'), decade=dc[0], setDecade=dc[1];
   var tm=useState(0), timerSec=tm[0], setTimerSec=tm[1];
   var scS=useState([]), scores=scS[0], setScores=scS[1];
