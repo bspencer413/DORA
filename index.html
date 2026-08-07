@@ -115,7 +115,7 @@
 <div id="root"></div>
 <script type="text/babel">
 'use strict';
-var APP_VERSION = '3.4.4';
+var APP_VERSION = '3.5.1';
 var useState = React.useState, useEffect = React.useEffect, useRef = React.useRef;
 
 // NAME POOL — [name, decade, aliveFallback, wikiTitle?]. Wikipedia is truth at play time. Expand by adding lines.
@@ -175,7 +175,12 @@ var POOL = {
     ['Al Gore','90s',true], ['Newt Gingrich','90s',true], ['Madeleine Albright','90s',false],
     ['Tony Blair','90s',true], ['Angela Merkel','00s',true], ['Fidel Castro','60s',false],
     ['Yasser Arafat','70s',false], ['Boris Yeltsin','90s',false], ['Dick Cheney','00s',true],
-    ['Jesse Jackson','80s',true], ['Bob Dole','90s',false]
+    ['Jesse Jackson','80s',true], ['Bob Dole','90s',false],
+    ['Joe Biden','00s',true], ['Hillary Clinton','90s',true], ['Nancy Pelosi','00s',true],
+    ['Mitch McConnell','90s',true], ['Condoleezza Rice','00s',true], ['John Kerry','00s',true],
+    ['Bernie Sanders','10s',true], ['Vladimir Putin','00s',true], ['Bill Bradley','80s',true],
+    ['Jerry Brown','80s',true], ['Arnold Schwarzenegger','00s',true], ['Michael Dukakis','80s',true],
+    ['Dan Quayle','90s',true], ['Walter Mondale','80s',false]
   ],
   authors: [
     ['Ken Kesey','60s',false], ['Hunter S. Thompson','70s',false], ['Robert A. Heinlein','50s',false],
@@ -477,9 +482,8 @@ function Win(props){
   return (
     <div className="max-w-md mx-auto px-5 py-10 flex flex-col justify-center" style={{minHeight:'100dvh'}}>
       <div className="text-center rise">
-        <div className="t3 text-xs uppercase tracking-[0.3em] mb-3">Winner</div>
-        <div className="slam display leading-none mb-1 neon-teal" style={{fontSize:'clamp(56px, 18vw, 120px)'}}>{props.winnerName}</div>
-        <div className="display text-5xl neon-pink mb-8">wins!</div>
+        <div className="slam display leading-[0.9] neon-teal" style={{fontSize:'clamp(72px, 24vw, 170px)'}}>{props.winnerName}</div>
+        <div className="display neon-pink mt-1 mb-9" style={{fontSize:'clamp(64px, 22vw, 150px)'}}>WINS!</div>
         <div className="panel rounded-2xl divide-y" style={{borderColor:'var(--line)'}}>
           {sorted.map(function(p,i){ return (
             <div key={i} className="flex items-center justify-between px-5 py-3" style={{borderColor:'var(--line)'}}>
