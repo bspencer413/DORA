@@ -115,7 +115,7 @@
 <div id="root"></div>
 <script type="text/babel">
 'use strict';
-var APP_VERSION = '3.4.2';
+var APP_VERSION = '3.4.3';
 var useState = React.useState, useEffect = React.useEffect, useRef = React.useRef;
 
 // NAME POOL — [name, decade, aliveFallback, wikiTitle?]. Wikipedia is truth at play time. Expand by adding lines.
@@ -321,12 +321,6 @@ function Splash(props){
           </div>
 
           <div className="display flick neon-pink leading-[0.9]" style={{fontSize:'clamp(80px, 27vw, 210px)'}}>Wanted</div>
-
-          <div className="my-5 w-full flex items-center justify-center gap-3 max-w-xs mx-auto">
-            <span className="h-px flex-1" style={{background:'linear-gradient(90deg,transparent,var(--line-2))'}}></span>
-            <span className="t2 text-2xl tracking-[0.3em] display">DEAD OR ALIVE</span>
-            <span className="h-px flex-1" style={{background:'linear-gradient(90deg,var(--line-2),transparent)'}}></span>
-          </div>
 
           <div className="display blink leading-[0.85]">
             <span className="neon-alive" style={{fontSize:'clamp(52px, 17vw, 128px)'}}>Dead</span>
