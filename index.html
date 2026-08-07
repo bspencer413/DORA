@@ -1,90 +1,85 @@
-<!-- DORA v2.0.0 | 2026-08-03 | Dead or Alive party game — frontend-only, Wikipedia-verified. Round-robin, first to 7. -->
+<!-- DORA v3.0.0 | 2026-08-05 | Dead or Alive — sleek redesign. Actors/Performers/Athletes/Politicians/Authors/Random. Wikipedia-verified. First to 7. -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>DORA — Dead or Alive</title>
-<meta name="description" content="Dead or Alive: the party game. Name a star, guess living or gone, first to 7 wins. Verified live from Wikipedia.">
+<meta name="description" content="Dead or Alive: the party game. Name a star, call it — alive or gone. First to 7 wins. Verified live from Wikipedia.">
+<meta name="theme-color" content="#050608">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --ink: #0a0f1a;
-    --panel: #111a2b;
-    --panel-2: #16233b;
-    --teal: #2dd4bf;
-    --teal-deep: #0d9488;
-    --alive: #34d399;
-    --dead: #fb7185;
-    --slate: #64748b;
-    --line: #24344f;
+    --void: #050608;
+    --panel: #0d1017;
+    --panel-2: #141924;
+    --line: #212836;
+    --teal: #2ff3d6;
+    --alive: #22f5a8;
+    --dead: #ff3b6b;
+    --ghost: #7c8aa5;
   }
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; padding: 0; }
   body {
-    font-family: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
     background:
-      radial-gradient(1200px 600px at 50% -10%, #16233b 0%, rgba(22,35,59,0) 60%),
-      var(--ink);
-    color: #eef2f8;
-    min-height: 100vh;
-    -webkit-font-smoothing: antialiased;
+      radial-gradient(900px 500px at 15% -5%, rgba(47,243,214,0.10), transparent 55%),
+      radial-gradient(900px 600px at 100% 110%, rgba(255,59,107,0.10), transparent 55%),
+      var(--void);
+    color: #eaf0f7;
+    min-height: 100vh; min-height: 100dvh;
+    -webkit-font-smoothing: antialiased; overflow-x: hidden;
   }
-  .display { font-family: 'Anton', sans-serif; letter-spacing: 0.01em; text-transform: uppercase; }
+  .display { font-family: 'Anton', sans-serif; text-transform: uppercase; letter-spacing: 0.005em; }
   .tnum { font-variant-numeric: tabular-nums; }
-  .card { background: var(--panel); border: 1px solid var(--line); }
+  .panel { background: var(--panel); border: 1px solid var(--line); }
   .chip {
-    border: 1px solid var(--line); background: var(--panel-2);
-    transition: transform .08s ease, border-color .12s ease, background .12s ease;
+    border: 1px solid var(--line); background: var(--panel-2); color: #9fb0c7;
+    transition: transform .08s ease, border-color .14s ease, color .14s ease, box-shadow .14s ease;
   }
-  .chip:active { transform: scale(0.97); }
-  .chip-on { background: rgba(45,212,191,0.14); border-color: var(--teal); color: #baf7ee; }
-  .bigbtn { transition: transform .06s ease, filter .12s ease; }
-  .bigbtn:active { transform: scale(0.98); }
-  .stamp {
-    animation: stampIn .34s cubic-bezier(.2,1.3,.4,1) both;
+  .chip:active { transform: scale(0.96); }
+  .chip-on { color: #061a15; background: var(--teal); border-color: var(--teal); box-shadow: 0 0 22px rgba(47,243,214,0.35); }
+  .btn { transition: transform .06s ease, box-shadow .16s ease, filter .16s ease; }
+  .btn:active { transform: scale(0.985); }
+  .glow-teal { box-shadow: 0 0 28px rgba(47,243,214,0.30); }
+  .glow-alive { box-shadow: 0 0 34px rgba(34,245,168,0.45); }
+  .glow-dead  { box-shadow: 0 0 34px rgba(255,59,107,0.42); }
+  .slam { animation: slam .42s cubic-bezier(.16,1.15,.3,1) both; }
+  @keyframes slam {
+    0%   { opacity: 0; transform: scale(1.9) rotate(-6deg); filter: blur(6px); }
+    55%  { opacity: 1; filter: blur(0); }
+    70%  { transform: scale(0.94) rotate(1deg); }
+    100% { opacity: 1; transform: scale(1) rotate(-2deg); }
   }
-  @keyframes stampIn {
-    0% { opacity: 0; transform: scale(1.6) rotate(-8deg); }
-    60% { opacity: 1; }
-    100% { opacity: 1; transform: scale(1) rotate(-3deg); }
-  }
-  .rise { animation: rise .3s ease both; }
-  @keyframes rise { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
-  .ringwrap { position: relative; width: 44px; height: 44px; }
+  .flash { animation: flash .5s ease both; }
+  @keyframes flash { 0% { opacity: 0.5; } 100% { opacity: 0; } }
+  .rise { animation: rise .34s ease both; }
+  @keyframes rise { 0% { opacity: 0; transform: translateY(12px); } 100% { opacity: 1; transform: translateY(0); } }
+  .pulse-name { animation: pulseName .3s ease both; }
+  @keyframes pulseName { 0% { opacity: 0; transform: scale(.96); } 100% { opacity: 1; transform: scale(1); } }
+  .ringwrap { position: relative; width: 46px; height: 46px; }
   .ringwrap svg { transform: rotate(-90deg); }
-  @media (prefers-reduced-motion: reduce) {
-    .stamp, .rise { animation: none; }
-  }
-  .tap { -webkit-tap-highlight-color: transparent; }
+  @media (prefers-reduced-motion: reduce) { .slam,.rise,.flash,.pulse-name { animation: none; } }
   input { font-family: inherit; }
+  ::-webkit-scrollbar { height: 0; width: 0; }
 </style>
 </head>
 <body>
-<div id="root" class="tap"></div>
-
+<div id="root"></div>
 <script type="text/babel">
 'use strict';
-var APP_VERSION = '2.0.0';
-var useState = React.useState;
-var useEffect = React.useEffect;
-var useRef = React.useRef;
+var APP_VERSION = '3.0.0';
+var useState = React.useState, useEffect = React.useEffect, useRef = React.useRef;
 
-// ============================================================================
-// NAME POOL — curated, decade-tagged. Format per entry: [name, decade, aliveFallback, wikiTitle?]
-//   decade      = era they're best known for (the decade filter narrows on this)
-//   aliveFallback = best-guess used ONLY if the live Wikipedia check fails
-//   wikiTitle   = optional, when the exact Wikipedia page title differs from name
-// Wikipedia is the source of truth at play time (stays current as people pass).
-// To expand: just add lines to any category array below.
-// ============================================================================
+// NAME POOL — [name, decade, aliveFallback, wikiTitle?]. Wikipedia is truth at play time. Expand by adding lines.
 var POOL = {
-  movies: [
+  actors: [
     ['Tom Cruise','80s',true], ['Meryl Streep','80s',true], ['Marlon Brando','50s',false],
     ['Audrey Hepburn','50s',false], ['Robert De Niro','70s',true], ['Al Pacino','70s',true],
     ['Elizabeth Taylor','50s',false], ['James Dean','50s',false], ['Clint Eastwood','60s',true],
@@ -97,7 +92,7 @@ var POOL = {
     ['Ingrid Bergman','40s',false], ['Robin Williams','90s',false], ['Morgan Freeman','90s',true],
     ['Sophia Loren','60s',true], ['Gene Hackman','70s',false], ['Betty White','50s',false]
   ],
-  music: [
+  performers: [
     ['Mick Jagger','60s',true], ['Keith Richards','60s',true], ['David Bowie','70s',false],
     ['John Lennon','60s',false], ['Paul McCartney','60s',true], ['Elvis Presley','50s',false],
     ['Prince','80s',false,'Prince (musician)'], ['Freddie Mercury','70s',false], ['Bob Dylan','60s',true],
@@ -106,19 +101,28 @@ var POOL = {
     ['Ringo Starr','60s',true], ['George Harrison','60s',false], ['Chuck Berry','50s',false],
     ['Little Richard','50s',false], ['Buddy Holly','50s',false], ['Eric Clapton','60s',true],
     ['Ozzy Osbourne','70s',false], ['Stevie Nicks','70s',true], ['Madonna','80s',true],
-    ['Phil Collins','80s',true], ['Tina Turner','80s',false], ['Grace Slick','60s',true],
-    ['Neil Young','70s',true], ['Jerry Garcia','70s',false]
+    ['Phil Collins','80s',true], ['Tina Turner','80s',false], ['Neil Young','70s',true],
+    ['Jerry Garcia','70s',false], ['Aretha Franklin','60s',false], ['Frank Sinatra','50s',false],
+    ['Tony Bennett','50s',false], ['Diana Ross','60s',true], ['Stevie Wonder','70s',true],
+    ['Whitney Houston','80s',false], ['Michael Jackson','80s',false], ['Barbra Streisand','60s',true],
+    ['Ray Charles','50s',false], ['Nat King Cole','50s',false], ['Dolly Parton','70s',true],
+    ['Willie Nelson','70s',true], ['Johnny Cash','60s',false], ['Cher','70s',true],
+    ['Elton John','70s',true], ['Adele','00s',true], ['Beyonce','00s',true,'Beyonc\u00e9'],
+    ['Amy Winehouse','00s',false], ['Luciano Pavarotti','90s',false], ['Sam Cooke','60s',false],
+    ['Marvin Gaye','70s',false], ['Smokey Robinson','60s',true], ['Lionel Richie','80s',true],
+    ['Harry Belafonte','50s',false], ['Patsy Cline','50s',false]
   ],
-  singers: [
-    ['Aretha Franklin','60s',false], ['Frank Sinatra','50s',false], ['Tony Bennett','50s',false],
-    ['Diana Ross','60s',true], ['Stevie Wonder','70s',true], ['Whitney Houston','80s',false],
-    ['Michael Jackson','80s',false], ['Barbra Streisand','60s',true], ['Ray Charles','50s',false],
-    ['Nat King Cole','50s',false], ['Dolly Parton','70s',true], ['Willie Nelson','70s',true],
-    ['Johnny Cash','60s',false], ['Cher','70s',true], ['Elton John','70s',true],
-    ['Adele','00s',true], ['Beyonce','00s',true,'Beyonc\u00e9'], ['Amy Winehouse','00s',false],
-    ['Luciano Pavarotti','90s',false], ['Patsy Cline','50s',false], ['Sam Cooke','60s',false],
-    ['Marvin Gaye','70s',false], ['Gladys Knight','70s',true], ['Smokey Robinson','60s',true],
-    ['Lionel Richie','80s',true], ['Andrea Bocelli','90s',true], ['Harry Belafonte','50s',false]
+  athletes: [
+    ['Muhammad Ali','60s',false], ['Michael Jordan','90s',true], ['Wayne Gretzky','80s',true],
+    ['Pele','60s',false,'Pel\u00e9'], ['Kobe Bryant','00s',false], ['Magic Johnson','80s',true],
+    ['Larry Bird','80s',true], ['Joe Montana','80s',true], ['Jackie Robinson','40s',false],
+    ['Jack Nicklaus','70s',true], ['Arnold Palmer','60s',false], ['Billie Jean King','70s',true],
+    ['Serena Williams','00s',true], ['Tiger Woods','90s',true], ['Joe DiMaggio','40s',false],
+    ['Mickey Mantle','50s',false], ['Hank Aaron','60s',false], ['Willie Mays','50s',false],
+    ['Kareem Abdul-Jabbar','70s',true], ['Bill Russell','60s',false], ['Wilt Chamberlain','60s',false],
+    ['Mike Tyson','80s',true], ['Joe Frazier','70s',false], ['George Foreman','70s',false],
+    ['Diego Maradona','80s',false], ['Bo Jackson','80s',true], ['John Madden','70s',false],
+    ['Nadia Comaneci','70s',true,'Nadia Com\u0103neci']
   ],
   politics: [
     ['Jimmy Carter','70s',false], ['Bill Clinton','90s',true], ['George W. Bush','00s',true],
@@ -132,519 +136,286 @@ var POOL = {
     ['Yasser Arafat','70s',false], ['Boris Yeltsin','90s',false], ['Dick Cheney','00s',true],
     ['Jesse Jackson','80s',true], ['Bob Dole','90s',false]
   ],
-  sports: [
-    ['Muhammad Ali','60s',false], ['Michael Jordan','90s',true], ['Wayne Gretzky','80s',true],
-    ['Pele','60s',false,'Pel\u00e9'], ['Kobe Bryant','00s',false], ['Magic Johnson','80s',true],
-    ['Larry Bird','80s',true], ['Joe Montana','80s',true], ['Jackie Robinson','40s',false],
-    ['Jack Nicklaus','70s',true], ['Arnold Palmer','60s',false], ['Billie Jean King','70s',true],
-    ['Serena Williams','00s',true], ['Tiger Woods','90s',true], ['Joe DiMaggio','40s',false],
-    ['Mickey Mantle','50s',false], ['Hank Aaron','60s',false], ['Willie Mays','50s',false],
-    ['Kareem Abdul-Jabbar','70s',true], ['Bill Russell','60s',false], ['Wilt Chamberlain','60s',false],
-    ['Mike Tyson','80s',true], ['Joe Frazier','70s',false], ['George Foreman','70s',false],
-    ['Diego Maradona','80s',false], ['Bo Jackson','80s',true], ['John Madden','70s',false],
-    ['Nadia Comaneci','70s',true,'Nadia Com\u0103neci']
+  authors: [
+    ['Ken Kesey','60s',false], ['Hunter S. Thompson','70s',false], ['Robert A. Heinlein','50s',false],
+    ['Ernest Hemingway','50s',false], ['Maya Angelou','70s',false], ['Toni Morrison','80s',false],
+    ['Kurt Vonnegut','60s',false], ['Ray Bradbury','50s',false], ['Isaac Asimov','50s',false],
+    ['Philip K. Dick','60s',false], ['Harper Lee','60s',false], ['Truman Capote','60s',false],
+    ['Gore Vidal','70s',false], ['Michael Crichton','90s',false], ['Ursula K. Le Guin','70s',false],
+    ['Tom Wolfe','80s',false], ['Terry Pratchett','90s',false], ['Cormac McCarthy','00s',false],
+    ['Stephen King','80s',true], ['Margaret Atwood','80s',true], ['J. K. Rowling','90s',true],
+    ['Salman Rushdie','80s',true], ['Neil Gaiman','90s',true], ['George R. R. Martin','90s',true],
+    ['Joyce Carol Oates','70s',true], ['Don DeLillo','80s',true], ['Thomas Pynchon','70s',true],
+    ['William Gibson','80s',true]
   ]
 };
-
 var CATEGORIES = [
-  { id: 'movies',  label: 'Movie Stars' },
-  { id: 'music',   label: 'Artists' },
-  { id: 'singers', label: 'Singers' },
-  { id: 'politics',label: 'Politicians' },
-  { id: 'sports',  label: 'Sports Players' },
-  { id: 'random',  label: 'Random' }
+  { id:'actors', label:'Actors' }, { id:'performers', label:'Performers' },
+  { id:'athletes', label:'Athletes' }, { id:'politics', label:'Politicians' },
+  { id:'authors', label:'Authors' }, { id:'random', label:'Random' }
 ];
-
 var DECADES = ['Any','40s','50s','60s','70s','80s','90s','00s'];
 var WIN_SCORE = 7;
 
-// Build a flat list of {name, title, cat, decade, aliveFallback}
-function buildFlat() {
-  var out = [];
-  for (var cat in POOL) {
-    if (!POOL.hasOwnProperty(cat)) continue;
-    var arr = POOL[cat];
-    for (var i = 0; i < arr.length; i++) {
-      var e = arr[i];
-      out.push({
-        name: e[0],
-        decade: e[1],
-        aliveFallback: e[2],
-        title: e[3] ? e[3] : e[0],
-        cat: cat
-      });
-    }
-  }
+function buildFlat(){
+  var out=[];
+  for (var cat in POOL){ if(!POOL.hasOwnProperty(cat)) continue; var arr=POOL[cat];
+    for (var i=0;i<arr.length;i++){ var e=arr[i];
+      out.push({ name:e[0], decade:e[1], aliveFallback:e[2], title:e[3]?e[3]:e[0], cat:cat }); } }
   return out;
 }
 var ALL = buildFlat();
-
-// Filter the pool by selected categories + decade, excluding used titles.
-function poolFor(selectedCats, decade, usedTitles) {
-  var wantRandom = selectedCats.indexOf('random') !== -1;
-  return ALL.filter(function(p) {
-    if (usedTitles[p.title]) return false;
-    if (decade !== 'Any' && p.decade !== decade) return false;
+function poolFor(sel, decade, used){
+  var wantRandom = sel.indexOf('random')!==-1;
+  return ALL.filter(function(p){
+    if (used[p.title]) return false;
+    if (decade!=='Any' && p.decade!==decade) return false;
     if (wantRandom) return true;
-    return selectedCats.indexOf(p.cat) !== -1;
+    return sel.indexOf(p.cat)!==-1;
   });
 }
+function pickRandom(list){ if(!list.length) return null; return list[Math.floor(Math.random()*list.length)]; }
+function catLabel(id){ for(var i=0;i<CATEGORIES.length;i++) if(CATEGORIES[i].id===id) return CATEGORIES[i].label; return ''; }
 
-function pickRandom(list) {
-  if (!list.length) return null;
-  return list[Math.floor(Math.random() * list.length)];
+function verifyAlive(title){
+  var url='https://en.wikipedia.org/w/api.php?action=query&prop=categories&cllimit=500&clshow=!hidden&redirects=1&format=json&origin=*&titles='+encodeURIComponent(title);
+  return fetch(url).then(function(r){return r.json();}).then(function(data){
+    var cats=[];
+    try{ var pages=data.query.pages; for(var k in pages) if(pages.hasOwnProperty(k)&&pages[k].categories) cats=pages[k].categories.map(function(c){return c.title;}); }catch(e){cats=[];}
+    var living=false, year=null;
+    for(var i=0;i<cats.length;i++){ if(cats[i].indexOf('Living people')!==-1) living=true; var m=cats[i].match(/Category:(\d{4}) deaths/); if(m) year=m[1]; }
+    if(year) return {alive:false, year:year};
+    if(living) return {alive:true, year:null};
+    return {alive:null, year:null};
+  }).catch(function(){ return {alive:null, year:null}; });
 }
 
-// ---- Wikipedia verification -------------------------------------------------
-// Uses the categories API. 'Living people' => alive. 'YYYY deaths' => dead + year.
-// Returns a promise of { alive: bool|null, year: string|null }.
-function verifyAlive(title) {
-  var url = 'https://en.wikipedia.org/w/api.php'
-    + '?action=query&prop=categories&cllimit=500&clshow=!hidden'
-    + '&redirects=1&format=json&origin=*&titles=' + encodeURIComponent(title);
-  return fetch(url).then(function(r) { return r.json(); }).then(function(data) {
-    var cats = [];
-    try {
-      var pages = data.query.pages;
-      for (var k in pages) {
-        if (pages.hasOwnProperty(k) && pages[k].categories) {
-          cats = pages[k].categories.map(function(c) { return c.title; });
-        }
-      }
-    } catch (e) { cats = []; }
-    var living = false, deathYear = null;
-    for (var i = 0; i < cats.length; i++) {
-      if (cats[i].indexOf('Living people') !== -1) living = true;
-      var m = cats[i].match(/Category:(\d{4}) deaths/);
-      if (m) deathYear = m[1];
-    }
-    if (deathYear) return { alive: false, year: deathYear };
-    if (living) return { alive: true, year: null };
-    return { alive: null, year: null };
-  }).catch(function() { return { alive: null, year: null }; });
-}
+function App(){
+  var sc=useState('setup'), screen=sc[0], setScreen=sc[1];
+  var pl=useState(['','']), players=pl[0], setPlayers=pl[1];
+  var ct=useState(['actors','performers','athletes','politics','authors']), cats=ct[0], setCats=ct[1];
+  var dc=useState('Any'), decade=dc[0], setDecade=dc[1];
+  var tm=useState(0), timerSec=tm[0], setTimerSec=tm[1];
+  var scS=useState([]), scores=scS[0], setScores=scS[1];
+  var tn=useState(0), turn=tn[0], setTurn=tn[1];
+  var us=useState({}), used=us[0], setUsed=us[1];
+  var cu=useState(null), current=cu[0], setCurrent=cu[1];
+  var rv=useState(null), reveal=rv[0], setReveal=rv[1];
+  var bs=useState(false), busy=bs[0], setBusy=bs[1];
+  var wnr=useState(-1), winner=wnr[0], setWinner=wnr[1];
+  var lf=useState(0), left=lf[0], setLeft=lf[1];
+  var tickRef=useRef(null);
 
-// ============================================================================
-// UI
-// ============================================================================
-function App() {
-  var screenState = useState('setup'); var screen = screenState[0], setScreen = screenState[1];
+  var validPlayers=players.filter(function(p){return p.trim().length>0;});
+  var canStart=validPlayers.length>=2 && cats.length>=1;
 
-  // setup config
-  var playersState = useState(['', '']); var players = playersState[0], setPlayers = playersState[1];
-  var catsState = useState(['movies','music','singers','politics','sports']); var cats = catsState[0], setCats = catsState[1];
-  var decadeState = useState('Any'); var decade = decadeState[0], setDecade = decadeState[1];
-  var timerState = useState(0); var timerSec = timerState[0], setTimerSec = timerState[1]; // 0 = off
+  function toggleCat(id){ if(cats.indexOf(id)!==-1) setCats(cats.filter(function(c){return c!==id;})); else setCats(cats.concat([id])); }
+  function setPlayerName(i,v){ var n=players.slice(); n[i]=v; setPlayers(n); }
+  function addPlayer(){ if(players.length<6) setPlayers(players.concat([''])); }
+  function removePlayer(i){ if(players.length>2) setPlayers(players.filter(function(_,idx){return idx!==i;})); }
 
-  // game state
-  var scoresState = useState([]); var scores = scoresState[0], setScores = scoresState[1];
-  var turnState = useState(0); var turn = turnState[0], setTurn = turnState[1];
-  var usedState = useState({}); var used = usedState[0], setUsed = usedState[1];
-  var currentState = useState(null); var current = currentState[0], setCurrent = currentState[1];
-  var revealState = useState(null); var reveal = revealState[0], setReveal = revealState[1]; // {guess, truth, year, correct, unknown}
-  var busyState = useState(false); var busy = busyState[0], setBusy = busyState[1];
-  var winnerState = useState(-1); var winner = winnerState[0], setWinner = winnerState[1];
-  var leftState = useState(0); var left = leftState[0], setLeft = leftState[1]; // timer countdown
-  var tickRef = useRef(null);
-
-  var validPlayers = players.filter(function(p) { return p.trim().length > 0; });
-  var canStart = validPlayers.length >= 2 && cats.length >= 1;
-
-  function toggleCat(id) {
-    if (cats.indexOf(id) !== -1) setCats(cats.filter(function(c) { return c !== id; }));
-    else setCats(cats.concat([id]));
+  function startGame(){ var s=validPlayers.map(function(n){return {name:n.trim(),score:0};});
+    setScores(s); setTurn(0); setUsed({}); setCurrent(null); setReveal(null); setWinner(-1); setScreen('play'); serveNext(0,{}); }
+  function serveNext(nextTurn, usedMap){
+    var pool=poolFor(cats, decade, usedMap);
+    if(!pool.length){ usedMap={}; pool=poolFor(cats, decade, usedMap); setUsed({}); }
+    setCurrent(pickRandom(pool)); setReveal(null); setTurn(nextTurn); startTimer();
   }
-  function setPlayerName(i, val) {
-    var next = players.slice();
-    next[i] = val;
-    setPlayers(next);
-  }
-  function addPlayer() { if (players.length < 6) setPlayers(players.concat([''])); }
-  function removePlayer(i) { if (players.length > 2) setPlayers(players.filter(function(_, idx) { return idx !== i; })); }
+  function startTimer(){ clearTimer(); if(!timerSec){ setLeft(0); return; } setLeft(timerSec); }
+  function clearTimer(){ if(tickRef.current){ clearInterval(tickRef.current); tickRef.current=null; } }
 
-  function startGame() {
-    var names = validPlayers;
-    var s = names.map(function(n) { return { name: n.trim(), score: 0 }; });
-    setScores(s);
-    setTurn(0);
-    setUsed({});
-    setCurrent(null);
-    setReveal(null);
-    setWinner(-1);
-    setScreen('play');
-    serveNext(0, {});
-  }
-
-  function serveNext(nextTurn, usedMap) {
-    var pool = poolFor(cats, decade, usedMap);
-    if (!pool.length) {
-      // exhausted — allow repeats by resetting used
-      usedMap = {};
-      pool = poolFor(cats, decade, usedMap);
-      setUsed({});
-    }
-    var pick = pickRandom(pool);
-    setCurrent(pick);
-    setReveal(null);
-    setTurn(nextTurn);
-    startTimer();
-  }
-
-  function startTimer() {
+  useEffect(function(){
+    if(screen!=='play'||!timerSec||reveal||busy||!current){ clearTimer(); return; }
     clearTimer();
-    if (!timerSec) { setLeft(0); return; }
-    setLeft(timerSec);
-  }
-  function clearTimer() {
-    if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null; }
-  }
-
-  // countdown driver
-  useEffect(function() {
-    if (screen !== 'play' || !timerSec || reveal || busy || !current) { clearTimer(); return; }
-    clearTimer();
-    tickRef.current = setInterval(function() {
-      setLeft(function(prev) {
-        if (prev <= 1) {
-          clearTimer();
-          // time out => auto-wrong (guess null)
-          submitGuess(null, true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    tickRef.current=setInterval(function(){ setLeft(function(prev){ if(prev<=1){ clearTimer(); submitGuess(null,true); return 0; } return prev-1; }); },1000);
     return clearTimer;
-  }, [screen, timerSec, reveal, busy, current]);
+  },[screen,timerSec,reveal,busy,current]);
 
-  function submitGuess(guessAlive, timedOut) {
-    if (busy || reveal || !current) return;
-    setBusy(true);
-    clearTimer();
-    verifyAlive(current.title).then(function(res) {
-      var truthAlive = res.alive;
-      var unknown = false;
-      if (truthAlive === null) { truthAlive = current.aliveFallback; unknown = true; }
-      var correct = false;
-      if (!timedOut && guessAlive !== null) correct = (guessAlive === truthAlive);
-      setReveal({
-        guess: guessAlive,
-        truthAlive: truthAlive,
-        year: res.year,
-        correct: correct,
-        timedOut: !!timedOut,
-        unknown: unknown
-      });
+  function submitGuess(guessAlive, timedOut){
+    if(busy||reveal||!current) return;
+    setBusy(true); clearTimer();
+    verifyAlive(current.title).then(function(res){
+      var truthAlive=res.alive, unknown=false;
+      if(truthAlive===null){ truthAlive=current.aliveFallback; unknown=true; }
+      var correct=false;
+      if(!timedOut && guessAlive!==null) correct=(guessAlive===truthAlive);
+      setReveal({ guess:guessAlive, truthAlive:truthAlive, year:res.year, correct:correct, timedOut:!!timedOut, unknown:unknown });
       setBusy(false);
     });
   }
-
-  function scoreAndAdvance() {
-    var newScores = scores.map(function(s, i) {
-      if (i === turn && reveal && reveal.correct) return Object.assign({}, s, { score: s.score + 1 });
-      return s;
-    });
+  function scoreAndAdvance(){
+    var newScores=scores.map(function(s,i){ if(i===turn&&reveal&&reveal.correct) return Object.assign({},s,{score:s.score+1}); return s; });
     setScores(newScores);
-    var used2 = Object.assign({}, used);
-    if (current) used2[current.title] = true;
-    setUsed(used2);
-
-    // win check
-    if (reveal && reveal.correct && newScores[turn].score >= WIN_SCORE) {
-      setWinner(turn);
-      setScreen('win');
-      setReveal(null);
-      return;
-    }
-    var nextTurn = (turn + 1) % scores.length;
-    serveNext(nextTurn, used2);
+    var used2=Object.assign({},used); if(current) used2[current.title]=true; setUsed(used2);
+    if(reveal&&reveal.correct&&newScores[turn].score>=WIN_SCORE){ setWinner(turn); setScreen('win'); setReveal(null); return; }
+    serveNext((turn+1)%scores.length, used2);
   }
+  function newGame(){ setScreen('setup'); setReveal(null); setCurrent(null); setWinner(-1); }
+  function playAgain(){ var s=scores.map(function(x){return {name:x.name,score:0};}); setScores(s); setUsed({}); setWinner(-1); setScreen('play'); serveNext(0,{}); }
 
-  function newGame() {
-    setScreen('setup');
-    setReveal(null);
-    setCurrent(null);
-    setWinner(-1);
-  }
-  function playAgain() {
-    var s = scores.map(function(x) { return { name: x.name, score: 0 }; });
-    setScores(s);
-    setUsed({});
-    setWinner(-1);
-    setScreen('play');
-    serveNext(0, {});
-  }
-
-  // ---- render ----
-  if (screen === 'setup') return <Setup
-    players={players} setPlayerName={setPlayerName} addPlayer={addPlayer} removePlayer={removePlayer}
-    cats={cats} toggleCat={toggleCat} decade={decade} setDecade={setDecade}
-    timerSec={timerSec} setTimerSec={setTimerSec} canStart={canStart} onStart={startGame} />;
-
-  if (screen === 'win') return <Win winnerName={scores[winner] ? scores[winner].name : ''}
-    scores={scores} onAgain={playAgain} onNew={newGame} />;
-
-  return <Play
-    scores={scores} turn={turn} current={current} reveal={reveal} busy={busy}
-    timerSec={timerSec} left={left}
+  if(screen==='setup') return <Setup players={players} setPlayerName={setPlayerName} addPlayer={addPlayer} removePlayer={removePlayer}
+    cats={cats} toggleCat={toggleCat} decade={decade} setDecade={setDecade} timerSec={timerSec} setTimerSec={setTimerSec} canStart={canStart} onStart={startGame} />;
+  if(screen==='win') return <Win winnerName={scores[winner]?scores[winner].name:''} scores={scores} onAgain={playAgain} onNew={newGame} />;
+  return <Play scores={scores} turn={turn} current={current} reveal={reveal} busy={busy} timerSec={timerSec} left={left}
     onGuess={submitGuess} onNext={scoreAndAdvance} onQuit={newGame} />;
 }
 
-// ---- Setup screen ----
-function Setup(props) {
+function Setup(props){
   return (
-    <div className="max-w-md mx-auto px-5 py-8">
-      <div className="text-center mb-7 rise">
-        <div className="display text-6xl leading-none" style={{ color: 'var(--teal)' }}>DORA</div>
-        <div className="display text-2xl mt-1 text-slate-200">Dead or Alive</div>
-        <p className="text-slate-400 text-sm mt-3">Name a star. Guess living or gone.<br/>First to {WIN_SCORE} wins.</p>
+    <div className="max-w-md mx-auto px-5 py-8" style={{paddingTop:'max(2rem, env(safe-area-inset-top))'}}>
+      <div className="text-center mb-8 rise">
+        <div className="display text-7xl leading-none" style={{color:'var(--teal)', textShadow:'0 0 30px rgba(47,243,214,0.45)'}}>DORA</div>
+        <div className="flex items-center justify-center gap-2 mt-2">
+          <span className="display text-xl" style={{color:'var(--alive)'}}>Dead</span>
+          <span className="text-ghost text-sm">or</span>
+          <span className="display text-xl" style={{color:'var(--dead)'}}>Alive</span>
+        </div>
+        <p className="text-ghost text-sm mt-3">Name drops. You call it.<br/>First to {WIN_SCORE} wins.</p>
       </div>
-
       <Section label="Players">
         <div className="space-y-2">
-          {props.players.map(function(p, i) {
-            return (
-              <div key={i} className="flex items-center gap-2">
-                <input value={p} onChange={function(e){ props.setPlayerName(i, e.target.value); }}
-                  placeholder={'Player ' + (i + 1)} maxLength={16}
-                  className="card flex-1 rounded-xl px-4 py-3 text-white placeholder-slate-500 outline-none focus:border-teal-400"
-                  style={{ borderColor: 'var(--line)' }} />
-                {props.players.length > 2 &&
-                  <button onClick={function(){ props.removePlayer(i); }}
-                    className="chip rounded-xl w-11 h-11 text-slate-400 text-xl">&times;</button>}
-              </div>
-            );
-          })}
+          {props.players.map(function(p,i){ return (
+            <div key={i} className="flex items-center gap-2">
+              <input value={p} onChange={function(e){props.setPlayerName(i,e.target.value);}} placeholder={'Player '+(i+1)} maxLength={16}
+                className="panel flex-1 rounded-xl px-4 py-3 text-white placeholder-slate-600 outline-none"
+                onFocus={function(e){e.target.style.borderColor='var(--teal)';}} onBlur={function(e){e.target.style.borderColor='var(--line)';}} />
+              {props.players.length>2 && <button onClick={function(){props.removePlayer(i);}} className="chip rounded-xl w-11 h-11 text-xl">&times;</button>}
+            </div>
+          );})}
         </div>
-        {props.players.length < 6 &&
-          <button onClick={props.addPlayer}
-            className="chip rounded-xl w-full py-2.5 mt-2 text-sm text-teal-200">+ Add player</button>}
+        {props.players.length<6 && <button onClick={props.addPlayer} className="chip rounded-xl w-full py-2.5 mt-2 text-sm" style={{color:'var(--teal)'}}>+ Add player</button>}
       </Section>
-
       <Section label="Categories">
         <div className="grid grid-cols-2 gap-2">
-          {CATEGORIES.map(function(c) {
-            var on = props.cats.indexOf(c.id) !== -1;
-            return (
-              <button key={c.id} onClick={function(){ props.toggleCat(c.id); }}
-                className={'chip rounded-xl py-3 text-sm font-semibold ' + (on ? 'chip-on' : 'text-slate-300')}>
-                {c.label}
-              </button>
-            );
-          })}
+          {CATEGORIES.map(function(c){ var on=props.cats.indexOf(c.id)!==-1; return (
+            <button key={c.id} onClick={function(){props.toggleCat(c.id);}} className={'chip rounded-xl py-3 text-sm font-semibold '+(on?'chip-on':'')}>{c.label}</button>
+          );})}
         </div>
       </Section>
-
       <Section label="Era">
         <div className="flex flex-wrap gap-2">
-          {DECADES.map(function(d) {
-            var on = props.decade === d;
-            return (
-              <button key={d} onClick={function(){ props.setDecade(d); }}
-                className={'chip rounded-full px-4 py-2 text-sm font-semibold ' + (on ? 'chip-on' : 'text-slate-300')}>
-                {d}
-              </button>
-            );
-          })}
+          {DECADES.map(function(d){ var on=props.decade===d; return (
+            <button key={d} onClick={function(){props.setDecade(d);}} className={'chip rounded-full px-4 py-2 text-sm font-semibold '+(on?'chip-on':'')}>{d}</button>
+          );})}
         </div>
       </Section>
-
       <Section label="Answer timer">
         <div className="flex gap-2">
-          {[[0,'Off'],[15,'15s'],[30,'30s']].map(function(t) {
-            var on = props.timerSec === t[0];
-            return (
-              <button key={t[0]} onClick={function(){ props.setTimerSec(t[0]); }}
-                className={'chip rounded-xl flex-1 py-2.5 text-sm font-semibold ' + (on ? 'chip-on' : 'text-slate-300')}>
-                {t[1]}
-              </button>
-            );
-          })}
+          {[[0,'Off'],[15,'15s'],[30,'30s']].map(function(t){ var on=props.timerSec===t[0]; return (
+            <button key={t[0]} onClick={function(){props.setTimerSec(t[0]);}} className={'chip rounded-xl flex-1 py-2.5 text-sm font-semibold '+(on?'chip-on':'')}>{t[1]}</button>
+          );})}
         </div>
       </Section>
-
-      <button disabled={!props.canStart} onClick={props.onStart}
-        className={'bigbtn display w-full rounded-2xl py-4 text-2xl mt-3 ' + (props.canStart ? 'text-slate-900' : 'text-slate-500')}
-        style={{ background: props.canStart ? 'var(--teal)' : 'var(--panel)' }}>
-        Start Game
-      </button>
-      {!props.canStart &&
-        <p className="text-center text-slate-500 text-xs mt-2">Add at least 2 players and 1 category.</p>}
+      <button disabled={!props.canStart} onClick={props.onStart} className={'btn display w-full rounded-2xl py-4 text-3xl mt-3 '+(props.canStart?'glow-teal':'')}
+        style={{ background:props.canStart?'var(--teal)':'var(--panel)', color:props.canStart?'#061a15':'#3a4658' }}>Start</button>
+      {!props.canStart && <p className="text-center text-slate-600 text-xs mt-2">Add 2+ players and a category.</p>}
       <p className="text-center text-slate-700 text-xs mt-8">v{APP_VERSION} &middot; verified live from Wikipedia</p>
     </div>
   );
 }
+function Section(props){ return (
+  <div className="mb-6">
+    <div className="text-xs uppercase tracking-[0.2em] text-slate-500 mb-2 font-semibold">{props.label}</div>
+    {props.children}
+  </div>
+); }
 
-function Section(props) {
+function Play(props){
+  var s=props.scores||[], cur=props.current, rev=props.reveal;
+  var me=s[props.turn]?s[props.turn].name:'';
   return (
-    <div className="mb-6">
-      <div className="text-xs uppercase tracking-widest text-slate-500 mb-2 font-semibold">{props.label}</div>
-      {props.children}
-    </div>
-  );
-}
-
-// ---- Play screen ----
-function Play(props) {
-  var s = props.scores || [];
-  var cur = props.current;
-  var rev = props.reveal;
-  var me = s[props.turn] ? s[props.turn].name : '';
-
-  return (
-    <div className="max-w-md mx-auto px-5 py-6 min-h-screen flex flex-col">
-      {/* scoreboard */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 mb-4">
-        {s.map(function(p, i) {
-          var active = i === props.turn;
-          return (
-            <div key={i}
-              className={'card rounded-xl px-3 py-2 shrink-0 ' + (active ? '' : 'opacity-60')}
-              style={ active ? { borderColor: 'var(--teal)' } : {} }>
-              <div className="text-xs text-slate-300 max-w-[92px] truncate">{p.name}</div>
-              <div className="display text-2xl tnum leading-none"
-                style={{ color: active ? 'var(--teal)' : '#cbd5e1' }}>
-                {p.score}<span className="text-slate-600 text-sm">/{WIN_SCORE}</span>
-              </div>
-            </div>
-          );
-        })}
-        <button onClick={props.onQuit}
-          className="chip rounded-xl px-3 py-2 shrink-0 text-slate-400 text-xs">Quit</button>
+    <div className="max-w-md mx-auto px-5 py-6 flex flex-col" style={{minHeight:'100dvh', paddingTop:'max(1.5rem, env(safe-area-inset-top))'}}>
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 mb-2">
+        {s.map(function(p,i){ var active=i===props.turn; return (
+          <div key={i} className={'panel rounded-xl px-3 py-2 shrink-0 '+(active?'glow-teal':'opacity-55')} style={active?{borderColor:'var(--teal)'}:{}}>
+            <div className="text-xs text-slate-400 max-w-[92px] truncate">{p.name}</div>
+            <div className="display text-2xl tnum leading-none" style={{color:active?'var(--teal)':'#c3cede'}}>{p.score}<span className="text-slate-600 text-sm">/{WIN_SCORE}</span></div>
+          </div>
+        );})}
+        <button onClick={props.onQuit} className="chip rounded-xl px-3 py-2 shrink-0 text-xs">Quit</button>
       </div>
-
-      {/* main card */}
       <div className="flex-1 flex flex-col justify-center">
         {!rev && cur &&
-          <div className="text-center rise">
-            <div className="text-slate-400 text-sm mb-1">{me}, you&rsquo;re up</div>
-            <div className="text-xs uppercase tracking-widest mb-6" style={{ color: 'var(--teal)' }}>
-              {catLabel(cur.cat)} &middot; {cur.decade === 'Any' ? '' : cur.decade}
+          <div className="text-center">
+            <div className="text-slate-400 text-sm mb-1 rise">{me}, your call</div>
+            <div className="text-xs uppercase tracking-[0.25em] mb-7 rise" style={{color:'var(--teal)'}}>{catLabel(cur.cat)}{cur.decade==='Any'?'':' \u00b7 '+cur.decade}</div>
+            <div className="pulse-name panel rounded-3xl px-6 py-12 mb-3" style={{background:'linear-gradient(180deg, #10141d, #0b0e15)'}}>
+              <div className="display text-5xl leading-tight text-white">{cur.name}</div>
             </div>
-            <div className="card rounded-3xl px-6 py-10 mb-2">
-              <div className="display text-4xl leading-tight text-white">{cur.name}</div>
-            </div>
-            <div className="text-slate-500 text-sm mb-6">Dead or alive?</div>
-
-            {props.timerSec > 0 && !props.busy &&
-              <div className="flex justify-center mb-5">
-                <TimerRing total={props.timerSec} left={props.left} />
-              </div>}
-
+            <div className="text-slate-500 text-sm mb-7">Dead or alive?</div>
+            {props.timerSec>0 && !props.busy && <div className="flex justify-center mb-6"><TimerRing total={props.timerSec} left={props.left} /></div>}
             {props.busy
-              ? <div className="text-slate-400 py-4">Checking Wikipedia&hellip;</div>
+              ? <div className="text-slate-400 py-5 rise">Checking the record&hellip;</div>
               : <div className="grid grid-cols-2 gap-3">
-                  <button onClick={function(){ props.onGuess(true, false); }}
-                    className="bigbtn display rounded-2xl py-6 text-2xl text-slate-900"
-                    style={{ background: 'var(--alive)' }}>Alive</button>
-                  <button onClick={function(){ props.onGuess(false, false); }}
-                    className="bigbtn display rounded-2xl py-6 text-2xl text-white"
-                    style={{ background: 'var(--dead)' }}>Dead</button>
+                  <button onClick={function(){props.onGuess(false,false);}} className="btn display rounded-2xl py-7 text-3xl glow-dead" style={{background:'var(--dead)', color:'#fff'}}>Dead</button>
+                  <button onClick={function(){props.onGuess(true,false);}} className="btn display rounded-2xl py-7 text-3xl glow-alive" style={{background:'var(--alive)', color:'#03150e'}}>Alive</button>
                 </div>}
           </div>}
-
-        {rev && cur &&
-          <Reveal name={cur.name} rev={rev} playerName={me} onNext={props.onNext} />}
+        {rev && cur && <Reveal name={cur.name} rev={rev} playerName={me} onNext={props.onNext} />}
       </div>
     </div>
   );
 }
-
-function catLabel(id) {
-  for (var i = 0; i < CATEGORIES.length; i++) if (CATEGORIES[i].id === id) return CATEGORIES[i].label;
-  return '';
-}
-
-function TimerRing(props) {
-  var r = 18, c = 2 * Math.PI * r;
-  var frac = props.total ? props.left / props.total : 0;
-  var dash = c * frac;
-  var col = props.left <= 5 ? 'var(--dead)' : 'var(--teal)';
+function TimerRing(props){
+  var r=19, c=2*Math.PI*r, frac=props.total?props.left/props.total:0, dash=c*frac;
+  var col=props.left<=5?'var(--dead)':'var(--teal)';
   return (
     <div className="ringwrap">
-      <svg width="44" height="44">
-        <circle cx="22" cy="22" r={r} stroke="var(--line)" strokeWidth="4" fill="none" />
-        <circle cx="22" cy="22" r={r} stroke={col} strokeWidth="4" fill="none"
-          strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c - dash} />
+      <svg width="46" height="46">
+        <circle cx="23" cy="23" r={r} stroke="var(--line)" strokeWidth="4" fill="none" />
+        <circle cx="23" cy="23" r={r} stroke={col} strokeWidth="4" fill="none" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c-dash} />
       </svg>
-      <div className="absolute inset-0 flex items-center justify-center tnum text-sm font-bold"
-        style={{ color: col }}>{props.left}</div>
+      <div className="absolute inset-0 flex items-center justify-center tnum text-sm font-bold" style={{color:col}}>{props.left}</div>
     </div>
   );
 }
-
-// ---- Reveal ----
-function Reveal(props) {
-  var rev = props.rev;
-  var aliveTruth = rev.truthAlive;
-  var verdictColor = aliveTruth ? 'var(--alive)' : 'var(--dead)';
-  var verdictText = aliveTruth ? 'Still with us' : ('Died ' + (rev.year ? rev.year : '\u2014'));
-  var outcome, outcomeColor;
-  if (rev.timedOut) { outcome = 'Time\u2019s up'; outcomeColor = 'var(--dead)'; }
-  else if (rev.correct) { outcome = 'Correct'; outcomeColor = 'var(--alive)'; }
-  else { outcome = 'Wrong'; outcomeColor = 'var(--dead)'; }
-
+function Reveal(props){
+  var rev=props.rev, alive=rev.truthAlive;
+  var col=alive?'var(--alive)':'var(--dead)', verdict=alive?'Alive':'Dead';
+  var sub=alive?'Still standing':(rev.year?('Died '+rev.year):'Gone');
+  var outcome, oCol;
+  if(rev.timedOut){ outcome='Time\u2019s up'; oCol='var(--dead)'; }
+  else if(rev.correct){ outcome='Nailed it'; oCol='var(--alive)'; }
+  else { outcome='Missed'; oCol='var(--dead)'; }
   return (
     <div className="text-center">
-      <div className="card rounded-3xl px-6 py-9 mb-4">
-        <div className="text-slate-400 text-sm mb-3">{props.name}</div>
-        <div className="stamp inline-block display text-4xl px-5 py-2 rounded-xl"
-          style={{ color: verdictColor, border: '3px solid ' + verdictColor }}>
-          {verdictText}
+      <div className="relative panel rounded-3xl px-6 py-10 mb-5 overflow-hidden">
+        <div className="flash absolute inset-0" style={{background:col}}></div>
+        <div className="relative">
+          <div className="text-slate-400 text-sm mb-4">{props.name}</div>
+          <div className="slam display text-7xl leading-none" style={{color:col, textShadow:'0 0 40px '+col}}>{verdict}</div>
+          <div className="text-slate-300 text-lg mt-3">{sub}</div>
+          {rev.unknown && <div className="text-slate-600 text-xs mt-3">Wikipedia didn&rsquo;t confirm &mdash; using our record.</div>}
         </div>
-        {rev.unknown &&
-          <div className="text-slate-500 text-xs mt-4">Wikipedia didn&rsquo;t confirm &mdash; using our best record.</div>}
       </div>
-
-      <div className="display text-3xl mb-1" style={{ color: outcomeColor }}>{outcome}</div>
-      <div className="text-slate-400 text-sm mb-7">
-        {rev.timedOut ? props.playerName + ' ran out of time' :
-          (rev.correct ? props.playerName + ' scores a point' : 'No point for ' + props.playerName)}
-      </div>
-
-      <button onClick={props.onNext}
-        className="bigbtn display w-full rounded-2xl py-4 text-2xl text-slate-900"
-        style={{ background: 'var(--teal)' }}>Next</button>
+      <div className="display text-3xl mb-1" style={{color:oCol}}>{outcome}</div>
+      <div className="text-slate-400 text-sm mb-7">{rev.timedOut?props.playerName+' ran out the clock':(rev.correct?'+1 for '+props.playerName:'No point for '+props.playerName)}</div>
+      <button onClick={props.onNext} className="btn display w-full rounded-2xl py-4 text-2xl glow-teal" style={{background:'var(--teal)', color:'#061a15'}}>Next</button>
     </div>
   );
 }
-
-// ---- Win ----
-function Win(props) {
-  var sorted = props.scores.slice().sort(function(a, b) { return b.score - a.score; });
+function Win(props){
+  var sorted=props.scores.slice().sort(function(a,b){return b.score-a.score;});
   return (
-    <div className="max-w-md mx-auto px-5 py-10 min-h-screen flex flex-col justify-center">
+    <div className="max-w-md mx-auto px-5 py-10 flex flex-col justify-center" style={{minHeight:'100dvh'}}>
       <div className="text-center rise">
-        <div className="text-xs uppercase tracking-widest text-slate-500 mb-2">Winner</div>
-        <div className="display text-6xl leading-none mb-2" style={{ color: 'var(--teal)' }}>
-          {props.winnerName}
+        <div className="text-xs uppercase tracking-[0.3em] text-slate-500 mb-3">Winner</div>
+        <div className="slam display text-7xl leading-none mb-1" style={{color:'var(--teal)', textShadow:'0 0 40px rgba(47,243,214,0.5)'}}>{props.winnerName}</div>
+        <div className="display text-4xl text-white mb-8">wins</div>
+        <div className="panel rounded-2xl divide-y" style={{borderColor:'var(--line)'}}>
+          {sorted.map(function(p,i){ return (
+            <div key={i} className="flex items-center justify-between px-5 py-3" style={{borderColor:'var(--line)'}}>
+              <span className="text-slate-200">{p.name}</span>
+              <span className="display text-2xl tnum" style={{color:i===0?'var(--teal)':'#8595ad'}}>{p.score}</span>
+            </div>
+          );})}
         </div>
-        <div className="text-slate-400 mb-8">reached {WIN_SCORE} first</div>
-
-        <div className="card rounded-2xl divide-y" style={{ borderColor: 'var(--line)' }}>
-          {sorted.map(function(p, i) {
-            return (
-              <div key={i} className="flex items-center justify-between px-5 py-3"
-                style={{ borderColor: 'var(--line)' }}>
-                <span className="text-slate-200">{p.name}</span>
-                <span className="display text-2xl tnum" style={{ color: i === 0 ? 'var(--teal)' : '#94a3b8' }}>
-                  {p.score}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-
-        <button onClick={props.onAgain}
-          className="bigbtn display w-full rounded-2xl py-4 text-2xl text-slate-900 mt-6"
-          style={{ background: 'var(--teal)' }}>Play again</button>
-        <button onClick={props.onNew}
-          className="chip rounded-2xl w-full py-3 mt-3 text-slate-300">New game &amp; settings</button>
+        <button onClick={props.onAgain} className="btn display w-full rounded-2xl py-4 text-2xl glow-teal mt-6" style={{background:'var(--teal)', color:'#061a15'}}>Play again</button>
+        <button onClick={props.onNew} className="chip rounded-2xl w-full py-3 mt-3">New game &amp; settings</button>
       </div>
     </div>
   );
 }
-
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 </script>
 </body>
