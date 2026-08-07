@@ -90,9 +90,23 @@
   @keyframes rise { 0% { opacity: 0; transform: translateY(12px); } 100% { opacity: 1; transform: translateY(0); } }
   .pop { animation: pop .32s ease both; }
   @keyframes pop { 0% { opacity: 0; transform: scale(.95); } 100% { opacity: 1; transform: scale(1); } }
+  .neon-frame {
+    border: 2px solid rgba(255,46,154,0.55);
+    border-radius: 26px;
+    box-shadow: 0 0 16px rgba(255,46,154,0.45), 0 0 42px rgba(255,46,154,0.18), inset 0 0 22px rgba(255,46,154,0.14);
+  }
+  .btn-neon {
+    background: transparent;
+    border: 2px solid var(--teal);
+    box-shadow: 0 0 14px rgba(47,243,214,0.5), inset 0 0 18px rgba(47,243,214,0.2);
+    transition: transform .06s ease, box-shadow .16s ease;
+  }
+  .btn-neon:active { transform: scale(0.985); box-shadow: 0 0 26px rgba(47,243,214,0.7), inset 0 0 24px rgba(47,243,214,0.3); }
+  .blink { animation: blink 1.4s infinite steps(1); }
+  @keyframes blink { 0%,60%,100% { opacity: 1; } 70%,88% { opacity: 0.25; } }
   .ringwrap { position: relative; width: 46px; height: 46px; }
   .ringwrap svg { transform: rotate(-90deg); }
-  @media (prefers-reduced-motion: reduce) { .slam,.rise,.flash,.pop,.flick,.flick2 { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .slam,.rise,.flash,.pop,.flick,.flick2,.blink { animation: none; } }
   input { font-family: inherit; }
   ::-webkit-scrollbar { height: 0; width: 0; }
 </style>
@@ -101,7 +115,7 @@
 <div id="root"></div>
 <script type="text/babel">
 'use strict';
-var APP_VERSION = '3.2.0';
+var APP_VERSION = '3.3.0';
 var useState = React.useState, useEffect = React.useEffect, useRef = React.useRef;
 
 // NAME POOL — [name, decade, aliveFallback, wikiTitle?]. Wikipedia is truth at play time. Expand by adding lines.
@@ -291,38 +305,40 @@ function App(){
 // ---- Splash: full-screen neon-sign wanted poster (WANTED is the hero) ----
 function Splash(props){
   return (
-    <div className="w-full flex flex-col px-6" style={{minHeight:'100dvh', paddingTop:'max(1.5rem, env(safe-area-inset-top))', paddingBottom:'max(1.5rem, env(safe-area-inset-bottom))'}}>
-      {/* brand tag — small, this is just what we call it */}
-      <div className="flex items-center justify-center gap-2 pt-2 rise">
-        <span className="display text-lg neon-teal">DORA</span>
-        <span className="t3 text-[11px] tracking-[0.3em]">THE PARTY GAME</span>
-      </div>
-
-      {/* HERO — fills the middle */}
-      <div className="flex-1 flex flex-col items-center justify-center text-center">
-        <div className="t2 text-xs tracking-[0.5em] mb-4 flick2">&#9733;&nbsp;&nbsp;R E W A R D&nbsp;: &nbsp;B R A G G I N G&nbsp; R I G H T S&nbsp;&nbsp;&#9733;</div>
-
-        <div className="display flick neon-pink leading-[0.9]" style={{fontSize:'clamp(76px, 26vw, 200px)'}}>Wanted</div>
-
-        <div className="my-5 w-full flex items-center justify-center gap-3 max-w-xs mx-auto">
-          <span className="h-px flex-1" style={{background:'linear-gradient(90deg,transparent,var(--line-2))'}}></span>
-          <span className="t3 text-xs tracking-[0.35em]">DEAD OR ALIVE</span>
-          <span className="h-px flex-1" style={{background:'linear-gradient(90deg,var(--line-2),transparent)'}}></span>
+    <div className="w-full px-4" style={{minHeight:'100dvh', paddingTop:'max(1rem, env(safe-area-inset-top))', paddingBottom:'max(1rem, env(safe-area-inset-bottom))'}}>
+      <div className="neon-frame rise flex flex-col px-5" style={{minHeight:'calc(100dvh - 2rem)'}}>
+        {/* brand tag */}
+        <div className="flex items-center justify-center gap-2 pt-5">
+          <span className="display text-2xl neon-teal">DORA</span>
+          <span className="t2 text-sm tracking-[0.28em]">THE PARTY GAME</span>
         </div>
 
-        <div className="display leading-[0.85]">
-          <span className="neon-alive" style={{fontSize:'clamp(52px, 17vw, 128px)'}}>Dead</span>
-          <span className="t3 mx-3" style={{fontSize:'clamp(24px, 7vw, 56px)'}}>or</span>
-          <span className="neon-dead" style={{fontSize:'clamp(52px, 17vw, 128px)'}}>Alive</span>
+        {/* HERO — fills the middle */}
+        <div className="flex-1 flex flex-col items-center justify-center text-center">
+          <div className="t2 text-sm tracking-[0.42em] mb-4 flick2">&#9733;&nbsp; REWARD : BRAGGING RIGHTS &nbsp;&#9733;</div>
+
+          <div className="display flick neon-pink leading-[0.9]" style={{fontSize:'clamp(80px, 27vw, 210px)'}}>Wanted</div>
+
+          <div className="my-5 w-full flex items-center justify-center gap-3 max-w-xs mx-auto">
+            <span className="h-px flex-1" style={{background:'linear-gradient(90deg,transparent,var(--line-2))'}}></span>
+            <span className="t2 text-sm tracking-[0.32em]">DEAD OR ALIVE</span>
+            <span className="h-px flex-1" style={{background:'linear-gradient(90deg,var(--line-2),transparent)'}}></span>
+          </div>
+
+          <div className="display blink leading-[0.85]">
+            <span className="neon-alive" style={{fontSize:'clamp(52px, 17vw, 128px)'}}>Dead</span>
+            <span className="t3 mx-3" style={{fontSize:'clamp(24px, 7vw, 56px)'}}>or</span>
+            <span className="neon-dead" style={{fontSize:'clamp(52px, 17vw, 128px)'}}>Alive</span>
+          </div>
+
+          <p className="t2 text-sm mt-8 max-w-xs">A legend drops. You call it &mdash; still standing, or long gone.<br/><span className="t3">First to {WIN_SCORE} wins.</span></p>
         </div>
 
-        <p className="t2 text-sm mt-8 max-w-xs">A legend drops. You call it &mdash; still standing, or long gone.<br/><span className="t3">First to {WIN_SCORE} wins.</span></p>
-      </div>
-
-      {/* bottom action */}
-      <div className="pb-2">
-        <button onClick={props.onPlay} className="btn display w-full rounded-2xl py-5 text-4xl glow-teal" style={{ background:'var(--teal)', color:'#061a15' }}>Play</button>
-        <p className="text-center t3 text-xs mt-4">v{APP_VERSION} &middot; verified live from Wikipedia</p>
+        {/* bottom action — neon outline */}
+        <div className="pb-6">
+          <button onClick={props.onPlay} className="btn-neon display w-full rounded-2xl py-5 neon-teal" style={{fontSize:'clamp(34px, 10vw, 52px)'}}>Play</button>
+          <p className="text-center t3 text-xs mt-4">v{APP_VERSION} &middot; verified live from Wikipedia</p>
+        </div>
       </div>
     </div>
   );
