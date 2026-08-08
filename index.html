@@ -115,7 +115,7 @@
 <div id="root"></div>
 <script type="text/babel">
 'use strict';
-var APP_VERSION = '3.5.1';
+var APP_VERSION = '3.5.2';
 var useState = React.useState, useEffect = React.useEffect, useRef = React.useRef;
 
 // NAME POOL — [name, decade, aliveFallback, wikiTitle?]. Wikipedia is truth at play time. Expand by adding lines.
@@ -296,7 +296,7 @@ function App(){
     if(reveal&&reveal.correct&&newScores[turn].score>=WIN_SCORE){ setWinner(turn); setScreen('win'); setReveal(null); return; }
     serveNext((turn+1)%scores.length, used2);
   }
-  function newGame(){ setScreen('setup'); setReveal(null); setCurrent(null); setWinner(-1); }
+  function newGame(){ setScreen('splash'); setReveal(null); setCurrent(null); setWinner(-1); }
   function playAgain(){ var s=scores.map(function(x){return {name:x.name,score:0};}); setScores(s); setUsed({}); setWinner(-1); setScreen('play'); serveNext(0,{}); }
 
   if(screen==='splash') return <Splash onPlay={function(){ setScreen('setup'); }} />;
