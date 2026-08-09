@@ -1,0 +1,153 @@
+<!-- DORA web splash v2.0.0 | exact replica of in-app splash + download links -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>DORA — Dead or Alive | The Party Game</title>
+<meta name="description" content="Wanted: Dead or Alive. A name drops, you call it — still standing or long gone. First to 7 wins. Free, no signup. Play at dora.watch.">
+<meta name="theme-color" content="#080b12">
+<link rel="canonical" href="https://dora.watch/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="DORA">
+<meta property="og:title" content="DORA — Dead or Alive | The Party Game">
+<meta property="og:description" content="A name drops, you call it — dead or alive. First to 7 wins. Free, no signup.">
+<meta property="og:url" content="https://dora.watch/">
+<meta property="og:image" content="https://dora.watch/dora-og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://dora.watch/dora-og.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="/icon-192.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void: #080b12;
+    --panel: #141b2a;
+    --panel-2: #1b2437;
+    --line: #2e3a50;
+    --line-2: #3b4a66;
+    --teal: #2ff3d6;
+    --pink: #ff2e9a;
+    --alive: #2af5a0;
+    --dead: #ff3b6b;
+    --txt: #eef2f8;
+    --txt-2: #b8c4d6;
+    --txt-3: #8a99b3;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { background-color: #080b12; }
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+  body {
+    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: #080b12;
+    background-image:
+      radial-gradient(1100px 620px at 50% -6%, rgba(255,46,154,0.10), transparent 60%),
+      radial-gradient(1000px 680px at 50% 112%, rgba(47,243,214,0.10), transparent 60%);
+    color: var(--txt);
+    min-height: 100vh; min-height: 100dvh;
+    -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+  .display { font-family: 'Anton', sans-serif; text-transform: uppercase; letter-spacing: 0.01em; }
+  .tnum { font-variant-numeric: tabular-nums; }
+  .panel { background: var(--panel); border: 1px solid var(--line); }
+  .t2 { color: var(--txt-2); } .t3 { color: var(--txt-3); }
+
+  /* ---- real neon-tube text ---- */
+  .neon-pink  { color:#fff; text-shadow:0 0 4px #fff,0 0 11px #ff5fb4,0 0 24px #ff2e9a,0 0 46px #ff2e9a,0 0 88px #ff2e9a; }
+  .neon-teal  { color:#f2fffd; text-shadow:0 0 4px #fff,0 0 11px #86f7ea,0 0 24px #2ff3d6,0 0 46px #2ff3d6,0 0 86px #2ff3d6; }
+  .neon-alive { color:#f1fff8; text-shadow:0 0 4px #fff,0 0 11px #7dffc6,0 0 24px #2af5a0,0 0 46px #2af5a0,0 0 88px #2af5a0; }
+  .neon-dead  { color:#fff3f6; text-shadow:0 0 4px #fff,0 0 11px #ff7d97,0 0 24px #ff3b6b,0 0 46px #ff3b6b,0 0 88px #ff3b6b; }
+  .tube-pink  { border:2px solid rgba(255,46,154,0.65); box-shadow:0 0 14px rgba(255,46,154,0.5), inset 0 0 16px rgba(255,46,154,0.22); }
+  .tube-teal  { border:2px solid rgba(47,243,214,0.6); box-shadow:0 0 14px rgba(47,243,214,0.45), inset 0 0 16px rgba(47,243,214,0.2); }
+
+  .flick { animation: flick 5.5s infinite; }
+  @keyframes flick {
+    0%,17%,21%,23%,55%,58%,100% { opacity:1; }
+    19%,22%,56% { opacity:0.35; }
+  }
+  .flick2 { animation: flick2 7s infinite; }
+  @keyframes flick2 {
+    0%,40%,43%,80%,100% { opacity:1; }
+    41%,82% { opacity:0.5; }
+  }
+
+  .chip {
+    border: 1px solid var(--line-2); background: var(--panel-2); color: var(--txt-2);
+    transition: transform .08s ease, border-color .14s ease, color .14s ease, box-shadow .14s ease;
+  }
+  .chip:active { transform: scale(0.96); }
+  .chip-on { color: #061a15; background: var(--teal); border-color: var(--teal); box-shadow: 0 0 22px rgba(47,243,214,0.4); }
+  .btn { transition: transform .06s ease, box-shadow .16s ease, filter .16s ease; }
+  .btn:active { transform: scale(0.985); }
+  .glow-teal { box-shadow: 0 0 30px rgba(47,243,214,0.4); }
+  .glow-alive { box-shadow: 0 0 36px rgba(42,245,160,0.5); }
+  .glow-dead  { box-shadow: 0 0 36px rgba(255,59,107,0.48); }
+
+  .slam { animation: slam .44s cubic-bezier(.15,1.2,.28,1) both; }
+  @keyframes slam {
+    0%   { opacity: 0; transform: scale(2.2) rotate(-7deg); filter: blur(8px); }
+    50%  { opacity: 1; filter: blur(0); }
+    66%  { transform: scale(0.9) rotate(1.5deg); }
+    82%  { transform: scale(1.04) rotate(-1deg); }
+    100% { opacity: 1; transform: scale(1) rotate(-2deg); }
+  }
+  .flash { animation: flash .55s ease both; }
+  @keyframes flash { 0% { opacity: 0.85; } 100% { opacity: 0; } }
+  .rise { animation: rise .34s ease both; }
+  @keyframes rise { 0% { opacity: 0; transform: translateY(12px); } 100% { opacity: 1; transform: translateY(0); } }
+  .pop { animation: pop .32s ease both; }
+  @keyframes pop { 0% { opacity: 0; transform: scale(.95); } 100% { opacity: 1; transform: scale(1); } }
+  .neon-frame {
+    border: 2px solid rgba(255,46,154,0.55);
+    border-radius: 26px;
+    box-shadow: 0 0 16px rgba(255,46,154,0.45), 0 0 42px rgba(255,46,154,0.18), inset 0 0 22px rgba(255,46,154,0.14);
+  }
+  .btn-neon {
+    background: transparent;
+    border: 2px solid var(--teal);
+    box-shadow: 0 0 14px rgba(47,243,214,0.5), inset 0 0 18px rgba(47,243,214,0.2);
+    transition: transform .06s ease, box-shadow .16s ease;
+  }
+  .btn-neon:active { transform: scale(0.985); box-shadow: 0 0 26px rgba(47,243,214,0.7), inset 0 0 24px rgba(47,243,214,0.3); }
+  .blink { animation: blink 1.4s infinite steps(1); }
+  @keyframes blink { 0%,60%,100% { opacity: 1; } 70%,88% { opacity: 0.25; } }
+  .ringwrap { position: relative; width: 46px; height: 46px; }
+  .ringwrap svg { transform: rotate(-90deg); }
+  @media (prefers-reduced-motion: reduce) { .slam,.rise,.flash,.pop,.flick,.flick2,.blink { animation: none; } }
+  input { font-family: inherit; }
+  ::-webkit-scrollbar { height: 0; width: 0; }
+</style>
+</head>
+<body style="background-color:#080b12;">
+  <div class="w-full px-4" style="min-height:100dvh; padding-top:max(1rem,env(safe-area-inset-top)); padding-bottom:max(1rem,env(safe-area-inset-bottom))">
+    <div class="neon-frame rise flex flex-col px-5 max-w-md mx-auto" style="min-height:calc(100dvh - 2rem)">
+
+      <div class="text-center pt-8">
+        <div class="display text-6xl neon-teal leading-none">DORA</div>
+        <div class="t2 text-3xl tracking-[0.22em] mt-3 display">THE PARTY GAME</div>
+      </div>
+
+      <div class="flex-1 flex flex-col items-center justify-center text-center">
+        <div class="display flick neon-teal leading-none mb-10 tracking-[0.12em]" style="font-size:clamp(44px, 13vw, 92px)">Wanted</div>
+
+        <div class="display blink leading-none text-center">
+          <div class="neon-dead" style="font-size:clamp(80px, 27vw, 210px)">Dead</div>
+          <div class="t3 my-5" style="font-size:clamp(34px, 10vw, 70px)">or</div>
+          <div class="neon-alive" style="font-size:clamp(80px, 27vw, 210px)">Alive</div>
+        </div>
+      </div>
+
+      <div class="pb-6">
+        <p class="text-center t2 text-lg max-w-sm mx-auto mb-4 leading-relaxed">A legend drops. You call it &mdash; still standing, or long gone. <span class="t3">First to 7 wins.</span></p>
+        <a href="https://dora.watch/" class="btn-neon display block text-center w-full rounded-2xl py-5 neon-teal" style="font-size:clamp(34px, 10vw, 52px)">Play Free</a>
+        <p class="text-center t3 text-sm mt-4">Add to home screen &mdash; iPhone: Share &rarr; Add to Home Screen &middot; Android: menu &rarr; Install</p>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>
