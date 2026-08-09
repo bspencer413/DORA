@@ -160,7 +160,7 @@
 <div id="root"></div>
 <script type="text/babel">
 'use strict';
-var APP_VERSION = '3.6.2';
+var APP_VERSION = '3.6.3';
 var useState = React.useState, useEffect = React.useEffect, useRef = React.useRef;
 
 // NAME POOL — [name, decade, aliveFallback, wikiTitle?]. Wikipedia is truth at play time. Expand by adding lines.
@@ -370,12 +370,12 @@ function Splash(props){
             <div className="t2 text-lg tracking-[0.3em] mt-1">BRAGGING RIGHTS</div>
           </div>
 
-          <div className="display flick neon-pink leading-[0.9] mb-10" style={{fontSize:'clamp(80px, 27vw, 210px)'}}>Wanted</div>
+          <div className="display flick neon-pink leading-none mb-6 tracking-[0.15em]" style={{fontSize:'clamp(28px, 8vw, 56px)'}}>Wanted</div>
 
-          <div className="display blink leading-[0.85]">
-            <span className="neon-alive" style={{fontSize:'clamp(52px, 17vw, 128px)'}}>Dead</span>
-            <span className="t3 mx-3" style={{fontSize:'clamp(24px, 7vw, 56px)'}}>or</span>
-            <span className="neon-dead" style={{fontSize:'clamp(52px, 17vw, 128px)'}}>Alive</span>
+          <div className="display blink leading-[0.82] text-center">
+            <div className="neon-dead" style={{fontSize:'clamp(78px, 26vw, 200px)'}}>Dead</div>
+            <div className="t3 my-1" style={{fontSize:'clamp(30px, 9vw, 64px)'}}>or</div>
+            <div className="neon-alive" style={{fontSize:'clamp(78px, 26vw, 200px)'}}>Alive</div>
           </div>
 
           <p className="t2 text-xl mt-9 max-w-sm leading-relaxed">A legend drops. You call it &mdash; still standing, or long gone.<br/><span className="t3">First to {WIN_SCORE} wins.</span></p>
