@@ -147,6 +147,8 @@
     transition: transform .06s ease, box-shadow .16s ease;
   }
   .btn-neon:active { transform: scale(0.985); box-shadow: 0 0 26px rgba(47,243,214,0.7), inset 0 0 24px rgba(47,243,214,0.3); }
+  .btn-mini { background:transparent; border:2px solid var(--teal); box-shadow:0 0 10px rgba(47,243,214,0.45), inset 0 0 12px rgba(47,243,214,0.15); transition:transform .06s ease, box-shadow .16s ease; }
+  .btn-mini:active { transform:scale(.96); box-shadow:0 0 18px rgba(47,243,214,0.65); }
   .blink { animation: blink 1.4s infinite steps(1); }
   @keyframes blink { 0%,60%,100% { opacity: 1; } 70%,88% { opacity: 0.25; } }
   .ringwrap { position: relative; width: 46px; height: 46px; }
@@ -160,7 +162,7 @@
 <div id="root"></div>
 <script type="text/babel">
 'use strict';
-var APP_VERSION = '3.6.6';
+var APP_VERSION = '3.7.0';
 var useState = React.useState, useEffect = React.useEffect, useRef = React.useRef;
 
 // NAME POOL — [name, decade, aliveFallback, wikiTitle?]. Wikipedia is truth at play time. Expand by adding lines.
@@ -402,7 +404,7 @@ function Setup(props){
             </div>
           );})}
         </div>
-        {props.players.length<6 && <button onClick={props.addPlayer} className="chip rounded-xl w-full py-2.5 mt-2 text-sm" style={{color:'var(--teal)'}}>+ Add player</button>}
+        {props.players.length<6 && <button onClick={props.addPlayer} className="btn-mini display rounded-xl w-full py-2.5 mt-2 text-base neon-teal">+ Add player</button>}
       </Section>
       <Section label="Categories" hint="pick one or more">
         <div className="grid grid-cols-2 gap-2">
@@ -425,8 +427,8 @@ function Setup(props){
           );})}
         </div>
       </Section>
-      <button disabled={!props.canStart} onClick={props.onStart} className={'btn display w-full rounded-2xl py-4 text-3xl mt-3 '+(props.canStart?'glow-teal':'')}
-        style={{ background:props.canStart?'var(--teal)':'var(--panel)', color:props.canStart?'#061a15':'#4a5a70' }}>Start</button>
+      <button disabled={!props.canStart} onClick={props.onStart} className={'display w-full rounded-2xl py-6 mt-4 '+(props.canStart?'btn-mini neon-teal':'')}
+        style={props.canStart?{fontSize:'clamp(40px, 12vw, 64px)'}:{background:'var(--panel)', border:'2px solid var(--line)', color:'#4a5a70', fontSize:'clamp(40px, 12vw, 64px)'}}>Start</button>
       {!props.canStart && <p className="text-center t3 text-xs mt-2">Add 2+ players and a category.</p>}
     </div>
   );
@@ -473,7 +475,7 @@ function Play(props){
         {rev && cur && <Reveal name={cur.name} rev={rev} playerName={me} onNext={props.onNext} />}
       </div>
       <div className="text-center pt-4 pb-2">
-        <button onClick={props.onQuit} className="chip rounded-xl px-4 py-2 text-xs">Quit</button>
+        <button onClick={props.onQuit} className="btn-mini display rounded-xl px-6 py-2 text-lg neon-teal">Quit</button>
       </div>
     </div>
   );
@@ -512,7 +514,7 @@ function Reveal(props){
       </div>
       <div className={'display text-4xl mb-1 '+oNeon}>{outcome}</div>
       <div className="t2 text-sm mb-7">{rev.timedOut?props.playerName+' ran out the clock':(rev.correct?'+1 for '+props.playerName:'No point for '+props.playerName)}</div>
-      <button onClick={props.onNext} className="btn display w-full rounded-2xl py-4 text-2xl glow-teal" style={{background:'var(--teal)', color:'#061a15'}}>Next</button>
+      <button onClick={props.onNext} className="btn-mini display w-full rounded-2xl py-4 text-3xl neon-teal">Next</button>
     </div>
   );
 }
@@ -531,8 +533,8 @@ function Win(props){
             </div>
           );})}
         </div>
-        <button onClick={props.onAgain} className="btn display w-full rounded-2xl py-4 text-2xl glow-teal mt-6" style={{background:'var(--teal)', color:'#061a15'}}>Play again</button>
-        <button onClick={props.onNew} className="chip rounded-2xl w-full py-3 mt-3">New game &amp; settings</button>
+        <button onClick={props.onAgain} className="btn-mini display w-full rounded-2xl py-4 text-3xl neon-teal mt-6">Play again</button>
+        <button onClick={props.onNew} className="btn-mini display rounded-2xl w-full py-3 mt-3 text-lg neon-teal">New game</button>
       </div>
     </div>
   );
