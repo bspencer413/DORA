@@ -166,7 +166,7 @@
 <div id="root"></div>
 <script type="text/babel">
 'use strict';
-var APP_VERSION = '3.8.0';
+var APP_VERSION = '3.9.1';
 var useState = React.useState, useEffect = React.useEffect, useRef = React.useRef;
 
 // NAME POOL — [name, decade, aliveFallback, wikiTitle?]. Wikipedia is truth at play time. Expand by adding lines.
@@ -281,11 +281,15 @@ function verifyAlive(title){
   return fetch(url).then(function(r){return r.json();}).then(function(data){
     var cats=[];
     try{ var pages=data.query.pages; for(var k in pages) if(pages.hasOwnProperty(k)&&pages[k].categories) cats=pages[k].categories.map(function(c){return c.title;}); }catch(e){cats=[];}
-    var living=false, year=null;
-    for(var i=0;i<cats.length;i++){ if(cats[i].indexOf('Living people')!==-1) living=true; var m=cats[i].match(/Category:(\d{4}) deaths/); if(m) year=m[1]; }
-    if(year) return {alive:false, year:year};
-    if(living) return {alive:true, year:null};
-    return {alive:null, year:null};
+    var living=false, year=null, born=null;
+    for(var i=0;i<cats.length;i++){
+      if(cats[i].indexOf('Living people')!==-1) living=true;
+      var m=cats[i].match(/Category:(\d{4}) deaths/); if(m) year=m[1];
+      var b=cats[i].match(/Category:(\d{4}) births/); if(b) born=b[1];
+    }
+    if(year) return {alive:false, year:year, born:born};
+    if(living) return {alive:true, year:null, born:born};
+    return {alive:null, year:null, born:born};
   }).catch(function(){ return {alive:null, year:null}; });
 }
 
@@ -338,7 +342,7 @@ function App(){
       if(truthAlive===null){ truthAlive=current.aliveFallback; unknown=true; }
       var correct=false;
       if(!timedOut && guessAlive!==null) correct=(guessAlive===truthAlive);
-      setReveal({ guess:guessAlive, truthAlive:truthAlive, year:res.year, correct:correct, timedOut:!!timedOut, unknown:unknown });
+      setReveal({ guess:guessAlive, truthAlive:truthAlive, year:res.year, born:res.born, correct:correct, timedOut:!!timedOut, unknown:unknown });
       setBusy(false);
     });
   }
@@ -346,8 +350,18 @@ function App(){
     var newScores=scores.map(function(s,i){ if(i===turn&&reveal&&reveal.correct) return Object.assign({},s,{score:s.score+1}); return s; });
     setScores(newScores);
     var used2=Object.assign({},used); if(current) used2[current.title]=true; setUsed(used2);
-    if(reveal&&reveal.correct&&newScores[turn].score>=WIN_SCORE){ setWinner(turn); setScreen('win'); setReveal(null); return; }
-    serveNext((turn+1)%scores.length, used2);
+    var nextTurn=(turn+1)%scores.length;
+    // Decide a winner only at the END of a complete round, so every player gets
+    // equal turns. If the top score is tied, play another full round (sudden death).
+    if(nextTurn===0){
+      var maxScore=0; for(var i=0;i<newScores.length;i++) if(newScores[i].score>maxScore) maxScore=newScores[i].score;
+      if(maxScore>=WIN_SCORE){
+        var leaders=[]; for(var j=0;j<newScores.length;j++) if(newScores[j].score===maxScore) leaders.push(j);
+        if(leaders.length===1){ setWinner(leaders[0]); setScreen('win'); setReveal(null); return; }
+        // tie at the top -> keep playing; next complete round can break it
+      }
+    }
+    serveNext(nextTurn, used2);
   }
   function newGame(){ setScreen('splash'); setReveal(null); setCurrent(null); setWinner(-1); }
   function playAgain(){ var s=scores.map(function(x){return {name:x.name,score:0};}); setScores(s); setUsed({}); setWinner(-1); setScreen('play'); serveNext(0,{}); }
@@ -503,7 +517,14 @@ function TimerRing(props){
 function Reveal(props){
   var rev=props.rev, alive=rev.truthAlive;
   var neon=alive?'neon-alive':'neon-dead', flashCol=alive?'var(--alive)':'var(--dead)', verdict=alive?'Alive':'Dead';
-  var sub=alive?'Still standing':(rev.year?('Died '+rev.year):'Gone');
+  var sub;
+  if(alive){
+    if(rev.born){ var age=(new Date()).getFullYear()-parseInt(rev.born,10); sub='Alive \u00b7 born '+rev.born+' (age '+age+')'; }
+    else sub='Alive';
+  } else {
+    if(rev.year && rev.born){ var da=parseInt(rev.year,10)-parseInt(rev.born,10); sub='Died '+rev.year+' (age '+da+')'; }
+    else sub = rev.year?('Died '+rev.year):'Gone';
+  }
   var outcome, oNeon;
   if(rev.timedOut){ outcome='Time\u2019s up'; oNeon='neon-dead'; }
   else if(rev.correct){ outcome='Nailed it'; oNeon='neon-alive'; }
