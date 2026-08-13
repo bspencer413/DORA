@@ -166,7 +166,7 @@
 <div id="root"></div>
 <script type="text/babel">
 'use strict';
-var APP_VERSION = '3.9.2';
+var APP_VERSION = '3.9.4';
 var useState = React.useState, useEffect = React.useEffect, useRef = React.useRef;
 
 // NAME POOL — [name, decade, aliveFallback, wikiTitle?]. Wikipedia is truth at play time. Expand by adding lines.
@@ -419,9 +419,8 @@ function Setup(props){
           {props.players.map(function(p,i){ return (
             <div key={i} className="flex items-center gap-2">
               <input value={p} onChange={function(e){props.setPlayerName(i,e.target.value);}} placeholder={'Player '+(i+1)} maxLength={16}
-                className="flex-1 rounded-lg px-3 py-2 text-white placeholder-slate-500 outline-none"
-                style={{background:'transparent', border:'2px solid var(--teal)', boxShadow:'0 0 8px rgba(47,243,214,0.3), inset 0 0 8px rgba(47,243,214,0.1)'}} />
-              {props.players.length>2 && <button onClick={function(){props.removePlayer(i);}} className="btn-mini rounded-lg w-9 h-9 text-lg neon-teal display">&times;</button>}
+                className="btn-mini flex-1 rounded-lg px-3 py-2 text-white placeholder-slate-500 outline-none" />
+              {props.players.length>2 && <button onClick={function(){props.removePlayer(i);}} className="btn-mini display rounded-lg w-9 h-9 text-lg neon-teal">&times;</button>}
             </div>
           );})}
         </div>
@@ -448,10 +447,12 @@ function Setup(props){
           );})}
         </div>
       </Section>
-      <button disabled={!props.canStart} onClick={props.onStart} className={'display w-full rounded-2xl py-4 mt-5 text-4xl '+(props.canStart?'btn-mini neon-teal':'')}
-        style={props.canStart?{}:{background:'var(--panel)', border:'2px solid var(--line)', color:'#4a5a70'}}>Start</button>
-      {!props.canStart && <p className="text-center t2 text-base mt-3">Add 2+ players and pick a category.</p>}
-      <button onClick={props.onQuit} className="btn-mini display rounded-2xl w-full py-3 mt-3 text-lg neon-teal">Quit</button>
+      {!props.canStart && <p className="text-center t2 text-lg mt-3 mb-1">Add 2+ players and pick a category.</p>}
+      <div className="flex items-center justify-center gap-3 mt-3">
+        <button onClick={props.onQuit} className="btn-mini display rounded-xl px-8 py-3 text-2xl neon-teal">Quit</button>
+        <button disabled={!props.canStart} onClick={props.onStart} className={'display rounded-xl px-10 py-3 text-3xl '+(props.canStart?'btn-mini neon-teal':'')}
+          style={props.canStart?{}:{background:'var(--panel)', border:'2px solid var(--line)', color:'#4a5a70'}}>Start</button>
+      </div>
     </div>
   );
 }
