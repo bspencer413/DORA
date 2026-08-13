@@ -166,7 +166,7 @@
 <div id="root"></div>
 <script type="text/babel">
 'use strict';
-var APP_VERSION = '3.9.5';
+var APP_VERSION = '3.9.6';
 var useState = React.useState, useEffect = React.useEffect, useRef = React.useRef;
 
 // NAME POOL — [name, decade, aliveFallback, wikiTitle?]. Wikipedia is truth at play time. Expand by adding lines.
@@ -448,10 +448,10 @@ function Setup(props){
         </div>
       </Section>
       {!props.canStart && <p className="text-center t2 text-lg mt-3 mb-1">Add 2+ players and pick a category.</p>}
-      <button disabled={!props.canStart} onClick={props.onStart} className={'display w-full rounded-2xl py-5 mt-3 text-5xl '+(props.canStart?'btn-mini neon-teal':'')}
-        style={props.canStart?{}:{background:'var(--panel)', border:'2px solid var(--line)', color:'#4a5a70'}}>Start</button>
-      <div className="text-center mt-3">
-        <button onClick={props.onQuit} className="btn-mini display rounded-xl px-8 py-2 text-lg neon-teal">Quit</button>
+      <button disabled={!props.canStart} onClick={props.onStart} className="btn-mini display w-full rounded-2xl py-3 mt-3 text-3xl neon-teal"
+        style={props.canStart?{}:{opacity:0.45}}>Start</button>
+      <div className="text-center mt-2">
+        <button onClick={props.onQuit} className="btn-mini display rounded-xl px-8 py-2 text-base neon-teal">Quit</button>
       </div>
     </div>
   );
