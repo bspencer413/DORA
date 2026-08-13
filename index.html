@@ -166,7 +166,7 @@
 <div id="root"></div>
 <script type="text/babel">
 'use strict';
-var APP_VERSION = '3.9.1';
+var APP_VERSION = '3.9.2';
 var useState = React.useState, useEffect = React.useEffect, useRef = React.useRef;
 
 // NAME POOL — [name, decade, aliveFallback, wikiTitle?]. Wikipedia is truth at play time. Expand by adding lines.
@@ -368,7 +368,7 @@ function App(){
 
   if(screen==='splash') return <Splash onPlay={function(){ setScreen('setup'); }} />;
   if(screen==='setup') return <Setup players={players} setPlayerName={setPlayerName} addPlayer={addPlayer} removePlayer={removePlayer}
-    cats={cats} toggleCat={toggleCat} decade={decade} setDecade={setDecade} timerSec={timerSec} setTimerSec={setTimerSec} canStart={canStart} onStart={startGame} onBack={function(){setScreen('splash');}} />;
+    cats={cats} toggleCat={toggleCat} decade={decade} setDecade={setDecade} timerSec={timerSec} setTimerSec={setTimerSec} canStart={canStart} onStart={startGame} onQuit={function(){setScreen('splash');}} />;
   if(screen==='win') return <Win winnerName={scores[winner]?scores[winner].name:''} scores={scores} onAgain={playAgain} onNew={newGame} onQuit={newGame} />;
   return <Play scores={scores} turn={turn} current={current} reveal={reveal} busy={busy} timerSec={timerSec} left={left}
     onGuess={submitGuess} onNext={scoreAndAdvance} onQuit={newGame} />;
@@ -411,21 +411,21 @@ function Splash(props){
 function Setup(props){
   return (
     <div className="max-w-md mx-auto px-5 py-6" style={{paddingTop:'max(1.5rem, env(safe-area-inset-top))'}}>
-      <div className="text-center mb-6 rise">
-        <span className="display text-3xl neon-teal">DORA</span>
+      <div className="text-center mb-5 rise">
+        <span className="display text-6xl neon-teal">DORA</span>
       </div>
       <Section label="Players" hint="add up to 6">
         <div className="space-y-2">
           {props.players.map(function(p,i){ return (
             <div key={i} className="flex items-center gap-2">
               <input value={p} onChange={function(e){props.setPlayerName(i,e.target.value);}} placeholder={'Player '+(i+1)} maxLength={16}
-                className="panel flex-1 rounded-xl px-4 py-3 text-white placeholder-slate-500 outline-none"
-                onFocus={function(e){e.target.style.borderColor='var(--teal)';}} onBlur={function(e){e.target.style.borderColor='var(--line)';}} />
-              {props.players.length>2 && <button onClick={function(){props.removePlayer(i);}} className="chip rounded-xl w-11 h-11 text-xl">&times;</button>}
+                className="flex-1 rounded-lg px-3 py-2 text-white placeholder-slate-500 outline-none"
+                style={{background:'transparent', border:'2px solid var(--teal)', boxShadow:'0 0 8px rgba(47,243,214,0.3), inset 0 0 8px rgba(47,243,214,0.1)'}} />
+              {props.players.length>2 && <button onClick={function(){props.removePlayer(i);}} className="btn-mini rounded-lg w-9 h-9 text-lg neon-teal display">&times;</button>}
             </div>
           );})}
         </div>
-        {props.players.length<6 && <button onClick={props.addPlayer} className="btn-mini display rounded-xl w-full py-2.5 mt-2 text-base neon-teal">+ Add player</button>}
+        {props.players.length<6 && <button onClick={props.addPlayer} className="btn-mini display rounded-lg w-full py-2 mt-2 text-sm neon-teal">+ Add player</button>}
       </Section>
       <Section label="Categories" hint="pick one or more">
         <div className="grid grid-cols-2 gap-2">
@@ -448,9 +448,10 @@ function Setup(props){
           );})}
         </div>
       </Section>
-      <button disabled={!props.canStart} onClick={props.onStart} className={'display w-full rounded-2xl py-6 mt-4 '+(props.canStart?'btn-mini neon-teal':'')}
-        style={props.canStart?{fontSize:'clamp(40px, 12vw, 64px)'}:{background:'var(--panel)', border:'2px solid var(--line)', color:'#4a5a70', fontSize:'clamp(40px, 12vw, 64px)'}}>Start</button>
-      {!props.canStart && <p className="text-center t3 text-xs mt-2">Add 2+ players and a category.</p>}
+      <button disabled={!props.canStart} onClick={props.onStart} className={'display w-full rounded-2xl py-4 mt-5 text-4xl '+(props.canStart?'btn-mini neon-teal':'')}
+        style={props.canStart?{}:{background:'var(--panel)', border:'2px solid var(--line)', color:'#4a5a70'}}>Start</button>
+      {!props.canStart && <p className="text-center t2 text-base mt-3">Add 2+ players and pick a category.</p>}
+      <button onClick={props.onQuit} className="btn-mini display rounded-2xl w-full py-3 mt-3 text-lg neon-teal">Quit</button>
     </div>
   );
 }
