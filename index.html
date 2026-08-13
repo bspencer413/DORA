@@ -110,11 +110,15 @@
   }
 
   .chip {
-    border: 1px solid var(--line-2); background: var(--panel-2); color: var(--txt-2);
+    background: transparent; border: 2px solid var(--dead);
+    color: #ffd7e0; box-shadow: 0 0 10px rgba(255,59,107,0.35), inset 0 0 10px rgba(255,59,107,0.12);
     transition: transform .08s ease, border-color .14s ease, color .14s ease, box-shadow .14s ease;
   }
   .chip:active { transform: scale(0.96); }
-  .chip-on { color: #061a15; background: var(--teal); border-color: var(--teal); box-shadow: 0 0 22px rgba(47,243,214,0.4); }
+  .chip-on {
+    border-color: var(--alive); color: #d7ffe9;
+    box-shadow: 0 0 14px rgba(42,245,160,0.5), inset 0 0 12px rgba(42,245,160,0.18);
+  }
   .btn { transition: transform .06s ease, box-shadow .16s ease, filter .16s ease; }
   .btn:active { transform: scale(0.985); }
   .glow-teal { box-shadow: 0 0 30px rgba(47,243,214,0.4); }
@@ -162,7 +166,7 @@
 <div id="root"></div>
 <script type="text/babel">
 'use strict';
-var APP_VERSION = '3.7.1';
+var APP_VERSION = '3.8.0';
 var useState = React.useState, useEffect = React.useEffect, useRef = React.useRef;
 
 // NAME POOL — [name, decade, aliveFallback, wikiTitle?]. Wikipedia is truth at play time. Expand by adding lines.
@@ -351,7 +355,7 @@ function App(){
   if(screen==='splash') return <Splash onPlay={function(){ setScreen('setup'); }} />;
   if(screen==='setup') return <Setup players={players} setPlayerName={setPlayerName} addPlayer={addPlayer} removePlayer={removePlayer}
     cats={cats} toggleCat={toggleCat} decade={decade} setDecade={setDecade} timerSec={timerSec} setTimerSec={setTimerSec} canStart={canStart} onStart={startGame} onBack={function(){setScreen('splash');}} />;
-  if(screen==='win') return <Win winnerName={scores[winner]?scores[winner].name:''} scores={scores} onAgain={playAgain} onNew={newGame} />;
+  if(screen==='win') return <Win winnerName={scores[winner]?scores[winner].name:''} scores={scores} onAgain={playAgain} onNew={newGame} onQuit={newGame} />;
   return <Play scores={scores} turn={turn} current={current} reveal={reveal} busy={busy} timerSec={timerSec} left={left}
     onGuess={submitGuess} onNext={scoreAndAdvance} onQuit={newGame} />;
 }
@@ -538,6 +542,7 @@ function Win(props){
         </div>
         <button onClick={props.onAgain} className="btn-mini display w-full rounded-2xl py-4 text-3xl neon-teal mt-6">Play again</button>
         <button onClick={props.onNew} className="btn-mini display rounded-2xl w-full py-3 mt-3 text-lg neon-teal">New game</button>
+        <button onClick={props.onQuit} className="btn-mini display rounded-2xl w-full py-3 mt-3 text-lg neon-teal">Quit</button>
       </div>
     </div>
   );
