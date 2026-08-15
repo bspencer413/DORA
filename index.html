@@ -166,7 +166,7 @@
 <div id="root"></div>
 <script type="text/babel">
 'use strict';
-var APP_VERSION = '3.9.6';
+var APP_VERSION = '3.10.0';
 var useState = React.useState, useEffect = React.useEffect, useRef = React.useRef;
 
 // NAME POOL — [name, decade, aliveFallback, wikiTitle?]. Wikipedia is truth at play time. Expand by adding lines.
@@ -307,10 +307,13 @@ function App(){
   var bs=useState(false), busy=bs[0], setBusy=bs[1];
   var wnr=useState(-1), winner=wnr[0], setWinner=wnr[1];
   var lf=useState(0), left=lf[0], setLeft=lf[1];
+  var so=useState(false), solo=so[0], setSolo=so[1];
+  var st=useState(0), streak=st[0], setStreak=st[1];
+  var bt=useState(0), best=bt[0], setBest=bt[1];
   var tickRef=useRef(null);
 
   var validPlayers=players.filter(function(p){return p.trim().length>0;});
-  var canStart=validPlayers.length>=2 && cats.length>=1;
+  var canStart=(solo ? validPlayers.length>=1 : validPlayers.length>=2) && cats.length>=1;
 
   function toggleCat(id){ if(cats.indexOf(id)!==-1) setCats(cats.filter(function(c){return c!==id;})); else setCats(cats.concat([id])); }
   function setPlayerName(i,v){ var n=players.slice(); n[i]=v; setPlayers(n); }
@@ -318,7 +321,9 @@ function App(){
   function removePlayer(i){ if(players.length>2) setPlayers(players.filter(function(_,idx){return idx!==i;})); }
 
   function startGame(){ var s=validPlayers.map(function(n){return {name:n.trim(),score:0};});
-    setScores(s); setTurn(0); setUsed({}); setCurrent(null); setReveal(null); setWinner(-1); setScreen('play'); serveNext(0,{}); }
+    if(solo && s.length===0) s=[{name:'You',score:0}];
+    setScores(s); setTurn(0); setUsed({}); setCurrent(null); setReveal(null); setWinner(-1);
+    setStreak(0); setBest(0); setScreen('play'); serveNext(0,{}); }
   function serveNext(nextTurn, usedMap){
     var pool=poolFor(cats, decade, usedMap);
     if(!pool.length){ usedMap={}; pool=poolFor(cats, decade, usedMap); setUsed({}); }
@@ -347,9 +352,14 @@ function App(){
     });
   }
   function scoreAndAdvance(){
+    var used2=Object.assign({},used); if(current) used2[current.title]=true; setUsed(used2);
+    if(solo){
+      if(reveal&&reveal.correct){ var ns=streak+1; setStreak(ns); if(ns>best) setBest(ns); }
+      else { setStreak(0); }
+      serveNext(0, used2); return;
+    }
     var newScores=scores.map(function(s,i){ if(i===turn&&reveal&&reveal.correct) return Object.assign({},s,{score:s.score+1}); return s; });
     setScores(newScores);
-    var used2=Object.assign({},used); if(current) used2[current.title]=true; setUsed(used2);
     var nextTurn=(turn+1)%scores.length;
     // Decide a winner only at the END of a complete round, so every player gets
     // equal turns. If the top score is tied, play another full round (sudden death).
@@ -364,14 +374,14 @@ function App(){
     serveNext(nextTurn, used2);
   }
   function newGame(){ setScreen('splash'); setReveal(null); setCurrent(null); setWinner(-1); }
-  function playAgain(){ var s=scores.map(function(x){return {name:x.name,score:0};}); setScores(s); setUsed({}); setWinner(-1); setScreen('play'); serveNext(0,{}); }
+  function playAgain(){ var s=scores.map(function(x){return {name:x.name,score:0};}); setScores(s); setUsed({}); setWinner(-1); setStreak(0); setBest(0); setScreen('play'); serveNext(0,{}); }
 
   if(screen==='splash') return <Splash onPlay={function(){ setScreen('setup'); }} />;
   if(screen==='setup') return <Setup players={players} setPlayerName={setPlayerName} addPlayer={addPlayer} removePlayer={removePlayer}
-    cats={cats} toggleCat={toggleCat} decade={decade} setDecade={setDecade} timerSec={timerSec} setTimerSec={setTimerSec} canStart={canStart} onStart={startGame} onQuit={function(){setScreen('splash');}} />;
+    cats={cats} toggleCat={toggleCat} decade={decade} setDecade={setDecade} timerSec={timerSec} setTimerSec={setTimerSec} canStart={canStart} onStart={startGame} onQuit={function(){setScreen('splash');}} solo={solo} setSolo={setSolo} />;
   if(screen==='win') return <Win winnerName={scores[winner]?scores[winner].name:''} scores={scores} onAgain={playAgain} onNew={newGame} onQuit={newGame} />;
   return <Play scores={scores} turn={turn} current={current} reveal={reveal} busy={busy} timerSec={timerSec} left={left}
-    onGuess={submitGuess} onNext={scoreAndAdvance} onQuit={newGame} />;
+    onGuess={submitGuess} onNext={scoreAndAdvance} onQuit={newGame} solo={solo} streak={streak} best={best} />;
 }
 
 // ---- Splash: full-screen neon-sign wanted poster (WANTED is the hero) ----
@@ -414,17 +424,23 @@ function Setup(props){
       <div className="text-center mb-5 rise">
         <span className="display text-6xl neon-teal">DORA</span>
       </div>
-      <Section label="Players" hint="add up to 6">
+      <Section label="Mode">
+        <div className="flex gap-2">
+          <button onClick={function(){props.setSolo(false);}} className={'chip rounded-xl flex-1 py-2.5 text-sm font-semibold '+(!props.solo?'chip-on':'')}>Party</button>
+          <button onClick={function(){props.setSolo(true);}} className={'chip rounded-xl flex-1 py-2.5 text-sm font-semibold '+(props.solo?'chip-on':'')}>Solo</button>
+        </div>
+      </Section>
+      <Section label={props.solo?'Player':'Players'} hint={props.solo?'just you':'add up to 6'}>
         <div className="space-y-2">
-          {props.players.map(function(p,i){ return (
+          {props.players.map(function(p,i){ if(props.solo && i>0) return null; return (
             <div key={i} className="flex items-center gap-2">
-              <input value={p} onChange={function(e){props.setPlayerName(i,e.target.value);}} placeholder={'Player '+(i+1)} maxLength={16}
+              <input value={p} onChange={function(e){props.setPlayerName(i,e.target.value);}} placeholder={props.solo?'Your name (optional)':'Player '+(i+1)} maxLength={16}
                 className="btn-mini flex-1 rounded-lg px-3 py-2 text-white placeholder-slate-500 outline-none" />
-              {props.players.length>2 && <button onClick={function(){props.removePlayer(i);}} className="btn-mini display rounded-lg w-9 h-9 text-lg neon-teal">&times;</button>}
+              {!props.solo && props.players.length>2 && <button onClick={function(){props.removePlayer(i);}} className="btn-mini display rounded-lg w-9 h-9 text-lg neon-teal">&times;</button>}
             </div>
           );})}
         </div>
-        {props.players.length<6 && <button onClick={props.addPlayer} className="btn-mini display rounded-lg w-full py-2 mt-2 text-sm neon-teal">+ Add player</button>}
+        {!props.solo && props.players.length<6 && <button onClick={props.addPlayer} className="btn-mini display rounded-lg w-full py-2 mt-2 text-sm neon-teal">+ Add player</button>}
       </Section>
       <Section label="Categories" hint="pick one or more">
         <div className="grid grid-cols-2 gap-2">
@@ -447,7 +463,7 @@ function Setup(props){
           );})}
         </div>
       </Section>
-      {!props.canStart && <p className="text-center t2 text-lg mt-3 mb-1">Add 2+ players and pick a category.</p>}
+      {!props.canStart && <p className="text-center t2 text-lg mt-3 mb-1">{props.solo?'Pick a category to start.':'Add 2+ players and pick a category.'}</p>}
       <button disabled={!props.canStart} onClick={props.onStart} className="btn-mini display w-full rounded-2xl py-3 mt-3 text-3xl neon-teal"
         style={props.canStart?{}:{opacity:0.45}}>Start</button>
       <div className="text-center mt-2">
@@ -470,18 +486,29 @@ function Play(props){
   var me=s[props.turn]?s[props.turn].name:'';
   return (
     <div className="max-w-md mx-auto px-5 py-6 flex flex-col" style={{minHeight:'100dvh', paddingTop:'max(1.5rem, env(safe-area-inset-top))'}}>
-      <div className="flex items-center justify-center flex-wrap gap-3 pb-1 mb-3">
-        {s.map(function(p,i){ var active=i===props.turn; return (
-          <div key={i} className={'panel rounded-2xl px-6 py-4 '+(active?'glow-teal':'opacity-60')} style={active?{borderColor:'var(--teal)'}:{}}>
-            <div className="text-base t2 max-w-[128px] truncate text-center">{p.name}</div>
-            <div className="display text-5xl tnum leading-none text-center" style={{color:active?'var(--teal)':'#c3cede'}}>{p.score}<span className="t3 text-xl">/{WIN_SCORE}</span></div>
+      {props.solo
+        ? <div className="flex items-center justify-center gap-4 pb-1 mb-3">
+            <div className="panel rounded-2xl px-6 py-3 glow-teal text-center" style={{borderColor:'var(--teal)'}}>
+              <div className="text-sm t2">Streak</div>
+              <div className="display text-5xl tnum leading-none" style={{color:'var(--teal)'}}>{props.streak}</div>
+            </div>
+            <div className="panel rounded-2xl px-6 py-3 text-center">
+              <div className="text-sm t2">Best</div>
+              <div className="display text-5xl tnum leading-none" style={{color:'#c3cede'}}>{props.best}</div>
+            </div>
           </div>
-        );})}
-      </div>
+        : <div className="flex items-center justify-center flex-wrap gap-3 pb-1 mb-3">
+            {s.map(function(p,i){ var active=i===props.turn; return (
+              <div key={i} className={'panel rounded-2xl px-6 py-4 '+(active?'glow-teal':'opacity-60')} style={active?{borderColor:'var(--teal)'}:{}}>
+                <div className="text-base t2 max-w-[128px] truncate text-center">{p.name}</div>
+                <div className="display text-5xl tnum leading-none text-center" style={{color:active?'var(--teal)':'#c3cede'}}>{p.score}<span className="t3 text-xl">/{WIN_SCORE}</span></div>
+              </div>
+            );})}
+          </div>}
       <div className="flex-1 flex flex-col justify-center">
         {!rev && cur &&
           <div className="text-center">
-            <div className="t2 text-xl mb-2 rise">{me}, your call</div>
+            <div className="t2 text-xl mb-2 rise">{props.solo?'Your call':me+', your call'}</div>
             <div className="text-sm uppercase tracking-[0.25em] mb-8 rise neon-teal">{catLabel(cur.cat)}{cur.decade==='Any'?'':' \u00b7 '+cur.decade}</div>
             <div className="pop panel rounded-3xl px-6 py-14 mb-3" style={{background:'linear-gradient(180deg, #161d2c, #0b1018)'}}>
               <div className="display text-6xl leading-tight text-white">{cur.name}</div>
