@@ -166,86 +166,190 @@
 <div id="root"></div>
 <script type="text/babel">
 'use strict';
-var APP_VERSION = '3.10.0';
+var APP_VERSION = '3.12.0';
 var useState = React.useState, useEffect = React.useEffect, useRef = React.useRef;
 
 // NAME POOL — [name, decade, aliveFallback, wikiTitle?]. Wikipedia is truth at play time. Expand by adding lines.
 var POOL = {
   actors: [
-    ['Tom Cruise','80s',true], ['Meryl Streep','80s',true], ['Marlon Brando','50s',false],
-    ['Audrey Hepburn','50s',false], ['Robert De Niro','70s',true], ['Al Pacino','70s',true],
-    ['Elizabeth Taylor','50s',false], ['James Dean','50s',false], ['Clint Eastwood','60s',true],
-    ['Paul Newman','60s',false], ['Jack Nicholson','70s',true], ['Sidney Poitier','60s',false],
-    ['Julia Roberts','90s',true], ['Denzel Washington','90s',true], ['Leonardo DiCaprio','90s',true],
-    ['Humphrey Bogart','40s',false], ['Katharine Hepburn','40s',false], ['Grace Kelly','50s',false],
-    ['Sean Connery','60s',false], ['Harrison Ford','80s',true], ['Bette Davis','40s',false],
-    ['Steve McQueen','60s',false,'Steve McQueen (actor)'], ['Bruce Willis','90s',true],
-    ['Sandra Bullock','90s',true], ['Will Smith','90s',true], ['Cary Grant','40s',false],
-    ['Ingrid Bergman','40s',false], ['Robin Williams','90s',false], ['Morgan Freeman','90s',true],
-    ['Sophia Loren','60s',true], ['Gene Hackman','70s',false], ['Betty White','50s',false]
+    ['Tom Cruise','80s',true,'h'], ['Meryl Streep','80s',true,'h'], ['Marlon Brando','50s',false,'h'],
+    ['Audrey Hepburn','50s',false,'h'], ['Robert De Niro','70s',true,'h'], ['Al Pacino','70s',true,'h'],
+    ['Elizabeth Taylor','50s',false,'h'], ['James Dean','50s',false,'h'], ['Clint Eastwood','60s',true,'h'],
+    ['Paul Newman','60s',false,'h'], ['Jack Nicholson','70s',true,'h'], ['Sidney Poitier','60s',false,'h'],
+    ['Julia Roberts','90s',true,'h'], ['Denzel Washington','90s',true,'h'], ['Leonardo DiCaprio','90s',true,'h'],
+    ['Sean Connery','60s',false,'h'], ['Harrison Ford','80s',true,'h'], ['Bruce Willis','90s',true,'h'],
+    ['Sandra Bullock','90s',true,'h'], ['Will Smith','90s',true,'h'], ['Robin Williams','90s',false,'h'],
+    ['Morgan Freeman','90s',true,'h'], ['Betty White','50s',false,'h'], ['Tom Hanks','80s',true,'h'],
+    ['Johnny Depp','90s',true,'h'], ['Brad Pitt','90s',true,'h'], ['Angelina Jolie','00s',true,'h'],
+    ['George Clooney','90s',true,'h'], ['Nicole Kidman','90s',true,'h'], ['Anthony Hopkins','90s',true,'h'],
+    ['Samuel L. Jackson','90s',true,'h'], ['Scarlett Johansson','00s',true,'h'], ['Dwayne Johnson','00s',true,'h'],
+    ['Jennifer Lawrence','10s',true,'h'], ['Ryan Gosling','00s',true,'h'], ['Heath Ledger','00s',false,'h'],
+    ['Chadwick Boseman','10s',false,'h'], ['Zendaya','10s',true,'h'], ['Marilyn Monroe','50s',false,'h'],
+    ['Charlie Chaplin','40s',false,'h'], ['John Wayne','50s',false,'h'], ['Gene Kelly','50s',false,'h'],
+    ['Robert Redford','70s',true,'h'], ['Dustin Hoffman','70s',true,'h'], ['Kevin Costner','90s',true,'h'],
+    ['Mel Gibson','90s',true,'h'], ['Arnold Schwarzenegger','80s',true,'h'], ['Sylvester Stallone','80s',true,'h'],
+    ['Jackie Chan','90s',true,'h'], ['Humphrey Bogart','40s',false,'hh'], ['Katharine Hepburn','40s',false,'hh'],
+    ['Grace Kelly','50s',false,'hh'], ['Bette Davis','40s',false,'hh'], ['Cary Grant','40s',false,'hh'],
+    ['Ingrid Bergman','40s',false,'hh'], ['Steve McQueen','60s',false,'hh','Steve McQueen (actor)'], ['Gene Hackman','70s',false,'hh'],
+    ['Sophia Loren','60s',true,'hh'], ['Rita Hayworth','40s',false,'hh'], ['Spencer Tracy','40s',false,'hh'],
+    ['Kirk Douglas','50s',false,'hh'], ['Burt Lancaster','50s',false,'hh'], ['Gregory Peck','50s',false,'hh'],
+    ['Henry Fonda','50s',false,'hh'], ['James Stewart','40s',false,'hh'], ['Lauren Bacall','40s',false,'hh'],
+    ['Vivien Leigh','40s',false,'hh'], ['Peter O\'Toole','60s',false,'hh'], ['Richard Burton','60s',false,'hh'],
+    ['Omar Sharif','60s',false,'hh'], ['Charlton Heston','50s',false,'hh'], ['Gene Wilder','70s',false,'hh'],
+    ['Christopher Lee','60s',false,'hh'], ['Max von Sydow','60s',false,'hh'], ['Olivia de Havilland','40s',false,'hh'],
+    ['Yul Brynner','50s',false,'hh'], ['Anne Bancroft','60s',false,'hh'], ['Faye Dunaway','70s',true,'hh'],
+    ['Jane Fonda','70s',true,'hh'], ['Michael Caine','60s',true,'hh'], ['Donald Sutherland','70s',false,'hh'],
+    ['Christopher Plummer','60s',false,'hh'], ['Maggie Smith','70s',false,'hh'], ['Judi Dench','90s',true,'hh'],
+    ['Ian McKellen','90s',true,'hh'], ['Alan Rickman','90s',false,'hh'], ['Philip Seymour Hoffman','00s',false,'hh'],
+    ['River Phoenix','90s',false,'hh'], ['Cicely Tyson','70s',false,'hh'], ['Diahann Carroll','70s',false,'hh'],
+    ['Harry Dean Stanton','80s',false,'hh'], ['Peter Falk','70s',false,'hh'], ['Karl Malden','60s',false,'hh'],
+    ['Ernest Borgnine','60s',false,'hh'], ['Rod Steiger','60s',false,'hh'], ['Telly Savalas','70s',false,'hh'],
+    ['Raul Julia','80s',false,'hh']
   ],
   performers: [
-    ['Mick Jagger','60s',true], ['Keith Richards','60s',true], ['David Bowie','70s',false],
-    ['John Lennon','60s',false], ['Paul McCartney','60s',true], ['Elvis Presley','50s',false],
-    ['Prince','80s',false,'Prince (musician)'], ['Freddie Mercury','70s',false], ['Bob Dylan','60s',true],
-    ['Jimi Hendrix','60s',false], ['Janis Joplin','60s',false], ['Bruce Springsteen','70s',true],
-    ['Kurt Cobain','90s',false], ['Tom Petty','70s',false], ['Eddie Van Halen','80s',false],
-    ['Ringo Starr','60s',true], ['George Harrison','60s',false], ['Chuck Berry','50s',false],
-    ['Little Richard','50s',false], ['Buddy Holly','50s',false], ['Eric Clapton','60s',true],
-    ['Ozzy Osbourne','70s',false], ['Stevie Nicks','70s',true], ['Madonna','80s',true],
-    ['Phil Collins','80s',true], ['Tina Turner','80s',false], ['Neil Young','70s',true],
-    ['Jerry Garcia','70s',false], ['Aretha Franklin','60s',false], ['Frank Sinatra','50s',false],
-    ['Tony Bennett','50s',false], ['Diana Ross','60s',true], ['Stevie Wonder','70s',true],
-    ['Whitney Houston','80s',false], ['Michael Jackson','80s',false], ['Barbra Streisand','60s',true],
-    ['Ray Charles','50s',false], ['Nat King Cole','50s',false], ['Dolly Parton','70s',true],
-    ['Willie Nelson','70s',true], ['Johnny Cash','60s',false], ['Cher','70s',true],
-    ['Elton John','70s',true], ['Adele','00s',true], ['Beyonce','00s',true,'Beyonc\u00e9'],
-    ['Amy Winehouse','00s',false], ['Luciano Pavarotti','90s',false], ['Sam Cooke','60s',false],
-    ['Marvin Gaye','70s',false], ['Smokey Robinson','60s',true], ['Lionel Richie','80s',true],
-    ['Harry Belafonte','50s',false], ['Patsy Cline','50s',false]
+    ['Mick Jagger','60s',true,'h'], ['Keith Richards','60s',true,'h'], ['David Bowie','70s',false,'h'],
+    ['John Lennon','60s',false,'h'], ['Paul McCartney','60s',true,'h'], ['Elvis Presley','50s',false,'h'],
+    ['Prince','80s',false,'h','Prince (musician)'], ['Freddie Mercury','70s',false,'h'], ['Bob Dylan','60s',true,'h'],
+    ['Jimi Hendrix','60s',false,'h'], ['Bruce Springsteen','70s',true,'h'], ['Kurt Cobain','90s',false,'h'],
+    ['Ringo Starr','60s',true,'h'], ['Eric Clapton','60s',true,'h'], ['Ozzy Osbourne','70s',false,'h'],
+    ['Stevie Nicks','70s',true,'h'], ['Madonna','80s',true,'h'], ['Tina Turner','80s',false,'h'],
+    ['Aretha Franklin','60s',false,'h'], ['Frank Sinatra','50s',false,'h'], ['Stevie Wonder','70s',true,'h'],
+    ['Whitney Houston','80s',false,'h'], ['Michael Jackson','80s',false,'h'], ['Ray Charles','50s',false,'h'],
+    ['Dolly Parton','70s',true,'h'], ['Willie Nelson','70s',true,'h'], ['Johnny Cash','60s',false,'h'],
+    ['Cher','70s',true,'h'], ['Elton John','70s',true,'h'], ['Adele','00s',true,'h'],
+    ['Beyonce','00s',true,'h','Beyoncé'], ['Amy Winehouse','00s',false,'h'], ['Taylor Swift','00s',true,'h'],
+    ['Rihanna','00s',true,'h'], ['Billie Eilish','10s',true,'h'], ['Bruno Mars','10s',true,'h'],
+    ['Lady Gaga','00s',true,'h'], ['Justin Bieber','10s',true,'h'], ['Ed Sheeran','10s',true,'h'],
+    ['Drake','10s',true,'h','Drake (musician)'], ['Kanye West','00s',true,'h'], ['Jay-Z','00s',true,'h'],
+    ['Snoop Dogg','90s',true,'h'], ['Eminem','00s',true,'h'], ['The Weeknd','10s',true,'h','The Weeknd'],
+    ['Bob Marley','70s',false,'h'], ['Diana Ross','60s',true,'h'], ['Barbra Streisand','60s',true,'h'],
+    ['Paul Simon','70s',true,'h'], ['Neil Young','70s',true,'h'], ['George Harrison','60s',false,'hh'],
+    ['Chuck Berry','50s',false,'hh'], ['Little Richard','50s',false,'hh'], ['Buddy Holly','50s',false,'hh'],
+    ['Janis Joplin','60s',false,'hh'], ['Tom Petty','70s',false,'hh'], ['Eddie Van Halen','80s',false,'hh'],
+    ['Phil Collins','80s',true,'hh'], ['Jerry Garcia','70s',false,'hh'], ['Tony Bennett','50s',false,'hh'],
+    ['Nat King Cole','50s',false,'hh'], ['Sam Cooke','60s',false,'hh'], ['Marvin Gaye','70s',false,'hh'],
+    ['Smokey Robinson','60s',true,'hh'], ['Lionel Richie','80s',true,'hh'], ['Harry Belafonte','50s',false,'hh'],
+    ['Patsy Cline','50s',false,'hh'], ['Luciano Pavarotti','90s',false,'hh'], ['Mac Miller','10s',false,'hh'],
+    ['Chester Bennington','00s',false,'hh'], ['Roy Orbison','60s',false,'hh'], ['Otis Redding','60s',false,'hh'],
+    ['Jim Morrison','60s',false,'hh'], ['Karen Carpenter','70s',false,'hh'], ['John Denver','70s',false,'hh'],
+    ['George Michael','80s',false,'hh'], ['Leonard Cohen','60s',false,'hh'], ['Lou Reed','70s',false,'hh'],
+    ['Frank Zappa','70s',false,'hh'], ['Joe Cocker','70s',false,'hh'], ['B.B. King','60s',false,'hh'],
+    ['Etta James','50s',false,'hh'], ['Nina Simone','60s',false,'hh'], ['Ella Fitzgerald','50s',false,'hh'],
+    ['Sammy Davis Jr.','60s',false,'hh'], ['Dean Martin','50s',false,'hh'], ['Bing Crosby','40s',false,'hh'],
+    ['Glen Campbell','60s',false,'hh'], ['Merle Haggard','60s',false,'hh'], ['Waylon Jennings','70s',false,'hh'],
+    ['Kris Kristofferson','70s',false,'hh'], ['Loretta Lynn','60s',false,'hh'], ['Charley Pride','70s',false,'hh'],
+    ['Isaac Hayes','70s',false,'hh'], ['Rick James','80s',false,'hh'], ['Barry White','70s',false,'hh'],
+    ['Donna Summer','70s',false,'hh'], ['Gregg Allman','70s',false,'hh'], ['David Crosby','70s',false,'hh'],
+    ['Meat Loaf','70s',false,'hh'], ['Charlie Watts','60s',false,'hh'], ['Taylor Hawkins','00s',false,'hh']
   ],
   athletes: [
-    ['Muhammad Ali','60s',false], ['Michael Jordan','90s',true], ['Wayne Gretzky','80s',true],
-    ['Pele','60s',false,'Pel\u00e9'], ['Kobe Bryant','00s',false], ['Magic Johnson','80s',true],
-    ['Larry Bird','80s',true], ['Joe Montana','80s',true], ['Jackie Robinson','40s',false],
-    ['Jack Nicklaus','70s',true], ['Arnold Palmer','60s',false], ['Billie Jean King','70s',true],
-    ['Serena Williams','00s',true], ['Tiger Woods','90s',true], ['Joe DiMaggio','40s',false],
-    ['Mickey Mantle','50s',false], ['Hank Aaron','60s',false], ['Willie Mays','50s',false],
-    ['Kareem Abdul-Jabbar','70s',true], ['Bill Russell','60s',false], ['Wilt Chamberlain','60s',false],
-    ['Mike Tyson','80s',true], ['Joe Frazier','70s',false], ['George Foreman','70s',false],
-    ['Diego Maradona','80s',false], ['Bo Jackson','80s',true], ['John Madden','70s',false],
-    ['LeBron James','00s',true], ['Tom Brady','00s',true], ['Usain Bolt','00s',true], ['Simone Biles','10s',true], ['Stephen Curry','10s',true], ['Lionel Messi','00s',true], ['Cristiano Ronaldo','00s',true],
-    ['Nadia Comaneci','70s',true,'Nadia Com\u0103neci']
+    ['Muhammad Ali','60s',false,'h'], ['Michael Jordan','90s',true,'h'], ['Wayne Gretzky','80s',true,'h'],
+    ['Pele','60s',false,'h','Pelé'], ['Kobe Bryant','00s',false,'h'], ['Magic Johnson','80s',true,'h'],
+    ['Larry Bird','80s',true,'h'], ['Joe Montana','80s',true,'h'], ['Jackie Robinson','40s',false,'h'],
+    ['Jack Nicklaus','70s',true,'h'], ['Arnold Palmer','60s',false,'h'], ['Serena Williams','00s',true,'h'],
+    ['Tiger Woods','90s',true,'h'], ['Mike Tyson','80s',true,'h'], ['LeBron James','00s',true,'h'],
+    ['Tom Brady','00s',true,'h'], ['Usain Bolt','00s',true,'h'], ['Simone Biles','10s',true,'h'],
+    ['Stephen Curry','10s',true,'h'], ['Lionel Messi','00s',true,'h'], ['Cristiano Ronaldo','00s',true,'h'],
+    ['Shaquille O\'Neal','90s',true,'h'], ['Kareem Abdul-Jabbar','70s',true,'h'], ['Babe Ruth','40s',false,'h'],
+    ['Joe DiMaggio','40s',false,'h'], ['Mickey Mantle','50s',false,'h'], ['Hank Aaron','60s',false,'h'],
+    ['Willie Mays','50s',false,'h'], ['Wilt Chamberlain','60s',false,'h'], ['Bill Russell','60s',false,'h'],
+    ['Joe Frazier','70s',false,'h'], ['George Foreman','70s',false,'h'], ['Diego Maradona','80s',false,'h'],
+    ['Billie Jean King','70s',true,'h'], ['Venus Williams','00s',true,'h'], ['Roger Federer','00s',true,'h'],
+    ['Rafael Nadal','00s',true,'h'], ['Peyton Manning','00s',true,'h'], ['Derek Jeter','90s',true,'h'],
+    ['Bo Jackson','80s',true,'h'], ['Jesse Owens','40s',false,'h'], ['Jim Thorpe','40s',false,'h'],
+    ['Secretariat','70s',false,'h','Secretariat (horse)'], ['Michael Phelps','00s',true,'h'], ['Tony Hawk','90s',true,'h'],
+    ['Dale Earnhardt','90s',false,'h'], ['Jeff Gordon','90s',true,'h'], ['Mia Hamm','90s',true,'h'],
+    ['Joe Louis','40s',false,'hh'], ['Rocky Marciano','50s',false,'hh'], ['Sugar Ray Robinson','50s',false,'hh'],
+    ['Jim Brown','60s',false,'hh'], ['Johnny Unitas','60s',false,'hh'], ['Roberto Clemente','60s',false,'hh'],
+    ['Ted Williams','50s',false,'hh'], ['Sandy Koufax','60s',true,'hh'], ['Gordie Howe','60s',false,'hh'],
+    ['Bobby Orr','70s',true,'hh'], ['Arthur Ashe','70s',false,'hh'], ['Chris Evert','70s',true,'hh'],
+    ['Martina Navratilova','80s',true,'hh'], ['Nadia Comaneci','70s',true,'hh','Nadia Comăneci'], ['Mark Spitz','70s',true,'hh'],
+    ['Bruce Jenner','70s',true,'hh','Caitlyn Jenner'], ['Carl Lewis','80s',true,'hh'], ['Florence Griffith Joyner','80s',false,'hh'],
+    ['Jackie Joyner-Kersee','80s',true,'hh'], ['Greg Louganis','80s',true,'hh'], ['Walter Payton','70s',false,'hh'],
+    ['Dick Butkus','60s',false,'hh'], ['Johnny Bench','70s',true,'hh'], ['Pete Rose','70s',false,'hh'],
+    ['Nolan Ryan','70s',true,'hh'], ['Reggie Jackson','70s',true,'hh'], ['Oscar Robertson','60s',true,'hh'],
+    ['Jerry West','60s',true,'hh'], ['Elgin Baylor','60s',false,'hh'], ['John Madden','70s',false,'hh'],
+    ['Vince Lombardi','60s',false,'hh'], ['Red Auerbach','60s',false,'hh'], ['Ben Hogan','50s',false,'hh'],
+    ['Sam Snead','50s',false,'hh'], ['Bobby Jones','40s',false,'hh','Bobby Jones (golfer)'], ['Rod Laver','60s',true,'hh'],
+    ['Bjorn Borg','70s',true,'hh'], ['John McEnroe','80s',true,'hh'], ['Jimmy Connors','70s',true,'hh'],
+    ['Jack Johnson','40s',false,'hh','Jack Johnson (boxer)'], ['Y.A. Tittle','60s',false,'hh'], ['Bart Starr','60s',false,'hh'],
+    ['Gale Sayers','60s',false,'hh'], ['Ernie Banks','60s',false,'hh'], ['Al Kaline','60s',false,'hh'],
+    ['Bob Gibson','60s',false,'hh'], ['Whitey Ford','60s',false,'hh'], ['Yogi Berra','50s',false,'hh'],
+    ['Stan Musial','50s',false,'hh'], ['Maurice Richard','50s',false,'hh'], ['Jean Beliveau','60s',false,'hh'],
+    ['Bobby Hull','60s',false,'hh']
   ],
   politics: [
-    ['Jimmy Carter','70s',false], ['Bill Clinton','90s',true], ['George W. Bush','00s',true],
-    ['Barack Obama','00s',true], ['Ronald Reagan','80s',false], ['Richard Nixon','70s',false],
-    ['Gerald Ford','70s',false], ['Margaret Thatcher','80s',false], ['Nelson Mandela','90s',false],
-    ['Mikhail Gorbachev','80s',false], ['Henry Kissinger','70s',false], ['Colin Powell','90s',false],
-    ['John McCain','00s',false], ['Ted Kennedy','70s',false], ['George H. W. Bush','90s',false],
-    ['Elizabeth II','50s',false], ['Prince Philip, Duke of Edinburgh','50s',false],
-    ['Al Gore','90s',true], ['Newt Gingrich','90s',true], ['Madeleine Albright','90s',false],
-    ['Tony Blair','90s',true], ['Angela Merkel','00s',true], ['Fidel Castro','60s',false],
-    ['Yasser Arafat','70s',false], ['Boris Yeltsin','90s',false], ['Dick Cheney','00s',true],
-    ['Jesse Jackson','80s',true], ['Bob Dole','90s',false],
-    ['Joe Biden','00s',true], ['Hillary Clinton','90s',true], ['Nancy Pelosi','00s',true],
-    ['Mitch McConnell','90s',true], ['Condoleezza Rice','00s',true], ['John Kerry','00s',true],
-    ['Bernie Sanders','10s',true], ['Vladimir Putin','00s',true], ['Bill Bradley','80s',true],
-    ['Jerry Brown','80s',true], ['Arnold Schwarzenegger','00s',true], ['Michael Dukakis','80s',true],
-    ['Dan Quayle','90s',true], ['Walter Mondale','80s',false]
+    ['Jimmy Carter','70s',false,'h'], ['Bill Clinton','90s',true,'h'], ['George W. Bush','00s',true,'h'],
+    ['Barack Obama','00s',true,'h'], ['Ronald Reagan','80s',false,'h'], ['Richard Nixon','70s',false,'h'],
+    ['Margaret Thatcher','80s',false,'h'], ['Nelson Mandela','90s',false,'h'], ['Mikhail Gorbachev','80s',false,'h'],
+    ['Joe Biden','00s',true,'h'], ['Donald Trump','00s',true,'h'], ['Hillary Clinton','90s',true,'h'],
+    ['Kamala Harris','10s',true,'h'], ['Nancy Pelosi','00s',true,'h'], ['Bernie Sanders','10s',true,'h'],
+    ['John F. Kennedy','60s',false,'h'], ['Martin Luther King Jr.','60s',false,'h'], ['Winston Churchill','40s',false,'h'],
+    ['Queen Elizabeth II','50s',false,'h','Elizabeth II'], ['Fidel Castro','60s',false,'h'], ['Vladimir Putin','00s',true,'h'],
+    ['Angela Merkel','00s',true,'h'], ['Tony Blair','90s',true,'h'], ['Gerald Ford','70s',false,'h'],
+    ['George H. W. Bush','90s',false,'h'], ['Al Gore','90s',true,'h'], ['John McCain','00s',false,'h'],
+    ['Colin Powell','90s',false,'h'], ['Henry Kissinger','70s',false,'h'], ['Dick Cheney','00s',true,'h'],
+    ['Ted Kennedy','70s',false,'h'], ['Jesse Jackson','80s',true,'h'], ['Volodymyr Zelenskyy','10s',true,'h'],
+    ['Pete Buttigieg','10s',true,'h'], ['Alexandria Ocasio-Cortez','10s',true,'h'], ['Ron DeSantis','10s',true,'h'],
+    ['Mitch McConnell','90s',true,'h'], ['Condoleezza Rice','00s',true,'h'], ['John Kerry','00s',true,'h'],
+    ['Arnold Schwarzenegger','00s',true,'h'], ['Pope Francis','10s',true,'h'], ['Dalai Lama','70s',true,'h','14th Dalai Lama'],
+    ['Gandhi','40s',false,'h','Mahatma Gandhi'], ['Franklin D. Roosevelt','40s',false,'h'], ['Harry S. Truman','40s',false,'h'],
+    ['Dwight D. Eisenhower','50s',false,'h'], ['Lyndon B. Johnson','60s',false,'h'], ['Charles de Gaulle','50s',false,'h'],
+    ['Yasser Arafat','70s',false,'h'], ['Boris Yeltsin','90s',false,'h'], ['Madeleine Albright','90s',false,'hh'],
+    ['Newt Gingrich','90s',true,'hh'], ['Bob Dole','90s',false,'hh'], ['Walter Mondale','80s',false,'hh'],
+    ['Michael Dukakis','80s',true,'hh'], ['Dan Quayle','90s',true,'hh'], ['Jerry Brown','80s',true,'hh'],
+    ['Bill Bradley','80s',true,'hh'], ['Ross Perot','90s',false,'hh'], ['Prince Philip, Duke of Edinburgh','50s',false,'hh'],
+    ['Golda Meir','70s',false,'hh'], ['Indira Gandhi','70s',false,'hh'], ['Anwar Sadat','70s',false,'hh'],
+    ['Menachem Begin','70s',false,'hh'], ['Deng Xiaoping','80s',false,'hh'], ['Mao Zedong','50s',false,'hh'],
+    ['Nikita Khrushchev','60s',false,'hh'], ['Leonid Brezhnev','70s',false,'hh'], ['Josip Broz Tito','60s',false,'hh'],
+    ['Kofi Annan','90s',false,'hh'], ['Boutros Boutros-Ghali','90s',false,'hh'], ['Hosni Mubarak','80s',false,'hh'],
+    ['Muammar Gaddafi','80s',false,'hh'], ['Saddam Hussein','90s',false,'hh'], ['Ayatollah Khomeini','80s',false,'hh','Ruhollah Khomeini'],
+    ['Helmut Kohl','90s',false,'hh'], ['Francois Mitterrand','80s',false,'hh','François Mitterrand'], ['Jacques Chirac','90s',false,'hh'],
+    ['Willy Brandt','70s',false,'hh'], ['Olof Palme','80s',false,'hh'], ['Pierre Trudeau','70s',false,'hh'],
+    ['Brian Mulroney','80s',false,'hh'], ['John Major','90s',true,'hh'], ['Gordon Brown','00s',true,'hh'],
+    ['Shimon Peres','90s',false,'hh'], ['Yitzhak Rabin','90s',false,'hh'], ['Ehud Barak','90s',true,'hh'],
+    ['Benazir Bhutto','90s',false,'hh'], ['Corazon Aquino','80s',false,'hh'], ['Ferdinand Marcos','70s',false,'hh'],
+    ['Augusto Pinochet','70s',false,'hh'], ['Daniel Ortega','80s',true,'hh'], ['Vaclav Havel','90s',false,'hh','Václav Havel'],
+    ['Lech Walesa','80s',true,'hh','Lech Wałęsa'], ['Barry Goldwater','60s',false,'hh'], ['George McGovern','70s',false,'hh'],
+    ['Hubert Humphrey','60s',false,'hh'], ['Spiro Agnew','70s',false,'hh'], ['Tip O\'Neill','80s',false,'hh'],
+    ['Sam Rayburn','50s',false,'hh'], ['Thurgood Marshall','70s',false,'hh'], ['Ruth Bader Ginsburg','90s',false,'hh'],
+    ['Antonin Scalia','90s',false,'hh']
   ],
   authors: [
-    ['Ken Kesey','60s',false], ['Hunter S. Thompson','70s',false], ['Robert A. Heinlein','50s',false],
-    ['Ernest Hemingway','50s',false], ['Maya Angelou','70s',false], ['Toni Morrison','80s',false],
-    ['Kurt Vonnegut','60s',false], ['Ray Bradbury','50s',false], ['Isaac Asimov','50s',false],
-    ['Philip K. Dick','60s',false], ['Harper Lee','60s',false], ['Truman Capote','60s',false],
-    ['Gore Vidal','70s',false], ['Michael Crichton','90s',false], ['Ursula K. Le Guin','70s',false],
-    ['Tom Wolfe','80s',false], ['Terry Pratchett','90s',false], ['Cormac McCarthy','00s',false],
-    ['Stephen King','80s',true], ['Margaret Atwood','80s',true], ['J. K. Rowling','90s',true],
-    ['Salman Rushdie','80s',true], ['Neil Gaiman','90s',true], ['George R. R. Martin','90s',true],
-    ['Joyce Carol Oates','70s',true], ['Don DeLillo','80s',true], ['Thomas Pynchon','70s',true],
-    ['William Gibson','80s',true]
-    , ['Sally Rooney','10s',true], ['Colleen Hoover','10s',true], ['John Green','00s',true], ['Gillian Flynn','10s',true], ['Suzanne Collins','00s',true]
+    ['Ernest Hemingway','50s',false,'h'], ['Mark Twain','40s',false,'h'], ['Maya Angelou','70s',false,'h'],
+    ['Stephen King','80s',true,'h'], ['J. K. Rowling','90s',true,'h'], ['George R. R. Martin','90s',true,'h'],
+    ['Toni Morrison','80s',false,'h'], ['Ray Bradbury','50s',false,'h'], ['Isaac Asimov','50s',false,'h'],
+    ['Kurt Vonnegut','60s',false,'h'], ['Harper Lee','60s',false,'h'], ['Margaret Atwood','80s',true,'h'],
+    ['Stephen Hawking','80s',false,'h'], ['Dr. Seuss','50s',false,'h'], ['Roald Dahl','60s',false,'h'],
+    ['Agatha Christie','50s',false,'h'], ['George Orwell','40s',false,'h'], ['J. R. R. Tolkien','50s',false,'h'],
+    ['Ken Kesey','60s',false,'h'], ['Hunter S. Thompson','70s',false,'h'], ['Robert A. Heinlein','50s',false,'h'],
+    ['Philip K. Dick','60s',false,'h'], ['Michael Crichton','90s',false,'h'], ['Tom Clancy','90s',false,'h'],
+    ['John Grisham','90s',true,'h'], ['Dan Brown','00s',true,'h'], ['Suzanne Collins','00s',true,'h'],
+    ['Neil Gaiman','90s',true,'h'], ['Salman Rushdie','80s',true,'h'], ['Cormac McCarthy','00s',false,'h'],
+    ['F. Scott Fitzgerald','40s',false,'h'], ['John Steinbeck','50s',false,'h'], ['William Faulkner','50s',false,'h'],
+    ['Edgar Allan Poe','40s',false,'h'], ['Charles Dickens','40s',false,'h'], ['Jane Austen','40s',false,'h'],
+    ['Ernest Gaines','70s',false,'h'], ['James Baldwin','60s',false,'h'], ['Truman Capote','60s',false,'h'],
+    ['Gore Vidal','70s',false,'h'], ['Ursula K. Le Guin','70s',false,'h'], ['Terry Pratchett','90s',false,'h'],
+    ['Sally Rooney','10s',true,'h'], ['Colleen Hoover','10s',true,'h'], ['John Green','00s',true,'h'],
+    ['Malcolm Gladwell','00s',true,'h'], ['Bill Bryson','90s',true,'h'], ['David Sedaris','90s',true,'h'],
+    ['Judy Blume','70s',true,'h'], ['R. L. Stine','90s',true,'h'], ['William Gibson','80s',true,'hh'],
+    ['Thomas Pynchon','70s',true,'hh'], ['Don DeLillo','80s',true,'hh'], ['Joyce Carol Oates','70s',true,'hh'],
+    ['Tom Wolfe','80s',false,'hh'], ['Norman Mailer','60s',false,'hh'], ['Saul Bellow','60s',false,'hh'],
+    ['John Updike','70s',false,'hh'], ['Philip Roth','70s',false,'hh'], ['J. D. Salinger','50s',false,'hh'],
+    ['Jack Kerouac','50s',false,'hh'], ['Allen Ginsberg','60s',false,'hh'], ['William S. Burroughs','60s',false,'hh'],
+    ['Aldous Huxley','40s',false,'hh'], ['Virginia Woolf','40s',false,'hh'], ['James Joyce','40s',false,'hh'],
+    ['Gabriel Garcia Marquez','70s',false,'hh','Gabriel García Márquez'], ['Jorge Luis Borges','60s',false,'hh'], ['Chinua Achebe','60s',false,'hh'],
+    ['Nadine Gordimer','70s',false,'hh'], ['Doris Lessing','60s',false,'hh'], ['Alice Munro','80s',false,'hh'],
+    ['V. S. Naipaul','70s',false,'hh'], ['Gunter Grass','60s',false,'hh','Günter Grass'], ['Umberto Eco','80s',false,'hh'],
+    ['Italo Calvino','70s',false,'hh'], ['Milan Kundera','80s',false,'hh'], ['Kazuo Ishiguro','90s',true,'hh'],
+    ['Ian McEwan','90s',true,'hh'], ['Martin Amis','80s',false,'hh'], ['Zadie Smith','00s',true,'hh'],
+    ['Jonathan Franzen','00s',true,'hh'], ['David Foster Wallace','90s',false,'hh'], ['Michael Chabon','00s',true,'hh'],
+    ['Jhumpa Lahiri','00s',true,'hh'], ['Octavia Butler','80s',false,'hh'], ['Arthur C. Clarke','60s',false,'hh'],
+    ['Frank Herbert','60s',false,'hh'], ['Douglas Adams','80s',false,'hh'], ['Anne Rice','80s',false,'hh'],
+    ['Elmore Leonard','80s',false,'hh'], ['Alice Walker','80s',true,'hh'], ['Gwendolyn Brooks','60s',false,'hh'],
+    ['Langston Hughes','50s',false,'hh'], ['Ralph Ellison','50s',false,'hh'], ['Zora Neale Hurston','40s',false,'hh'],
+    ['Flannery O\'Connor','50s',false,'hh'], ['Eudora Welty','60s',false,'hh'], ['John Cheever','70s',false,'hh'],
+    ['Raymond Carver','80s',false,'hh'], ['Susan Sontag','70s',false,'hh'], ['Joan Didion','70s',false,'hh']
   ]
 };
 var CATEGORIES = [
@@ -260,15 +364,16 @@ function buildFlat(){
   var out=[];
   for (var cat in POOL){ if(!POOL.hasOwnProperty(cat)) continue; var arr=POOL[cat];
     for (var i=0;i<arr.length;i++){ var e=arr[i];
-      out.push({ name:e[0], decade:e[1], aliveFallback:e[2], title:e[3]?e[3]:e[0], cat:cat }); } }
+      out.push({ name:e[0], decade:e[1], aliveFallback:e[2], tier:e[3]?e[3]:'h', title:e[4]?e[4]:e[0], cat:cat }); } }
   return out;
 }
 var ALL = buildFlat();
-function poolFor(sel, decade, used){
+function poolFor(sel, decade, used, diff){
   var wantRandom = sel.indexOf('random')!==-1;
   return ALL.filter(function(p){
     if (used[p.title]) return false;
     if (decade!=='Any' && p.decade!==decade) return false;
+    if (diff && diff!=='both' && p.tier!==diff) return false;
     if (wantRandom) return true;
     return sel.indexOf(p.cat)!==-1;
   });
@@ -308,6 +413,7 @@ function App(){
   var wnr=useState(-1), winner=wnr[0], setWinner=wnr[1];
   var lf=useState(0), left=lf[0], setLeft=lf[1];
   var so=useState(false), solo=so[0], setSolo=so[1];
+  var df=useState('both'), diff=df[0], setDiff=df[1];
   var st=useState(0), streak=st[0], setStreak=st[1];
   var bt=useState(0), best=bt[0], setBest=bt[1];
   var tickRef=useRef(null);
@@ -325,8 +431,8 @@ function App(){
     setScores(s); setTurn(0); setUsed({}); setCurrent(null); setReveal(null); setWinner(-1);
     setStreak(0); setBest(0); setScreen('play'); serveNext(0,{}); }
   function serveNext(nextTurn, usedMap){
-    var pool=poolFor(cats, decade, usedMap);
-    if(!pool.length){ usedMap={}; pool=poolFor(cats, decade, usedMap); setUsed({}); }
+    var pool=poolFor(cats, decade, usedMap, diff);
+    if(!pool.length){ usedMap={}; pool=poolFor(cats, decade, usedMap, diff); setUsed({}); }
     setCurrent(pickRandom(pool)); setReveal(null); setTurn(nextTurn); startTimer();
   }
   function startTimer(){ clearTimer(); if(!timerSec){ setLeft(0); return; } setLeft(timerSec); }
@@ -376,15 +482,58 @@ function App(){
   function newGame(){ setScreen('splash'); setReveal(null); setCurrent(null); setWinner(-1); }
   function playAgain(){ var s=scores.map(function(x){return {name:x.name,score:0};}); setScores(s); setUsed({}); setWinner(-1); setStreak(0); setBest(0); setScreen('play'); serveNext(0,{}); }
 
-  if(screen==='splash') return <Splash onPlay={function(){ setScreen('setup'); }} />;
+  function doShare(){
+    var url='https://dora.watch';
+    var data={ title:'DORA \u2014 Dead or Alive', text:'Dead or Alive? Call it. Play free:', url:url };
+    if(navigator.share){ navigator.share(data).catch(function(){}); }
+    else if(navigator.clipboard){ navigator.clipboard.writeText(url).then(function(){ alert('Link copied: '+url); }).catch(function(){ prompt('Copy this link:', url); }); }
+    else { prompt('Copy this link:', url); }
+  }
+  if(screen==='info') return <Info onBack={function(){ setScreen('splash'); }} onShare={doShare} />;
+  if(screen==='splash') return <Splash onPlay={function(){ setScreen('setup'); }} onShare={doShare} onInfo={function(){ setScreen('info'); }} />;
   if(screen==='setup') return <Setup players={players} setPlayerName={setPlayerName} addPlayer={addPlayer} removePlayer={removePlayer}
-    cats={cats} toggleCat={toggleCat} decade={decade} setDecade={setDecade} timerSec={timerSec} setTimerSec={setTimerSec} canStart={canStart} onStart={startGame} onQuit={function(){setScreen('splash');}} solo={solo} setSolo={setSolo} />;
+    cats={cats} toggleCat={toggleCat} decade={decade} setDecade={setDecade} timerSec={timerSec} setTimerSec={setTimerSec} canStart={canStart} onStart={startGame} onQuit={function(){setScreen('splash');}} solo={solo} setSolo={setSolo} diff={diff} setDiff={setDiff} />;
   if(screen==='win') return <Win winnerName={scores[winner]?scores[winner].name:''} scores={scores} onAgain={playAgain} onNew={newGame} onQuit={newGame} />;
   return <Play scores={scores} turn={turn} current={current} reveal={reveal} busy={busy} timerSec={timerSec} left={left}
     onGuess={submitGuess} onNext={scoreAndAdvance} onQuit={newGame} solo={solo} streak={streak} best={best} />;
 }
 
 // ---- Splash: full-screen neon-sign wanted poster (WANTED is the hero) ----
+function Info(props){
+  return (
+    <div className="w-full px-4" style={{minHeight:'100dvh', paddingTop:'max(1rem,env(safe-area-inset-top))', paddingBottom:'max(1rem,env(safe-area-inset-bottom))'}}>
+      <div className="neon-frame rise flex flex-col px-6 py-7 max-w-md mx-auto" style={{minHeight:'calc(100dvh - 2rem)'}}>
+        <div className="text-center mb-6">
+          <div className="display text-5xl neon-teal">DORA</div>
+          <div className="t2 text-sm tracking-[0.28em] mt-1">DEAD OR ALIVE</div>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          <div className="mb-6">
+            <div className="display text-2xl neon-teal mb-2">How to play</div>
+            <p className="t2 text-base leading-relaxed">A famous name drops. Guess if they are <span className="neon-alive">alive</span> or <span className="neon-dead">dead</span>. Right answers score. In Party mode, first to {WIN_SCORE} wins. In Solo mode, build your best streak.</p>
+          </div>
+          <div className="mb-6">
+            <div className="display text-2xl neon-teal mb-2">Modes</div>
+            <p className="t2 text-base leading-relaxed"><b>Party</b> &mdash; 2 to 6 players, pass the phone, first to {WIN_SCORE}.<br/><b>Solo</b> &mdash; just you, chase your longest streak.</p>
+          </div>
+          <div className="mb-6">
+            <div className="display text-2xl neon-teal mb-2">Verified live</div>
+            <p className="t2 text-base leading-relaxed">Every answer is checked against Wikipedia in real time, with birth year, age, and year of death on the reveal.</p>
+          </div>
+          <div className="mb-2">
+            <div className="display text-2xl neon-teal mb-2">Tell a friend</div>
+            <p className="t2 text-base leading-relaxed mb-3">DORA is free, no signup. Share the link and they play instantly.</p>
+            <button onClick={props.onShare} className="btn-mini display w-full rounded-xl py-3 text-xl neon-teal">Share DORA</button>
+          </div>
+        </div>
+        <div className="pt-4">
+          <button onClick={props.onBack} className="btn-mini display w-full rounded-xl py-3 text-xl neon-teal">Back</button>
+          <p className="text-center t3 text-xs mt-3">v{APP_VERSION} &middot; A 3Brains.app &middot; &copy; 2026 Honolulu, Hawaii</p>
+        </div>
+      </div>
+    </div>
+  );
+}
 function Splash(props){
   return (
     <div className="w-full px-4" style={{minHeight:'100dvh', paddingTop:'max(1rem, env(safe-area-inset-top))', paddingBottom:'max(1rem, env(safe-area-inset-bottom))'}}>
@@ -410,6 +559,10 @@ function Splash(props){
         <div className="pb-6">
           <p className="text-center t2 text-lg max-w-sm mx-auto mb-4 leading-relaxed">A legend drops. You call it &mdash; still standing, or long gone. <span className="t3">First to {WIN_SCORE} wins.</span></p>
           <button onClick={props.onPlay} className="btn-neon display w-full rounded-2xl py-5 neon-teal" style={{fontSize:'clamp(34px, 10vw, 52px)'}}>Play</button>
+          <div className="flex gap-3 mt-3">
+            <button onClick={props.onShare} className="btn-mini display flex-1 rounded-xl py-3 text-xl neon-teal">Share</button>
+            <button onClick={props.onInfo} className="btn-mini display flex-1 rounded-xl py-3 text-xl neon-teal">Info</button>
+          </div>
           <p className="text-center t3 text-xs mt-4">v{APP_VERSION} &middot; verified live from Wikipedia</p>
           <p className="text-center t3 text-xs mt-1">A 3Brains.app &middot; &copy; 2026 Honolulu, Hawaii</p>
         </div>
@@ -453,6 +606,13 @@ function Setup(props){
         <div className="flex flex-wrap gap-2">
           {DECADES.map(function(d){ var on=props.decade===d; return (
             <button key={d} onClick={function(){props.setDecade(d);}} className={'chip rounded-full px-4 py-2 text-sm font-semibold '+(on?'chip-on':'')}>{d}</button>
+          );})}
+        </div>
+      </Section>
+      <Section label="Difficulty" hint="hard = famous, harder = deep cuts">
+        <div className="flex gap-2">
+          {[['both','Both'],['h','Hard'],['hh','Harder']].map(function(t){ var on=props.diff===t[0]; return (
+            <button key={t[0]} onClick={function(){props.setDiff(t[0]);}} className={'chip rounded-xl flex-1 py-2.5 text-sm font-semibold '+(on?'chip-on':'')}>{t[1]}</button>
           );})}
         </div>
       </Section>
