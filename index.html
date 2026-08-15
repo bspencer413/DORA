@@ -166,7 +166,7 @@
 <div id="root"></div>
 <script type="text/babel">
 'use strict';
-var APP_VERSION = '3.12.0';
+var APP_VERSION = '3.12.1';
 var useState = React.useState, useEffect = React.useEffect, useRef = React.useRef;
 
 // NAME POOL — [name, decade, aliveFallback, wikiTitle?]. Wikipedia is truth at play time. Expand by adding lines.
@@ -204,7 +204,8 @@ var POOL = {
     ['River Phoenix','90s',false,'hh'], ['Cicely Tyson','70s',false,'hh'], ['Diahann Carroll','70s',false,'hh'],
     ['Harry Dean Stanton','80s',false,'hh'], ['Peter Falk','70s',false,'hh'], ['Karl Malden','60s',false,'hh'],
     ['Ernest Borgnine','60s',false,'hh'], ['Rod Steiger','60s',false,'hh'], ['Telly Savalas','70s',false,'hh'],
-    ['Raul Julia','80s',false,'hh']
+    ['Raul Julia','80s',false,'hh'],
+    ['Margot Robbie','10s',true,'h'], ['Ryan Reynolds','00s',true,'h'], ['Emma Stone','10s',true,'h'], ['Chris Hemsworth','10s',true,'h'], ['Chris Evans','10s',true,'h','Chris Evans (actor)'], ['Robert Downey Jr.','00s',true,'h'], ['Gal Gadot','10s',true,'h'], ['Florence Pugh','10s',true,'h'], ['Tom Holland','10s',true,'h','Tom Holland (actor)'], ['Michael B. Jordan','10s',true,'h'], ['Anya Taylor-Joy','10s',true,'h'], ['Pedro Pascal','10s',true,'h'], ['Millie Bobby Brown','10s',true,'h'], ['Timothee Chalamet','10s',true,'h','Timothée Chalamet'], ['Oscar Isaac','10s',true,'hh'], ['Adam Driver','10s',true,'hh'], ['Saoirse Ronan','10s',true,'hh'], ['Mahershala Ali','10s',true,'hh'], ['Rami Malek','10s',true,'hh'], ['Lupita Nyong\'o','10s',true,'hh']
   ],
   performers: [
     ['Mick Jagger','60s',true,'h'], ['Keith Richards','60s',true,'h'], ['David Bowie','70s',false,'h'],
@@ -240,7 +241,8 @@ var POOL = {
     ['Kris Kristofferson','70s',false,'hh'], ['Loretta Lynn','60s',false,'hh'], ['Charley Pride','70s',false,'hh'],
     ['Isaac Hayes','70s',false,'hh'], ['Rick James','80s',false,'hh'], ['Barry White','70s',false,'hh'],
     ['Donna Summer','70s',false,'hh'], ['Gregg Allman','70s',false,'hh'], ['David Crosby','70s',false,'hh'],
-    ['Meat Loaf','70s',false,'hh'], ['Charlie Watts','60s',false,'hh'], ['Taylor Hawkins','00s',false,'hh']
+    ['Meat Loaf','70s',false,'hh'], ['Charlie Watts','60s',false,'hh'], ['Taylor Hawkins','00s',false,'hh'],
+    ['Bad Bunny','10s',true,'h'], ['Dua Lipa','10s',true,'h'], ['Post Malone','10s',true,'h'], ['Ariana Grande','10s',true,'h'], ['Harry Styles','10s',true,'h'], ['Olivia Rodrigo','20s',true,'h'], ['Doja Cat','20s',true,'h'], ['Kendrick Lamar','10s',true,'h'], ['Travis Scott','10s',true,'h'], ['Cardi B','10s',true,'h'], ['Miley Cyrus','00s',true,'h'], ['Katy Perry','00s',true,'h'], ['Shawn Mendes','10s',true,'h'], ['SZA','10s',true,'h'], ['Lizzo','10s',true,'h'], ['Frank Ocean','10s',true,'hh'], ['Tyler, the Creator','10s',true,'hh'], ['Lana Del Rey','10s',true,'hh'], ['Hozier','10s',true,'hh'], ['Janelle Monae','10s',true,'hh','Janelle Monáe'], ['Avicii','10s',false,'hh'], ['XXXTentacion','10s',false,'hh'], ['Pop Smoke','20s',false,'hh'], ['Takeoff','20s',false,'hh','Takeoff (rapper)']
   ],
   athletes: [
     ['Muhammad Ali','60s',false,'h'], ['Michael Jordan','90s',true,'h'], ['Wayne Gretzky','80s',true,'h'],
@@ -276,7 +278,8 @@ var POOL = {
     ['Gale Sayers','60s',false,'hh'], ['Ernie Banks','60s',false,'hh'], ['Al Kaline','60s',false,'hh'],
     ['Bob Gibson','60s',false,'hh'], ['Whitey Ford','60s',false,'hh'], ['Yogi Berra','50s',false,'hh'],
     ['Stan Musial','50s',false,'hh'], ['Maurice Richard','50s',false,'hh'], ['Jean Beliveau','60s',false,'hh'],
-    ['Bobby Hull','60s',false,'hh']
+    ['Bobby Hull','60s',false,'hh'],
+    ['Patrick Mahomes','10s',true,'h'], ['Giannis Antetokounmpo','10s',true,'h'], ['Kevin Durant','00s',true,'h'], ['Novak Djokovic','00s',true,'h'], ['Naomi Osaka','10s',true,'h'], ['Katie Ledecky','10s',true,'h'], ['Shohei Ohtani','10s',true,'h'], ['Aaron Judge','10s',true,'h'], ['Caitlin Clark','20s',true,'h'], ['Coco Gauff','20s',true,'h'], ['Connor McDavid','10s',true,'h'], ['Megan Rapinoe','10s',true,'h'], ['Kawhi Leonard','10s',true,'hh'], ['Nikola Jokic','10s',true,'hh','Nikola Jokić'], ['Luka Doncic','10s',true,'hh','Luka Dončić'], ['Erling Haaland','20s',true,'hh'], ['Mikaela Shiffrin','10s',true,'hh'], ['Sydney McLaughlin','20s',true,'hh','Sydney McLaughlin-Levrone']
   ],
   politics: [
     ['Jimmy Carter','70s',false,'h'], ['Bill Clinton','90s',true,'h'], ['George W. Bush','00s',true,'h'],
@@ -313,7 +316,8 @@ var POOL = {
     ['Lech Walesa','80s',true,'hh','Lech Wałęsa'], ['Barry Goldwater','60s',false,'hh'], ['George McGovern','70s',false,'hh'],
     ['Hubert Humphrey','60s',false,'hh'], ['Spiro Agnew','70s',false,'hh'], ['Tip O\'Neill','80s',false,'hh'],
     ['Sam Rayburn','50s',false,'hh'], ['Thurgood Marshall','70s',false,'hh'], ['Ruth Bader Ginsburg','90s',false,'hh'],
-    ['Antonin Scalia','90s',false,'hh']
+    ['Antonin Scalia','90s',false,'hh'],
+    ['Emmanuel Macron','10s',true,'h'], ['Justin Trudeau','10s',true,'h'], ['Boris Johnson','10s',true,'h'], ['Xi Jinping','10s',true,'h'], ['Narendra Modi','10s',true,'h'], ['Jacinda Ardern','10s',true,'h'], ['Rishi Sunak','20s',true,'h'], ['Keir Starmer','20s',true,'h'], ['Gavin Newsom','10s',true,'h'], ['Olaf Scholz','20s',true,'hh'], ['Giorgia Meloni','20s',true,'hh'], ['Nikki Haley','10s',true,'hh'], ['Elizabeth Warren','10s',true,'hh'], ['Marjorie Taylor Greene','20s',true,'hh'], ['Benjamin Netanyahu','90s',true,'hh'], ['Ursula von der Leyen','10s',true,'hh']
   ],
   authors: [
     ['Ernest Hemingway','50s',false,'h'], ['Mark Twain','40s',false,'h'], ['Maya Angelou','70s',false,'h'],
@@ -349,7 +353,8 @@ var POOL = {
     ['Elmore Leonard','80s',false,'hh'], ['Alice Walker','80s',true,'hh'], ['Gwendolyn Brooks','60s',false,'hh'],
     ['Langston Hughes','50s',false,'hh'], ['Ralph Ellison','50s',false,'hh'], ['Zora Neale Hurston','40s',false,'hh'],
     ['Flannery O\'Connor','50s',false,'hh'], ['Eudora Welty','60s',false,'hh'], ['John Cheever','70s',false,'hh'],
-    ['Raymond Carver','80s',false,'hh'], ['Susan Sontag','70s',false,'hh'], ['Joan Didion','70s',false,'hh']
+    ['Raymond Carver','80s',false,'hh'], ['Susan Sontag','70s',false,'hh'], ['Joan Didion','70s',false,'hh'],
+    ['Delia Owens','10s',true,'h'], ['Tara Westover','10s',true,'h'], ['Brandon Sanderson','00s',true,'h'], ['Rebecca Yarros','20s',true,'h'], ['Emily Henry','20s',true,'h'], ['Michelle Obama','10s',true,'h'], ['Ocean Vuong','10s',true,'hh'], ['Celeste Ng','10s',true,'hh'], ['Brit Bennett','10s',true,'hh'], ['Hanya Yanagihara','10s',true,'hh'], ['Colson Whitehead','10s',true,'hh'], ['Ta-Nehisi Coates','10s',true,'hh'], ['Marlon James','10s',true,'hh']
   ]
 };
 var CATEGORIES = [
@@ -357,7 +362,7 @@ var CATEGORIES = [
   { id:'athletes', label:'Athletes' }, { id:'politics', label:'Politicians' },
   { id:'authors', label:'Authors' }, { id:'random', label:'Random' }
 ];
-var DECADES = ['Any','40s','50s','60s','70s','80s','90s','00s'];
+var DECADES = ['Any','40s','50s','60s','70s','80s','90s','00s','10s','20s'];
 var WIN_SCORE = 7;
 
 function buildFlat(){
