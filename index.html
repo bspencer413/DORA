@@ -166,7 +166,7 @@
 <div id="root"></div>
 <script type="text/babel">
 'use strict';
-var APP_VERSION = '3.12.1';
+var APP_VERSION = '3.12.2';
 var useState = React.useState, useEffect = React.useEffect, useRef = React.useRef;
 
 // NAME POOL — [name, decade, aliveFallback, wikiTitle?]. Wikipedia is truth at play time. Expand by adding lines.
@@ -436,8 +436,11 @@ function App(){
     setScores(s); setTurn(0); setUsed({}); setCurrent(null); setReveal(null); setWinner(-1);
     setStreak(0); setBest(0); setScreen('play'); serveNext(0,{}); }
   function serveNext(nextTurn, usedMap){
-    var pool=poolFor(cats, decade, usedMap, diff);
-    if(!pool.length){ usedMap={}; pool=poolFor(cats, decade, usedMap, diff); setUsed({}); }
+    // If the chosen era makes the pool too thin, relax the era (keep category + difficulty)
+    // so players never get the same few names on repeat.
+    var eff = (poolFor(cats, decade, {}, diff).length < 12) ? 'Any' : decade;
+    var pool=poolFor(cats, eff, usedMap, diff);
+    if(!pool.length){ usedMap={}; pool=poolFor(cats, eff, usedMap, diff); setUsed({}); }
     setCurrent(pickRandom(pool)); setReveal(null); setTurn(nextTurn); startTimer();
   }
   function startTimer(){ clearTimer(); if(!timerSec){ setLeft(0); return; } setLeft(timerSec); }
