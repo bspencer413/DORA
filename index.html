@@ -166,7 +166,7 @@
 <div id="root"></div>
 <script type="text/babel">
 'use strict';
-var APP_VERSION = '3.12.2';
+var APP_VERSION = '3.12.3';
 var useState = React.useState, useEffect = React.useEffect, useRef = React.useRef;
 
 // NAME POOL — [name, decade, aliveFallback, wikiTitle?]. Wikipedia is truth at play time. Expand by adding lines.
@@ -362,7 +362,7 @@ var CATEGORIES = [
   { id:'athletes', label:'Athletes' }, { id:'politics', label:'Politicians' },
   { id:'authors', label:'Authors' }, { id:'random', label:'Random' }
 ];
-var DECADES = ['Any','40s','50s','60s','70s','80s','90s','00s','10s','20s'];
+var DECADES = ['40s','50s','60s','70s','80s','90s','00s','10s','20s','Any'];
 var WIN_SCORE = 7;
 
 function buildFlat(){
@@ -424,7 +424,7 @@ function App(){
   var tickRef=useRef(null);
 
   var validPlayers=players.filter(function(p){return p.trim().length>0;});
-  var canStart=(solo ? validPlayers.length>=1 : validPlayers.length>=2) && cats.length>=1;
+  var canStart=(solo ? true : validPlayers.length>=2) && cats.length>=1;
 
   function toggleCat(id){ if(cats.indexOf(id)!==-1) setCats(cats.filter(function(c){return c!==id;})); else setCats(cats.concat([id])); }
   function setPlayerName(i,v){ var n=players.slice(); n[i]=v; setPlayers(n); }
