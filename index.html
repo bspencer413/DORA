@@ -166,7 +166,7 @@
 <div id="root"></div>
 <script type="text/babel">
 'use strict';
-var APP_VERSION = '3.13';
+var APP_VERSION = '3.14';
 var useState = React.useState, useEffect = React.useEffect, useRef = React.useRef;
 
 // NAME POOL — [name, decade, aliveFallback, wikiTitle?]. Wikipedia is truth at play time. Expand by adding lines.
@@ -433,7 +433,7 @@ function App(){
 
   function toggleCat(id){ if(cats.indexOf(id)!==-1) setCats(cats.filter(function(c){return c!==id;})); else setCats(cats.concat([id])); }
   function setPlayerName(i,v){ var n=players.slice(); n[i]=v; setPlayers(n); }
-  function addPlayer(){ if(players.length<6) setPlayers(players.concat([''])); }
+  function addPlayer(){ if(players.length<8) setPlayers(players.concat([''])); }
   function removePlayer(i){ if(players.length>2) setPlayers(players.filter(function(_,idx){return idx!==i;})); }
 
   function startGame(){ var s=validPlayers.map(function(n){return {name:n.trim(),score:0};});
@@ -527,7 +527,7 @@ function Info(props){
           </div>
           <div className="mb-6">
             <div className="display text-2xl neon-teal mb-2">Modes</div>
-            <p className="t2 text-base leading-relaxed"><b>Party</b> &mdash; 2 to 6 players, pass the phone, first to {WIN_SCORE}.<br/><b>Solo</b> &mdash; just you, chase your longest streak.</p>
+            <p className="t2 text-base leading-relaxed"><b>Party</b> &mdash; 2 to 8 players, pass the phone, first to {WIN_SCORE}.<br/><b>Solo</b> &mdash; just you, chase your longest streak.</p>
           </div>
           <div className="mb-6">
             <div className="display text-2xl neon-teal mb-2">Verified live</div>
@@ -606,7 +606,7 @@ function Setup(props){
             </div>
           );})}
         </div>
-        {!props.solo && props.players.length<6 && <button onClick={props.addPlayer} className="btn-mini display rounded-lg w-full py-2 mt-2 text-sm neon-teal">+ Add player</button>}
+        {!props.solo && props.players.length<8 && <button onClick={props.addPlayer} className="btn-mini display rounded-lg w-full py-2 mt-2 text-sm neon-teal">+ Add player</button>}
       </Section>
       <Section label="Categories" hint="pick one or more">
         <div className="grid grid-cols-2 gap-2">
